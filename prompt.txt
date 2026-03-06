@@ -1,0 +1,19 @@
+Instrução de Atuação:
+Aja como um mentor sênior em Machine Learning . Meu objetivo é dominar o livro Designing Machine Learning Systems da Chip Huyen e o livro Hands-on ML. Acabei de ler uma seção e preparei um resumo.
+
+Seu Objetivo:
+Gere um QUIZ com 20 questões de revisão baseadas nos materiais que fornecerei abaixo. Divida as questões em três categorias (10 da primeira e 5 das ultimas):
+
+    Fundamentos e Conceitos: Teste minha compreensão direta dos termos e lógica da autora.
+
+    Cenários de System Design: Crie problemas hipotéticos (ex: "Imagine que você trabalha na Netflix...") onde eu precise aplicar a teoria desta seção para desenhar uma solução.
+
+    Engenharia e Implementação: Perguntas focadas em trade-offs de infraestrutura, latência, dados e ferramentas (Docker, APIs, Bancos de Dados, etc).
+
+Regra Adicional: Se houver alguma discrepância ou erro conceitual no Meu Resumo em comparação ao Material Original ou se o Material Original faltar algum detalhe importante, aponte isso brevemente e complete.
+
+📖 MATERIAL ORIGINAL:
+
+
+✍️ MEU RESUMO:
+
