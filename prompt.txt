@@ -1,15 +1,537 @@
-Gere um questionário Interativo com 20 questões baseadas no que fornecerei abaixo. Divida as questões em três categorias:
+Gere um questionário Interativo de multipla escolha com 35 questões baseadas no que fornecerei abaixo. Divida as questões em três categorias:
 
-    10 de Fundamentos e Conceitos: Teste minha compreensão direta dos termos e lógica.
+    15 de Fundamentos e Conceitos: Teste minha compreensão direta dos termos e lógica.
 
-    Cenários de System Design: Crie problemas hipotéticos (ex: "Imagine que você trabalha na Netflix...") onde eu precise aplicar a teoria desta seção para desenhar uma solução.
+    10 de Cenários de System Design: Crie problemas hipotéticos (ex: "Imagine que você trabalha na Netflix...") onde eu precise aplicar a teoria desta seção para desenhar uma solução.
 
-    Engenharia e Implementação: Perguntas focadas em trade-offs de infraestrutura, latência, dados e ferramentas (Docker, APIs, Bancos de Dados, etc).
+    10 de Engenharia e Implementação: Perguntas focadas em trade-offs de infraestrutura, latência, dados e ferramentas (Docker, APIs, Bancos de Dados, etc).
 
 Regra Adicional: Se houver alguma discrepância, erro conceitual ou incompletude aponte isso brevemente e complete no questionário.
 
 📖 MATERIAL ORIGINAL:
 
+Explore and Visualize the Data to Gain Insights
+So far you have only taken a quick glance at the data to get a general
+understanding of the kind of data you are manipulating. Now the goal is to go into
+a little more depth.
+First, make sure you have put the test set aside and you are only exploring the
+training set. Also, if the training set is very large, you may want to sample an
+exploration set, to make manipulations easy and fast during the exploration phase.
+In this case, the training set is quite small, so you can just work directly on the full
+set. Since you’re going to experiment with various transformations of the full
+training set, you should make a copy of the original so you can revert to it
+afterwards:
+housing = strat_train_set.copy()
+Visualizing Geographical Data
+Because the dataset includes geographical information (latitude and longitude), it
+is a good idea to create a scatterplot of all the districts to visualize the data
+(Figure 2-11):
+housing.plot(kind="scatter", x="longitude", y="latitude", grid=True)
+plt.show()
 
-✍️ MEU RESUMO:
+This looks like California all right, but other than that it is hard to see any
+particular pattern. Setting the alpha option to 0.2 makes it much easier to
+visualize the places where there is a high density of data points (Figure 2-12):
+housing.plot(kind="scatter", x="longitude", y="latitude", grid=True,
+alpha=0.2)
+plt.show()
+Now that’s much better: you can clearly see the high-density areas, namely the
+Bay Area and around Los Angeles and San Diego, plus a long line of fairly high-
+density areas in the Central Valley (in particular, around Sacramento and Fresno).
+Our brains are very good at spotting patterns in pictures, but you may need to play
+around with visualization parameters to make the patterns stand out.
+Figure 2-12. A better visualization that highlights high-density areas
+Next, you look at the housing prices (Figure 2-13). The radius of each circle
+represents the district’s population (option s), and the color represents the price
+(option c). Here you use a predefined color map (option cmap) called jet, which
+ranges from blue (low values) to red (high prices):8
+housing.plot(kind="scatter", x="longitude", y="latitude", grid=True,
+s=housing["population"] / 100, label="population",
+c="median_house_value", cmap="jet", colorbar=True,
+legend=True, sharex=False, figsize=(10, 7))
+plt.show()
+This image tells you that the housing prices are very much related to the location
+(e.g., close to the ocean) and to the population density, as you probably knew
+already. A clustering algorithm should be useful for detecting the main cluster and
+for adding new features that measure the proximity to the cluster centers. The
+ocean proximity attribute may be useful as well, although in Northern California
+the housing prices in coastal districts are not too high, so it is not a simple rule.
 
+Look for Correlations
+Since the dataset is not too large, you can easily compute the standard correlation
+coefficient (also called Pearson’s r) between every pair of numerical attributes
+using the corr() method:
+corr_matrix = housing.corr(numeric_only=True)
+Now you can look at how much each attribute correlates with the median house
+value:
+>>> corr_matrix["median_house_value"].sort_values(ascending=False)
+median_house_value 1.000000
+median_income 0.688380
+total_rooms 0.137455
+housing_median_age 0.102175
+households 0.071426
+total_bedrooms 0.054635
+population -0.020153
+longitude -0.050859
+latitude -0.139584
+Name: median_house_value, dtype: float64
+The correlation coefficient ranges from –1 to 1. When it is close to 1, it means that
+there is a strong positive correlation; for example, the median house value tends to
+go up when the median income goes up. When the coefficient is close to –1, it
+means that there is a strong negative correlation; you can see a small negative
+correlation between the latitude and the median house value (i.e., prices have a
+slight tendency to go down when you go north). Finally, coefficients close to 0
+mean that there is no linear correlation.
+Another way to check for correlation between attributes is to use the Pandas
+scatter_matrix() function, which plots every numerical attribute against
+every other numerical attribute. Since there are now 9 numerical attributes, you
+would get 92 = 81 plots, which would not fit on a page—so you decide to focus on
+a few promising attributes that seem most correlated with the median housing
+value (Figure 2-14):
+from pandas.plotting import scatter_matrix
+attributes = ["median_house_value", "median_income", "total_rooms",
+"housing_median_age"]
+scatter_matrix(housing[attributes], figsize=(12, 8))
+plt.show()
+
+he main diagonal would be full of straight lines if Pandas plotted each variable
+against itself, which would not be very useful. So instead, the Pandas displays a
+histogram of each attribute (other options are available; see the Pandas
+documentation for more details).
+Looking at the correlation scatterplots, it seems like the most promising attribute
+to predict the median house value is the median income, so you zoom in on that
+scatterplot (Figure 2-15):
+housing.plot(kind="scatter", x="median_income", y="median_house_value",
+alpha=0.1, grid=True)
+plt.show()
+
+This plot reveals a few things. First, the correlation is indeed quite strong; you can
+clearly see the upward trend, although the data is noisy. Second, the price cap you
+noticed earlier is clearly visible as a horizontal line at $500,000. But the plot also
+reveals other less obvious straight lines: a horizontal line around $450,000,
+another around $350,000, perhaps one around $280,000, and a few more below
+that. You may want to try removing the corresponding districts to prevent your
+algorithms from learning to reproduce these data quirks.
+Note that the correlation coefficient only measures linear correlations (“as x goes
+up, y generally goes up/down”). It may completely miss out on nonlinear
+relationships (e.g., “as x approaches 0, y generally goes up”). Figure 2-16 shows a
+variety of datasets along with their correlation coefficient. Note how all the plots
+of the bottom row have a correlation coefficient equal to 0, despite the fact that
+their axes are clearly not independent: these are examples of nonlinear
+relationships. Also, the second row shows examples where the correlation
+coefficient is equal to 1 or –1; notice that this has nothing to do with the slope. For
+example, your height in inches has a correlation coefficient of 1 with your height
+in feet or in nanometers.
+
+
+Experiment with Attribute Combinations
+Hopefully the previous sections gave you an idea of a few ways you can explore
+the data and gain insights. You identified a few data quirks that you may want to
+clean up before feeding the data to a machine learning algorithm, and you found
+interesting correlations between attributes, in particular with the target attribute.
+You also noticed that some attributes have a skewed-right distribution, so you may
+want to transform them (e.g., by computing their logarithm or square root). Of
+course, your mileage will vary considerably with each project, but the general
+ideas are similar.
+One last thing you may want to do before preparing the data for machine learning
+algorithms is to try out various attribute combinations. For example, the total
+number of rooms in a district is not very useful if you don’t know how many
+households there are. What you really want is the number of rooms per household.
+Similarly, the total number of bedrooms by itself is not very useful: you probably
+want to compare it to the total number of rooms. And the population per
+household also seems like an interesting attribute combination to look at. You
+create these new attributes as follows:
+housing["rooms_per_house"] = housing["total_rooms"] /
+housing["households"]
+housing["bedrooms_ratio"] = housing["total_bedrooms"] /
+housing["total_rooms"]
+housing["people_per_house"] = housing["population"] /
+housing["households"]
+And then you look at the correlation matrix again:
+>>> corr_matrix = housing.corr(numeric_only=True)
+>>> corr_matrix["median_house_value"].sort_values(ascending=False)
+median_house_value 1.000000
+median_income 0.688380
+rooms_per_house 0.143663
+total_rooms 0.137455
+housing_median_age 0.102175
+households 0.071426
+total_bedrooms 0.054635
+population -0.020153
+people_per_house -0.038224
+longitude -0.050859
+latitude -0.139584
+bedrooms_ratio -0.256397
+Name: median_house_value, dtype: float64
+Hey, not bad! The new bedrooms_ratio attribute is much more correlated
+with the median house value than the total number of rooms or bedrooms. It’s a
+strong negative correlation, so it looks like houses with a lower bedroom/room
+ratio tend to be more expensive. The number of rooms per household is also more
+informative than the total number of rooms in a district—obviously the larger the
+houses, the more expensive they are.
+WARNING
+When creating new combined features, make sure they are not too linearly correlated with
+existing features: collinearity can cause issues with some models, such as linear regression. In
+particular, avoid simple weighted sums of existing features.
+This round of exploration does not have to be absolutely thorough; the point is to
+start off on the right foot and quickly gain insights that will help you get a first
+reasonably good prototype. But this is an iterative process: once you get a
+prototype up and running, you can analyze its output to gain more insights and
+come back to this exploration step.
+Prepare the Data for Machine Learning
+Algorithms
+It’s time to prepare the data for your machine learning algorithms. Instead of doing
+this manually, you should write functions for this purpose, for several good
+reasons:
+This will allow you to reproduce these transformations easily on any
+dataset (e.g., the next time you get a fresh dataset).
+You will gradually build a library of transformation functions that you
+can reuse in future projects.
+You can use these functions in your live system to transform the new data
+before feeding it to your algorithms.
+This will make it possible for you to easily try various transformations
+and see which combination of transformations works best.
+But first, revert to a clean training set (by copying strat_train_set once
+again). You should also separate the predictors and the labels, since you don’t
+necessarily want to apply the same transformations to the predictors and the target
+values (note that drop() creates a copy of the data and does not affect
+strat_train_set):
+housing = strat_train_set.drop("median_house_value", axis=1)
+housing_labels = strat_train_set["median_house_value"].copy()
+Clean the Data
+Most machine learning algorithms cannot work with missing features, so you’ll
+need to take care of these. For example, you noticed earlier that the
+total_bedrooms attribute has some missing values. You have three options to
+fix this:
+1. Get rid of the corresponding districts.
+2. Get rid of the whole attribute.
+3. Set the missing values to some value (zero, the mean, the median, etc.).
+This is called imputation.
+You can accomplish these easily using the Pandas DataFrame’s dropna(),
+drop(), and fillna() methods:
+housing.dropna(subset=["total_bedrooms"], inplace=True) # option 1
+housing.drop("total_bedrooms", axis=1, inplace=True) # option 2
+median = housing["total_bedrooms"].median() # option 3
+housing["total_bedrooms"] = housing["total_bedrooms"].fillna(median)
+You decide to go for option 3 since it is the least destructive, but instead of the
+preceding code, you will use a handy Scikit-Learn class: SimpleImputer. The
+benefit is that it will store the median value of each feature: this will make it
+possible to impute missing values not only on the training set, but also on the
+validation set, the test set, and any new data fed to the model. To use it, first you
+need to create a SimpleImputer instance, specifying that you want to replace
+each attribute’s missing values with the median of that attribute:
+from sklearn.impute import SimpleImputer
+imputer = SimpleImputer(strategy="median")
+Since the median can only be computed on numerical attributes, you then need to
+create a copy of the data with only the numerical attributes (this will exclude the
+text attribute ocean_proximity):
+housing_num = housing.select_dtypes(include=[np.number])
+Now you can fit the imputer instance to the training data using the fit()
+method:
+imputer.fit(housing_num)
+The imputer has simply computed the median of each attribute and stored the
+result in its statistics_ instance variable. Only the total_bedrooms
+attribute had missing values, but you cannot be sure that there won’t be any
+missing values in new data after the system goes live, so it is safer to apply the
+imputer to all the numerical attributes:
+>>> imputer.statistics_
+array([-118.51 , 34.26 , 29. , 2125. , 434. , 1167. , 408. , 3.5385])
+>>> housing_num.median().values
+array([-118.51 , 34.26 , 29. , 2125. , 434. , 1167. , 408. , 3.5385])
+Now you can use this “trained” imputer to transform the training set by
+replacing missing values with the learned medians:
+X = imputer.transform(housing_num)
+Missing values can also be replaced with the mean value (strategy="mean"),
+or with the most frequent value (strategy="most_frequent"), or with a
+constant value (strategy="constant", fill_value=… ). The last two
+strategies support non-numerical data.
+
+Handling Text and Categorical Attributes
+So far we have only dealt with numerical attributes, but your data may also
+contain text attributes. In this dataset, there is just one: the ocean_proximity
+attribute. Let’s look at its value for the first few instances:
+>>> housing_cat = housing[["ocean_proximity"]]
+>>> housing_cat.head(8)
+ocean_proximity
+13096 NEAR BAY
+14973 <1H OCEAN
+3785 INLAND
+14689 INLAND
+20507 NEAR OCEAN
+1286 INLAND
+18078 <1H OCEAN
+4396 NEAR BAY
+It’s not arbitrary text: there are a limited number of possible values, each of which
+represents a category. So this attribute is a categorical attribute. Most machine
+learning algorithms prefer to work with numbers, so let’s convert these categories
+from text to numbers. For this, we can use Scikit-Learn’s OrdinalEncoder
+class:
+from sklearn.preprocessing import OrdinalEncoder
+ordinal_encoder = OrdinalEncoder()
+housing_cat_encoded = ordinal_encoder.fit_transform(housing_cat)
+Here’s what the first few encoded values in housing_cat_encoded look like:
+>>> housing_cat_encoded[:8]
+array([[3.],
+[0.],
+[1.],
+[1.],
+[4.],
+[1.],
+[0.],
+[3.]])
+You can get the list of categories using the categories_ instance variable. It is
+a list containing a 1D array of categories for each categorical attribute (in this
+case, a list containing a single array since there is just one categorical attribute):
+>>> ordinal_encoder.categories_
+[array(['<1H OCEAN', 'INLAND', 'ISLAND', 'NEAR BAY', 'NEAR OCEAN'],
+dtype=object)]
+One issue with this representation is that ML algorithms will assume that two
+nearby values are more similar than two distant values. This may be fine in some
+cases (e.g., for ordered categories such as “bad”, “average”, “good”, and
+“excellent”), but it is obviously not the case for the ocean_proximity column
+(for example, categories 0 and 4 are clearly more similar than categories 0 and 1).
+To fix this issue, a common solution is to create one binary attribute per category:
+one attribute equal to 1 when the category is "<1H OCEAN" (and 0 otherwise),
+another attribute equal to 1 when the category is "INLAND" (and 0 otherwise),
+and so on. This is called one-hot encoding, because only one attribute will be
+equal to 1 (hot), while the others will be 0 (cold). The new attributes are
+sometimes called dummy attributes. Scikit-Learn provides a OneHotEncoder
+class to convert categorical values into one-hot vectors:
+from sklearn.preprocessing import OneHotEncoder
+cat_encoder = OneHotEncoder()
+housing_cat_1hot = cat_encoder.fit_transform(housing_cat)
+By default, the output of a OneHotEncoder is a SciPy sparse matrix, instead of
+a NumPy array:
+>>> housing_cat_1hot
+<Compressed Sparse Row sparse matrix of dtype 'float64'
+with 16512 stored elements and shape (16512, 5)>
+A sparse matrix is a very efficient representation for matrices that contain mostly
+zeros. Indeed, internally it only stores the nonzero values and their positions.
+When a categorical attribute has hundreds or thousands of categories, one-hot
+encoding it results in a very large matrix full of 0s except for a single 1 per row. In
+this case, a sparse matrix is exactly what you need: it will save plenty of memory
+and speed up computations. You can use a sparse matrix mostly like a normal 2D
+array,12 but if you want to convert it to a (dense) NumPy array, just call the
+toarray() method:
+>>> housing_cat_1hot.toarray()
+array([[0., 0., 0., 1., 0.],
+[1., 0., 0., 0., 0.],
+[0., 1., 0., 0., 0.],
+...,
+[0., 0., 0., 0., 1.],
+[1., 0., 0., 0., 0.],
+[0., 0., 0., 0., 1.]], shape=(16512, 5))
+Alternatively, you can set sparse_output=False when creating the
+OneHotEncoder, in which case the transform() method will return a
+regular (dense) NumPy array directly:
+cat_encoder = OneHotEncoder(sparse_output=False)
+housing_cat_1hot = cat_encoder.fit_transform(housing_cat) # now a
+dense array
+As with the OrdinalEncoder, you can get the list of categories using the
+encoder’s categories_ instance variable:
+>>> cat_encoder.categories_
+[array(['<1H OCEAN', 'INLAND', 'ISLAND', 'NEAR BAY', 'NEAR OCEAN'],
+dtype=object)]
+Pandas has a function called get_dummies(), which also converts each
+categorical feature into a one-hot representation, with one binary feature per
+category:
+>>> df_test = pd.DataFrame({"ocean_proximity": ["INLAND", "NEAR BAY"]})
+>>> pd.get_dummies(df_test)
+ocean_proximity_INLAND ocean_proximity_NEAR BAY
+0 True False
+1 False True
+It looks nice and simple, so why not use it instead of OneHotEncoder? Well,
+the advantage of OneHotEncoder is that it remembers which categories it was
+trained on. This is very important because once your model is in production, it
+should be fed exactly the same features as during training: no more, no less. Look
+what our trained cat_encoder outputs when we make it transform the same
+df_test (using transform(), not fit_transform()):
+>>> cat_encoder.transform(df_test)
+array([[0., 1., 0., 0., 0.],
+[0., 0., 0., 1., 0.]])
+See the difference? get_dummies() saw only two categories, so it output two
+columns, whereas OneHotEncoder output one column per learned category, in
+the right order. Moreover, if you feed get_dummies() a DataFrame containing
+an unknown category (e.g., "<2H OCEAN"), it will happily generate a column for
+it:
+>>> df_test_unknown = pd.DataFrame({"ocean_proximity": ["<2H OCEAN",
+"ISLAND"]})
+>>> pd.get_dummies(df_test_unknown)
+ocean_proximity_<2H OCEAN ocean_proximity_ISLAND
+0 True False
+1 False True
+But OneHotEncoder is smarter: it will detect the unknown category and raise
+an exception. If you prefer, you can set the handle_unknown hyperparameter
+to "ignore", in which case it will just represent the unknown category with
+zeros:
+>>> cat_encoder.handle_unknown = "ignore"
+>>> cat_encoder.transform(df_test_unknown)
+array([[0., 0., 0., 0., 0.],
+[0., 0., 1., 0., 0.]])
+TIP
+If a categorical attribute has a large number of possible categories (e.g., country code, profession,
+species), then one-hot encoding will result in a large number of input features. This may slow
+down training and degrade performance. If this happens, you may want to replace the categorical
+input with useful numerical features related to the categories: for example, you could replace the
+ocean_proximity feature with the distance to the ocean (similarly, a country code could be
+replaced with the country’s population and GDP per capita). Alternatively, you can use one of the
+encoders provided by the category_encoders package on GitHub. Or, when dealing with
+neural networks, you can replace each category with a learnable, low-dimensional vector called
+an embedding (see Chapter 14). This is an example of representation learning (we will see more
+examples in Chapter 18).
+When you fit any Scikit-Learn estimator using a DataFrame, the estimator stores
+the column names in the feature_names_in_ attribute. Scikit-Learn then
+ensures that any DataFrame fed to this estimator after that (e.g., to
+transform() or predict()) has the same column names. Transformers also
+provide a get_feature_names_out() method that you can use to build a
+DataFrame around the transformer’s output:
+>>> cat_encoder.feature_names_in_
+array(['ocean_proximity'], dtype=object)
+>>> cat_encoder.get_feature_names_out()
+array(['ocean_proximity_<1H OCEAN', 'ocean_proximity_INLAND',
+'ocean_proximity_ISLAND', 'ocean_proximity_NEAR BAY',
+'ocean_proximity_NEAR OCEAN'], dtype=object)
+>>> df_output = pd.DataFrame(cat_encoder.transform(df_test_unknown),
+...
+columns=cat_encoder.get_feature_names_out(),
+... index=df_test_unknown.index)
+...
+This feature helps avoid column mismatches, and it’s also quite useful when
+debugging.
+Feature Scaling and Transformation
+One of the most important transformations you need to apply to your data is
+feature scaling. With few exceptions, machine learning algorithms don’t perform
+well when the input numerical attributes have very different scales. This is the
+case for the housing data: the total number of rooms ranges from about 6 to
+39,320, while the median incomes only range from 0 to 15. Without any scaling,
+most models will be biased toward ignoring the median income and focusing more
+on the number of rooms.
+There are two common ways to get all attributes to have the same scale: min-max
+scaling and standardization.
+WARNING
+As with all estimators, it is important to fit the scalers to the training data only: never use fit()
+or fit_transform() for anything else than the training set. Once you have a trained scaler,
+you can then use it to transform() any other set, including the validation set, the test set, and
+new data. Note that while the training set values will always be scaled to the specified range, if
+new data contains outliers, these may end up scaled outside the range. If you want to avoid this,
+just set the clip hyperparameter to True.
+Min-max scaling (many people call this normalization) is the simplest: for each
+attribute, the values are shifted and rescaled so that they end up ranging from 0 to
+1. This is performed by subtracting the min value from all values, and dividing the
+results by the difference between the min and the max. Scikit-Learn provides a
+transformer called MinMaxScaler for this. It has a feature_range
+hyperparameter that lets you change the range if, for some reason, you don’t want
+0–1 (e.g., neural networks work best with zero-mean inputs, so a range of –1 to 1
+is preferable). It’s quite easy to use:
+from sklearn.preprocessing import MinMaxScaler
+min_max_scaler = MinMaxScaler(feature_range=(-1, 1))
+housing_num_min_max_scaled = min_max_scaler.fit_transform(housing_num)
+Standardization is different: first it subtracts the mean value (so standardized
+values have a zero mean), then it divides the result by the standard deviation (so
+standardized values have a standard deviation equal to 1). Unlike min-max
+scaling, standardization does not restrict values to a specific range. However,
+standardization is much less affected by outliers. For example, suppose a district
+has a median income equal to 100 (by mistake), instead of the usual 0–15. Min-
+max scaling to the 0–1 range would map this outlier down to 1 and it would crush
+all the other values down to 0–0.15, whereas standardization would not be much
+affected. Scikit-Learn provides a transformer called StandardScaler for
+standardization:
+from sklearn.preprocessing import StandardScaler
+std_scaler = StandardScaler()
+housing_num_std_scaled = std_scaler.fit_transform(housing_num)
+TIP
+If you want to scale a sparse matrix without converting it to a dense matrix first, you can use a
+StandardScaler with its with_mean hyperparameter set to False: it will only divide the
+data by the standard deviation, without subtracting the mean (as this would break sparsity).
+When a feature’s distribution has a heavy tail (i.e., when values far from the mean
+are not exponentially rare), both min-max scaling and standardization will squash
+most values into a small range. Machine learning models generally don’t like this
+at all, as you will see in Chapter 4. So before you scale the feature, you should first
+transform it to shrink the heavy tail, and if possible to make the distribution
+roughly symmetrical. For example, a common way to do this for positive features
+with a heavy tail to the right is to replace the feature with its square root (or raise
+the feature to a power between 0 and 1). If the feature has a really long and heavy
+tail, such as a power law distribution, then replacing the feature with its logarithm
+may help. For example, the population feature roughly follows a power law:
+districts with 10,000 inhabitants are only 10 times less frequent than districts with
+1,000 inhabitants, not exponentially less frequent. Figure 2-17 shows how much
+better this feature looks when you compute its log: it’s very close to a Gaussian
+distribution (i.e., bell-shaped).
+
+Another approach to handle heavy-tailed features consists in bucketizing the
+feature. This means chopping its distribution into roughly equal-sized buckets, and
+replacing each feature value with the index of the bucket it belongs to, much like
+we did to create the income_cat feature (although we only used it for stratified
+sampling). For example, you could replace each value with its percentile.
+Bucketizing with equal-sized buckets results in a feature with an almost uniform
+distribution, so there’s no need for further scaling, or you can just divide by the
+number of buckets to force the values to the 0–1 range.
+When a feature has a multimodal distribution (i.e., with two or more clear peaks,
+called modes), such as the housing_median_age feature, it can also be
+helpful to bucketize it, but this time treating the bucket IDs as categories, rather
+than as numerical values. This means that the bucket indices must be encoded, for
+example using a OneHotEncoder (so you usually don’t want to use too many
+buckets). This approach will allow the regression model to more easily learn
+different rules for different ranges of this feature value. For example, perhaps
+houses built around 35 years ago have a peculiar style that fell out of fashion, and
+therefore they’re cheaper than their age alone would suggest.
+Another approach to transforming multimodal distributions is to add a feature for
+each of the modes (at least the main ones), representing the similarity between the
+housing median age and that particular mode. The similarity measure is typically
+computed using a radial basis function (RBF)—any function that depends only on
+the distance between the input value and a fixed point. The most commonly used
+RBF is the Gaussian RBF, whose output value decays exponentially as the input
+value moves away from the fixed point. For example, the Gaussian RBF similarity
+between the housing age x and 35 is given by the equation exp(–γ(x – 35)²). The
+hyperparameter γ (gamma) determines how quickly the similarity measure decays
+as x moves away from 35. Using Scikit-Learn’s rbf_kernel() function, you
+can create a new Gaussian RBF feature measuring the similarity between the
+housing median age and 35:
+from sklearn.metrics.pairwise import rbf_kernel
+age_simil_35 = rbf_kernel(housing[["housing_median_age"]], [[35]],
+gamma=0.1)
+Figure 2-18 shows this new feature as a function of the housing median age (solid
+line). It also shows what the feature would look like if you used a smaller gamma
+value. As the chart shows, the new age similarity feature peaks at 35, right around
+the spike in the housing median age distribution: if this particular age group is
+well correlated with lower prices, there’s a good chance that this new feature will
+help.
+Figure 2-18. Gaussian RBF feature measuring the similarity between the housing median age and 35
+So far we’ve only looked at the input features, but the target values may also need
+to be transformed. For example, if the target distribution has a heavy tail, you may
+choose to replace the target with its logarithm. But if you do, the regression model
+will now predict the log of the median house value, not the median house value
+itself. You will need to compute the exponential of the model’s prediction if you
+want the predicted median house value.
+Luckily, most of Scikit-Learn’s transformers have an inverse_transform()
+method, making it easy to compute the inverse of their transformations. For
+example, the following code example shows how to scale the labels using a
+StandardScaler (just like we did for inputs), then train a simple linear
+regression model on the resulting scaled labels and use it to make predictions on
+some new data, which we transform back to the original scale using the trained
+scaler’s inverse_transform() method. Note that we convert the labels from
+a Pandas Series to a DataFrame, since the StandardScaler expects 2D inputs.
+Also, in this example we just train the model on a single raw input feature (median
+income), for simplicity:
+from sklearn.linear_model import LinearRegression
+target_scaler = StandardScaler()
+scaled_labels = target_scaler.fit_transform(housing_labels.to_frame())
+model = LinearRegression()
+model.fit(housing[["median_income"]], scaled_labels)
+some_new_data = housing[["median_income"]].iloc[:5] # pretend this is
+new data
+scaled_predictions = model.predict(some_new_data)
+predictions = target_scaler.inverse_transform(scaled_predictions)
+This works fine, but it’s simpler and less error-prone to use a
+TransformedTargetRegressor, avoiding potential scaling mismatches.
+We just need to construct it, giving it the regression model and the label
+transformer, then fit it on the training set, using the original unscaled labels. It will
+automatically use the transformer to scale the labels and train the regression model
+on the resulting scaled labels, just like we did previously. Then, when we want to
+make a prediction, it will call the regression model’s predict() method and use
+the scaler’s inverse_transform() method to produce the prediction:
+from sklearn.compose import TransformedTargetRegressor
+model = TransformedTargetRegressor(LinearRegression(),
+transformer=StandardScaler())
+model.fit(housing[["median_income"]], housing_labels)
+predictions = model.predict(some_new_data)
