@@ -1,0 +1,3 @@
+### Intro
+
+GenAI e Ml Classico ambos caem dentro do subconjunto Machile learning... enquanto o ML classico é discriminativo e o GenAI é generativo mas qual a diferenca entre eles ? Nas tarefas discriminativas queremos aprender a diferenciar/separar/prever instancias (Regressoes logisticas, SVMs, Decision Trees, KNN, redes neurais...) nas generativas queremo gerar dados novos que seguem a distribuicao dos dados do treino em que aprendemos no treino...
