@@ -1,0 +1,3 @@
+Atue como um Professor Sênior de Machine Learning e Engenheiro de Sistemas. Com base no RESUMO ou NOTEBOOK PYTHON (.ipynb) que fornecerei, crie um QUIZ interativo de 20 questões de múltipla 
+escolha que revisam e testem meus conhecimentos sobre o resumo de forma completa.
+
