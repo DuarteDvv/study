@@ -4,7 +4,7 @@ Gere um questionário Interativo de multipla escolha com 35 questões baseadas n
 
     10 de Cenários de System Design: Crie problemas hipotéticos (ex: "Imagine que você trabalha na Netflix...") onde eu precise aplicar a teoria desta seção para desenhar uma solução.
 
-    10 de Engenharia e Implementação: Perguntas focadas em trade-offs de infraestrutura, latência, dados e ferramentas (Docker, APIs, Bancos de Dados, etc).
+    5 de Engenharia e Implementação: Perguntas focadas em trade-offs de infraestrutura, latência, dados e ferramentas (Docker, APIs, Bancos de Dados, etc).
 
 Regra Adicional: Se houver alguma discrepância, erro conceitual ou incompletude aponte isso brevemente e complete no questionário.
 
