@@ -1,4 +1,4 @@
-Gere um questionário Interativo de multipla escolha com 35 questões baseadas no que fornecerei abaixo. Divida as questões em três categorias:
+Gere um questionário Medio/Dificil Interativo de multipla escolha com 30 questões baseadas no que fornecerei abaixo. Divida as questões em três categorias:
 
     15 de Fundamentos e Conceitos: Teste minha compreensão direta dos termos e lógica.
 
