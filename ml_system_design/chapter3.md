@@ -35,14 +35,17 @@ Existem soluções declarativas o problema de modelos de ML e isso é chamado de
 
 - **Modelo de Chave/Valor**: Citação de Honra para modelos chave-valor que são muito usados para caches pois sua implementalção semelhanta a HASH torna ele muito eficiente para buscas de pertencimento ou não.
 
-# Comparativo de Modelos de Banco de Dados
+## Comparativo de Modelos 
 
-| Modelo de Banco de Dados | Problema que Resolve | Trade-offs (Prós / Contras) | Quando é o Melhor Cenário | Exemplo Prático |
-| :--- | :--- | :--- | :--- | :--- |
-| **Relacional (SQL)** | Necessidade de consistência absoluta, integridade referencial e eliminação de redundância de dados. | **Prós:** Transações ACID, linguagem universal (SQL).<br>**Contras:** Esquemas rígidos, escalabilidade horizontal complexa, lentidão em *joins* muito profundos. | Sistemas transacionais onde a consistência é inegociável e a estrutura de dados é previsível. | Sistema de faturamento e repasse de aluguéis (precisão matemática e transacional). |
-| **Documentos (NoSQL)** | "Incompatibilidade de impedância" com o código da aplicação e necessidade de flexibilidade no esquema. | **Prós:** Esquema flexível, fácil escalabilidade horizontal (*sharding*), leitura muito rápida.<br>**Contras:** Necessidade de desnormalização (duplicação), transações complexas menos eficientes. | Catálogos, sistemas de gerenciamento de conteúdo ou dados com estruturas que mudam com frequência. | Catálogo de anúncios de imóveis (atributos variados como "piscina" ou "edícula" no mesmo formato). |
-| **Grafos** | Consultas lentas em dados altamente conectados (ex: múltiplos *joins* para mapear "amigos de amigos"). | **Prós:** Performance imbatível para descobrir padrões em redes, navegar por conexões e mapear relacionamentos.<br>**Contras:** Curva de aprendizado (linguagens específicas), ineficiente para CRUD simples ou agregações globais. | Redes sociais, detecção de fraudes, grafos de conhecimento e motores de recomendação complexos. | Motor de recomendação cruzando dados de inquilinos, perfil de renda, imóveis visitados e localização de trabalho. |
+| Modelo de Banco de Dados | Problema que Resolve | Trade-offs (Prós / Contras) | Quando é o Melhor Cenário | 
+| :--- | :--- | :--- | :--- | 
+| **Relacional (SQL)** | Necessidade de consistência e eliminação de redundância de dados. | **Prós:** Transações ACID, linguagem universal (SQL).<br>**Contras:** Esquemas rígidos, escalabilidade horizontal complexa, lentidão em *joins* muito profundos. | Sistemas transacionais onde a consistência é inegociável e a estrutura de dados é previsível. 
+| **Documentos (NoSQL)** | Necessidade de flexibilidade no esquema. | **Prós:** Esquema flexível, fácil escalabilidade horizontal (*sharding*), leitura muito rápida.<br>**Contras:** Necessidade de desnormalização (duplicação), transações complexas menos eficientes. | Catálogos, sistemas de gerenciamento de conteúdo ou dados com estruturas que mudam com frequência. 
+| **Grafos** | Consultas lentas em dados altamente conectados (ex: múltiplos *joins* para mapear "amigos de amigos"). | **Prós:** Performance imbatível para descobrir padrões em redes, navegar por conexões e mapear relacionamentos.<br>**Contras:** Curva de aprendizado (linguagens específicas), ineficiente para CRUD simples ou agregações globais. | Redes sociais, detecção de fraudes, grafos de conhecimento e motores de recomendação complexos. 
 
 ### Dados Estruturados x Não Estruturados
 
 Dados Estruturados basicamente são dados que seguem algum schema como por exemplo o modelo relacional de dados que define formato das tabelas e tipos de cada variavel da coluna da tabela. Como dito anteriormente o principal problema desse tipo é que alterar o schema significa modificar todo dataset correndo risco de algum problema grave acontecer sem ser notado além disso também é dificil consumir varias fontes de dados diferentes pois cada uma pode seguir um schema diferente. È ai que entra os dados não estruturados que podem ser texto, videos, imagens e audios... te da maior flexibilidade na hora de armazenar os dados mas é menos interessantes para fazer analises e buscar algo. O repositório em que armazenamos dados estruturados após um processamento é chamado de data warehouse enquanto para dados não estruturados é chamado de data lake... repare que nada impede das features do warehouse terem vindo do data lake.
+
+### Processamento Analitico e de Transacoes
+
