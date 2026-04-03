@@ -8,5 +8,4 @@ Gere um questionário Medio/Dificil Interativo de multipla escolha com 30 quest�
 
 Regra Adicional: Se houver alguma discrepância, erro conceitual ou incompletude aponte isso brevemente e complete no questionário.
 
-📖 MATERIAL ORIGINAL:
 
