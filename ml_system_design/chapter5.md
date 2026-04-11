@@ -40,15 +40,14 @@ Entretanto isso não é o fim da engenharia de features uma vez que não existem
 
 - **Feature Crossing:** Feature crossing consiste em criar uma feature nova x3 apartir de 2 outras como x1 e x2 em que os valores que x3 assume são o produto cartesiano entre o conjunto de valores de x1 e x2... por exemplo se x1 assume {A,B} e x2 assume {C,D} então x3 vai assumir {AC, AD, BC, BD}. Essa é uma forma util de atingir a não linearidade em modelos lineares como regressão linear.
 
-- **Embedding Posicional Continua e Discreta:** Em problemas de imagem ou texto aplicados a RNNs as sequencias vão para o modelo sequencialmente então fica facil do modelo inferir posição... em transformers entretanto os tokens são processados em paralelo e uma consequencia disso é a perda de ordem. Não podemos apenas somar um numero representando a posição pois em geral as redes neurais e outros modelos são muito sensiveis a escala e somar uma posição 500 na feature com certeza terá um efeito indesejado... uma solução para isso é o chamado posicional embeddings em que somamos na embedding das palavras ou imagens um vetor de mesma dimensão que representa aquela posição, ou seja, se a frase tem 10 palavras o nosso vetor terá dim_emb x 10, sendo um vetor coluna para cada posição... esses vetores podem ser aprendidos com parametros ou fixos usando funções seno e cosseno (Embeddings conseguem fazer o encode apenas se os indexes forem discretos).
-
+- **Embedding Posicional Continua e Discreta:** Em problemas de imagem ou texto aplicados a RNNs as sequencias vão para o modelo sequencialmente então fica facil do modelo inferir posição... em transformers entretanto os tokens são processados em paralelo e uma consequencia disso é a perda de ordem. Não podemos apenas somar um numero representando a posição pois em geral as redes neurais e outros modelos são muito sensiveis a escala e somar uma posição 500 na feature com certeza terá um efeito indesejado... uma solução para isso é o chamado posicional embeddings em que somamos na embedding das palavras ou imagens um vetor de mesma dimensão que representa aquela posição, ou seja, se a frase tem 10 palavras o nosso vetor terá dim_emb x 10, sendo um vetor coluna para cada posição... esses vetores podem ser aprendidos ou serem fixos usando funções seno e cosseno (primeira versao do Transformers eram fixos).
 
     ![alt text](images/pos_embedding.png)
 
 
 ### Data Leakage 
 
-Vazamento de dados ou data leakage é quando de alguma forma alguma informação do seu conjunto de teste ou validação é vazado para o treinamento e gerando um boost muito grande no desempenho de validação/treino mas em produção como não temos o vazamento o desempenho cair bastante. Existem algumas causas comuns de vazamento de dados:
+Vazamento de dados ou data leakage é quando de alguma forma informação do seu conjunto de teste ou validação é vazado para o treinamento e gerando um boost muito grande no desempenho de validação/treino mas em produção como não temos o vazamento o desempenho cai bastante. Existem algumas causas comuns de vazamento de dados:
 
 - **Split incorreto:** Quando estamos fazendo split de treino/validação e teste em dados temporáis temos que ter em mente que não podemos amostrar aleatoriamente apenas... pois se estamos querendo prever algum valor de uma semana/dia não podemos usar dados dessa semana/dia no treino pois ela contem informação sobre o que estamos prevendo (Labels). Se temos por exemplo 5 semanas, use as 4 iniciais para treino e a ultima divida em teste/validação
 
@@ -61,6 +60,25 @@ Vazamento de dados ou data leakage é quando de alguma forma alguma informação
 **Como lidar com data leakage:** vazamento pode acontecer em multiplas etapas do ciclo de ciencia de dados e por isso devemos sempre estar atento a variaveis ou performace boas demais pois ou pode estar acontecendo algum tipo de vazamento ou seu modelo realmente é muito bom... sempre verificar variaveis extremamentos correlacionadas com o target. Nunca tocar no split de teste nem abri-lo para analise exploratória pois podemos vazar algum dado nos mesmo a partir de parametros ou processamento... além disso estudar as features tirando algumas e ver como o desempenho muda e investigar caso seja muito grande.
 
 
-### Da
+### Escolhendo boas features
+
+Geralmente adicionar mais features vai ajudar o modelo a aumentar sua performace mas algumas vezes ela pode piorar... e mesmo se melhorar pode ser que a melhoria nao compense comparado ao custo de se usar mais essas features. Mais features significa mais possibilidade de vazamento de dados, mais chance de overfitting, maior custo de se extrair essas features, maior latencia de inferencia e maior custo de se armazenar essas features... se esse custo for maior que a melhoria entao nao vale a pena. Regularizacao L1 pode ajudar a mitigar features ruins mas os custos de manutencao na feature store e inferencia ainda vao existir. Existem 2 dimensoes principais para se analisar quando uma feature é boa nao:
+
+- **Feature Importance:** O quao importante essa feature é para as predicoes ? Alguns modelos tem internamente implementado suas maneiras como XGBoost e modelos lineares (seus proprios pesos)... outros modelos sao caixa preta e dificeis... portanto existem metodos agnosticos de modelo como:
+
+    - **SHAP:** Usa teoria dos jogos medir globalmente (mas pode medir especificamente um exemplos tbm) a importancia da feature. Ele funciona calculando o valor shapley para uma feature x, esse valor representa a media ponderada da contribuicao marginal (melhoria) de adicionar x para qualquer combinacao de features já existentes (por exemplo podemos ver a diferenca causada por x adicionando ela a {y,z} ou a {y}) ponderado pelo numero de combinacoes possiveis em daquele conjunto de features, ou seja, conjuntos pequenos como com uma features apenas e conjuntos grande como com quase todas as features recebem maior peso pois tem menos combinacoes possiveis enquanto valores com muitas combinacoes possiveis recebem menos peso. (Por exemplo, escolher uma feature entre 10, possiveis gera 10 combinacoes possiveis... escolher 9 features entre 10 gera 10 combinacoes possiveis e escolher 5 features entre 10, gera 252 combinacoes possiveis... por isso dar mais peso para conjuntos grande e pequenos que medios)
+
+    - **LIME:** Esse metodo é util para entender localmente uma instancia do dataset, por exemplo queremos entender pq o nosso modelo errou uma predicao especifica. Ele funciona pegando essa instancia especifica x, gerando varios pontos proximos gerados de permutas da instancia original x, usamos o modelo para rotular essas perturbacoes e depois usamos um modelos simples interpretavel como regressao e treinamos ele nas perturbacoes... os pesos desse modelo sao a explicacao dessa instancia x. Se quisermos uma informacao um pouco mais global existe o SP-LIME em que escolhemos N instancias diversas e representativas dos dados e fazemos esse processo para elas.
+
+Essas tecnicas nao sao boas apenas para escolher features mas também para interpretar seu modelo...
+
+
+- **Feature Generalization:** O quao generalizavel é essa feature para o teste e mundo real ? Nem todas as features generalizam bem (mantem sua utilidade) para dados que nunca viu no treino. Por exemplo um id unico de linhas nao é util pois cada instancia tem um unico entao nao existe padrao... mas um id de um grupo de linhas pode ser util pois cria um relacao entre elas. Outro exemplo sao features temporais como dia_semana em que em muitos casos poderiamos treinar com os dados de sabado a quinta e testar com sexta... porém desse jeito o modelo nao aprendera a prever em producao quando dia_semana == sexta. Além disso, temos que escolher entre especificidade e generalizacao pois por exemplo em um sistema de previsao de tempo de espera no uber... usar a feature dinamica horario do dia pode ajudar muito mas criar uma feature especifica para horarios de pico também funciona muito bem mas é mais especifica e perde dados. Uma métrica para isso é o coverage que mede quantas instancias do total nao tem aquela feature como nula... se muitas forem nulas pode ser que ela nao generalize bem porém se esses nulos forem MNAR estaremos perdendo informacao ou se for MAR e essa caracteristica cheia de nulos for muito correlacionada com o label entao também estaremos perdendo informacao.
+
+
+
+
+
+
 
 
