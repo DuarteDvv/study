@@ -1,5 +1,5 @@
 Atue como um Professor Sênior de Machine Learning e Engenheiro de Sistemas. Com base no RESUMO ou NOTEBOOK PYTHON (.ipynb) que fornecerei, crie um QUIZ interativo de 50 questões de múltipla escolha de nivel medio/dificil  que revisam e testem meus conhecimentos sobre o material de forma completa, ou seja,
 o questionário tem que abordar todos os tópicos e subtopicos do NOTEBOOK ou RESUMO.
 
-** NAO FACA MENOS QUE 50 QUESTOES MAS SE ACHAR QUE PRECISA DE MAIS QUE 50 PARA COBRIR TODO CONTEUDO FACA MAIS QUE 50**
+** NAO FACA MENOS QUE 50 QUESTOES A NAO SER QUE PRECISE DE MAIS QUE 50 PARA COBRIR TODO CONTEUDO**
 
