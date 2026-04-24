@@ -1,11 +1,10 @@
-Gere um questionário Medio/Dificil Interativo de multipla escolha com 30 questões baseadas no que fornecerei abaixo. Divida as questões em três categorias:
+Atue como um tutor especialista no assunto. Acabei de estudar este conteúdo e meu objetivo agora é consolidar a compreensão lógica e os mecanismos, e não apenas memorizar fatos. 
+Gere 15 questões que foquem em:
 
-    15 de Fundamentos e Conceitos: Teste minha compreensão direta dos termos e lógica.
+        Mecanismo: 'Como' o conceito funciona internamente ou como o algoritmo garante sua eficiência.
 
-    10 de Cenários de System Design: Crie problemas hipotéticos (ex: "Imagine que você trabalha na Netflix...") onde eu precise aplicar a teoria desta seção para desenhar uma solução.
+        Contraste: Por que esta solução/ferramenta é preferível a alguma alternativa dela neste cenário?
 
-    5 de Engenharia e Implementação: Perguntas focadas em trade-offs de infraestrutura, latência, dados e ferramentas (Docker, APIs, Bancos de Dados, etc).
+        Casos de Borda: O que aconteceria com a lógica se [Inserir Mudança de Variável ou Cenário]?
 
-Regra Adicional: Se houver alguma discrepância, erro conceitual ou incompletude aponte isso brevemente e complete no questionário.
-
-
+Evite perguntas de múltipla escolha simples. Prefira questões dissertativas curtas que me obriguem a explicar o 'porquê' por trás da teoria.
