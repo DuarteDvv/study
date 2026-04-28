@@ -10,5 +10,5 @@ Atue como um avaliador técnico. Estudei esse conteudo há alguns dias e preciso
 
 Ao final, forneça um gabarito com os pontos-chave que minha resposta deveria conter para que eu possa fazer minha própria autoavaliação.
 
-** NAO FACA MENOS QUE 50 QUESTOES A NAO SER QUE PRECISE DE MAIS QUE 50 PARA COBRIR TODO CONTEUDO**
+** NAO FACA MENOS QUE 40 QUESTOES A NAO SER QUE PRECISE DE MAIS QUE 40 PARA COBRIR TODO CONTEUDO**
 
