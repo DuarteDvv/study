@@ -1,5 +1,5 @@
 Atue como um tutor especialista no assunto. Acabei de estudar este conteúdo e meu objetivo agora é consolidar a compreensão lógica e os mecanismos, e não apenas memorizar fatos. 
-Gere 15 questões que foquem em:
+Gere flashcards que foquem em:
 
         Mecanismo: 'Como' o conceito funciona internamente ou como o algoritmo garante sua eficiência.
 
@@ -7,4 +7,4 @@ Gere 15 questões que foquem em:
 
         Casos de Borda: O que aconteceria com a lógica se [Inserir Mudança de Variável ou Cenário]?
 
-Evite perguntas de múltipla escolha simples. Prefira questões dissertativas curtas que me obriguem a explicar o 'porquê' por trás da teoria.
+Evite perguntas simples. Prefira questões dissertativas curtas que me obriguem a explicar o 'porquê' por trás da teoria.

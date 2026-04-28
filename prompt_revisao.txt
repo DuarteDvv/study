@@ -8,7 +8,6 @@ Atue como um avaliador técnico. Estudei esse conteudo há alguns dias e preciso
 
     Cenário Real: Crie um problema hipotético (ex: um sistema de recomendação de imóveis ou um bug de performance) e peça para eu diagnosticar e resolver usando os conceitos aprendidos.
 
-Ao final, forneça um gabarito com os pontos-chave que minha resposta deveria conter para que eu possa fazer minha própria autoavaliação.
 
-** NAO FACA MENOS QUE 40 QUESTOES A NAO SER QUE PRECISE DE MAIS QUE 40 PARA COBRIR TODO CONTEUDO**
+** FACA O SUFICIENTE PARA COBRIR TODO TOPICO DE TODO CONTEUDO **
 
