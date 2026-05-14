@@ -7,6 +7,10 @@ Primeiro passo é conectar de maneira eficiente maquinas proximas (mesma LAN) qu
 
 ## **Switches (chaves)**
 
+### **Bridge**
+
+O antecessor do Switch para quando os computadores eram conectados por barramento (um fio unico)... dividiamos o fio em 2 pedaços e cada pedaço conectava grupos separados de computadores. Esses grupos são conectados por uma bridge que filtra pacotes... só passam para o outro grupo se o destinatario estiver lá (evitar colisões no outro grupo)... além disso ele reenvia o sinal recuperando a energia tbm.
+
 ### **HUBs (repetidor)**
 
 Tecnologia antiga que atua na camada 1 do modelo OSI e funciona como um switch porém ao invés de redirecionar e armazenar sinais ele simplesmente pega o sinal eletrico recebido e faz broadcast para todos os outros nodes conectados. Ainda possuem problemas graves de colisão e segurança pois todos pacote é recebido por toda a LAN.
@@ -56,9 +60,32 @@ Uma premissa do datagrama é que os switches tenham uma tabela que aponte para q
 - Redes grandes como internet tem milhões de nodes e para ter uma tabela desse tamanho é necessário muita memória.
 - Mesmo com memória infinita se trocarmos a porta de entrada de rede do nosso computador ? Adicionarmos um novo computador na rede ? teriamos que alterar todos os outros switches.
 
-Como contornar isso ? Com **broadcasting!** 
+Inicialmente a tabela do switch não possui nenhuma entrada... vai aprendendo conforme os pacotes são enviados.
 
-A ideia é
+A ideia é: 
+
+- Quando um pacote chega no switch sabemos que o remetente deste pacote esta na porta em que o pacote chegou... então criamos uma entrada na tabela que mapeia endereço do remetente para porta que o pacote chegou. 
+- Quando um pacote chega no switch, se o destino esta na tabela, seguimos a porta mapeada... se não sabemos qual porta fica o destino, fazemos broadcast para todas as portas (menos a que recebeu) ate encontrar o destino (isso é chamado de flooding). Todos os switches que recebem do broadcast também atualizam as tabelas com o remetente do pacote. Se o destino responder o remetente, o remetente aprende onde o destino esta de agora em diante, ou seja, switch aprende apenas onde quem enviou o pacote esta.
+- Se o remetente e destino estao na mesma porta, o pacote é descartado. Se a entrada na tabela não for mais usada ela tem um timeout e é removida.
+
+#### **STP para o problema de ciclos**
+
+Problema: um ciclo + nó desconhecido faria o pacote circular infinitamente pela rede... solução: encontramos uma arvore geradora STP (arvore que minimiza a distancia da raiz para todos os outros nós) da rede (nós são os switches) e caso alguma coisa na rede mude como um nó cair nos executamos o algoritmo novamente.
+
+Ideia do STP: 
+
+- Cada switch (nó) tem um ID unico inteiro, usamos o switch com menor ID como raiz da arvore... além disso tem também o ID da raiz da arvore, distancia do nó a raiz da árvore e os estados das portas.
+- Inicialmente todos os nós se consideram a raiz e fazem **multicast (só envia para switches, não para computadores (multicast é enviar para alguns/grupo))** de uma mensagem especial chamada BPDU, se o nó recebe sinal de outro nó que o ID é menor que o dele, ele para de enviar sua mensagem e passa a reenviar as mensagem do nó raiz. Se voce recebe o mesmo pacote por outra porta verifica a distancia (dentro do pacote) daquela porta para o nó raiz e deixa apenas a porta mais proxima da raiz ativada.
+- Quando convergir todos da arvore vão ter a mesma raiz e vão continuar recebento esse pacote da raiz de tempo em tempo... se esse pacote sumir por muito tempo significa que algo na rede mudou e outro caminho vai ser encontrado.
+
+#### **Limitações de switches e VLANs**
+
+Problemas: STP é um algoritmo linear no numero de switches e se a rede for grande demais isso fica caro... além disso pode encontrar arvores ruins pois não leva em conta capacidade dos nós. O broadcast durante o aprendizado da rede gera uma grande difusão/trafego de mensagens em literalmente toda a rede... redes fora do seu contexto de trabalho não precisam receber esses pacotes.
+
+VLAN: Criação de LANs virtuais (lógicas) dentro de uma rede e dividir responsabilidades... um VLAN por departamento por exemplo. Isso separa os trafegos independentes, reduz o numero de broadcasts desnecessários e mantem uma STP para cada VLAN. Isso é feito colocando uma tag de 4bytes no dataframe da ethernet que identifica qual VLAN o pacote tem que chegar... o switch ve e manda para as portas corretas (multicast).
+
+## **Internet (IP)**
+
 
 
 
