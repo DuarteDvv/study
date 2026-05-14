@@ -84,7 +84,17 @@ Problemas: STP é um algoritmo linear no numero de switches e se a rede for gran
 
 VLAN: Criação de LANs virtuais (lógicas) dentro de uma rede e dividir responsabilidades... um VLAN por departamento por exemplo. Isso separa os trafegos independentes, reduz o numero de broadcasts desnecessários e mantem uma STP para cada VLAN. Isso é feito colocando uma tag de 4bytes no dataframe da ethernet que identifica qual VLAN o pacote tem que chegar... o switch ve e manda para as portas corretas (multicast).
 
-## **Internet (IP)**
+## **Internet Protocol (IP)**
+
+### network vs subnetwork vs internetwork
+
+- Network: grupo de dispositivos conectados que usam a mesma tecnologia física e lógica e estão no mesmo "espaço" de endereçamento
+
+- Subnetwork: divisão lógica dentro de uma Network maior
+
+- Internetwork: é o que acontece quando você conecta duas ou mais redes (networks) diferentes, possivelmente com tecnologias diferentes. A "Internet" (com I) é a maior internetwork do mundo.
+
+
 
 
 
