@@ -4,11 +4,11 @@
 
 - **Camada 1 (Fisica/Hardware):** Lida com sinais elétricos e cabos (conversão para ondas de radio (eletromagneticas) e etc)
 
-- **Camada 2 (Enlace/link):** Lida com a tradução dos dados para um formato que possa ser transmitido (entrega e leitura) dentro de uma LAN.
+- **Camada 2 (Enlace/link):** Lida com o encapsulamento do protocolo IP, a tradução dos dados para um formato que possa ser transmitido (entrega e leitura) dentro de uma LAN.
 
 - **Camada 3 (Rede/Roteamento):** Lida com roteamento e conversão entre tipos de links diferentes para transmitir dados entre diferentes LANs.
 
-- Camada 4 (Transporte)
+- **Camada 4 (Transporte)** Lida com transporte dos pacotes e garantias de entrega
 
 - Camada 5 (): 
 
