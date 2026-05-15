@@ -103,7 +103,7 @@ Se o pacote é maior que o suportado pela tecnologia de rede ele precisa ser fra
 È o endereço da sua maquina dentro de uma rede... ele é composto por duas partes e tem n bits: 
 
 - **NETWORK:** Parte esquerda (prefixo) x bits que identifica a rede local globalmente -> $2^x$, redes locais possiveis desse tamanho
-- **HOST:** Parte direita de n - x bits que identifica seu "dispositivo" localmente chamado de HOST  -> $2^{n-x}$ hosts possiveis. Esse sufixo de host é unico dentro de uma mesma rede e só pode ser usado por um dispositivo por vez... 
+- **HOST:** Parte direita de n - x bits que identifica seu "dispositivo" localmente chamado de HOST  -> $2^{n-x} - 2$ hosts possiveis. Esse sufixo de host é unico dentro de uma mesma rede e só pode ser usado por um dispositivo por vez... (-2 pois o host 0 é o IP representante da rede e o host 255 é um sinal para broadcast).
 
 Esse IP é o segredo da eslabilidade pois ele tira a responsabilidade dos roteadores saberem onde esta a maquina, deixando a responsabilidade dos roteadores ser encontrar a rede local (LAN) que possui o sufixo do IP (onde a maquina esta)... o restante quem faz é a rede local com seus switchs e MAC (igual visto anteriormente). Geralmente IP são 4 bytes (32bits) ou seja 4 numeros que variam de 0 a 255. 
 
@@ -112,24 +112,24 @@ O ip de uma maquina em uma mesma rede pode mudar ? Sim mas depende de como o rot
 
 #### **Mascara de rede (submask net)**
 
-No endereço IP o numero de bits destinados para o prefixo e sufixo não é aleatório, quem decide isso é a mascara de rede... pode ser vista como um numero depois do IP como por exemplo "xxx.xxx.xxx.xxx / 24" e isso significa que 24 dos 32 bits são destinados ao network, ou seja, $2^{24}$ redes possiveis de prefixo e 32-24=8 bits destinados ao host, ou seja, $2^{8} - 2$ interfaces de host possiveis (-2 pois o host 0 é o IP representante da rede e o host 255 é um sinal para broadcast). A notação 255.255.255.0 representa extamente /24 pois 255 em binário é 11111111, e temos exatamente 24 1s na string. Mascara é util pois aplicam um AND em cima do IP e conseguem rapidamente obter o prefixo para fazer comparações... outra utilidade interessante é para gerar subredes dentro da nossa rede maior.
+No endereço IP o numero de bits destinados para o prefixo e sufixo não é aleatório, quem decide isso é a mascara de rede... pode ser vista como um numero depois do IP como por exemplo "xxx.xxx.xxx.xxx / 24" e isso significa que 24 dos 32 bits são destinados ao network, ou seja, $2^{24}$ redes possiveis de prefixo e 32-24=8 bits destinados ao host, ou seja, $2^{8} - 2$ interfaces de host possiveis. A notação 255.255.255.0 representa extamente /24 pois 255 em binário é 11111111, e temos exatamente 24 1s na string. Mascara é util pois aplicam um AND em cima do IP e conseguem rapidamente obter o prefixo para fazer comparações... outra utilidade interessante é para gerar subredes dentro da nossa rede maior.
 
 #### **Classes de endereço e CIDR**
 
 Antigamente existiam classes (A, B e C) que engessavam o tamanho das redes pelo primeiro octeto do IP. O problema é que essas classes eram muito rígidas: Classe C: Tinha apenas 254 hosts. Classe B: Pulava direto para 65.534 hosts...para resolver esse desperdício, criaram o CIDR (Classless Inter-Domain Routing - Roteamento Sem Classes). O CIDR basicamente aboliu as classes engessadas e introduziu a notação da barra (ex: /24, /25, /20). Com o CIDR, a máscara pode ser cortada em qualquer bit de 0 a 32, permitindo fatiar as redes (subnetting) para o tamanho exato da necessidade da empresa, economizando endereços de forma global e diminuindo o tamanho das tabelas de rotas nos roteadores da internet.
 
 
-#### **Network vs Subnetwork vs Supernetwork vs Internetwork**
+#### **Network vs Subnetting/Agregacao vs Internetwork**
 
 - **Network:** É o agrupamento lógico de dispositivos que compartilham o mesmo prefixo de endereço IP. Dispositivos na mesma rede conseguem se comunicar diretamente via Camada 2 (Switch/MAC) sem precisar de um roteador. O identificador da rede é o endereço onde todos os bits de host são 0. Por exemplo, na rede 192.168.1.0/24, o "nome" da rede é esse endereço finalizado em .0
 
-- **Subnetwork:** Quando usamos uma mascara com /25, ou seja, 25 bits de rede... estamos na verdade dividindo a rede original em 2 subredes que são xxx.xxx.xxx.1xxx (128 >=) e xxx.xxx.xxx.0xxx (128 <). Cada subrede com um roteador.
-
-- **Supernetwork:** É o oposto do subnetting. Acontece quando você combina várias redes menores (geralmente /24) em um único bloco maior (como um /20 ou /16) para simplificar o roteamento. Que o objetivo é reduzir o tamanho das tabelas de roteamento na Internet. Em vez de um roteador anunciar 16 redes separadas, ele anuncia uma única "Super-rede" que engloba todas elas.
+- **Subnetting e Agregacao:** Subnetting acontece quando subdividimos os hosts que temos na nossa rede grande em 2 ou mais redes menores... por exemplo se temos um roteador/rede 123.456.789.** * /24 e queremos dividir em redes menores por motivos de organizacao/seguranca. Criamos mais um nivel de rede interna aumentando os bits da rede como /25 em que agr um bit serve para dividir nossos hosts em 2 subredes (rede de quando o bit 25 = 0 e de quando o bit 25 = 1) ... essas subredes sao vistas como hosts da rede anterior que tinha /24 e elas precisam ter um roteador proprio logico ou fisico. Agregacao é quando criamos um nivel acima na hierarquia de redes removendo um bit da rede... estamos criando um roteador que enxergara varias redes como subredes (123.456.** *.*** por exemplo enxerga 123.456.789.** * como hosts/subredes). 
 
 - **Internetwork:** é o que acontece quando você conecta duas ou mais redes (networks) diferentes, possivelmente com tecnologias diferentes. A "Internet" (com I) é a maior internetwork do mundo.
 
-#### IPv4 vs IPv6
+Agregacao e Subnetting é o que faz o IP ser hierarquico! Gracas ao CIDR. A busca por IP da rede funciona tentando casar o maior prefixo do destino na tabela do roteador atual antes de dar jump.
+
+#### **IPv4 vs IPv6**
 
 Problema do
 
