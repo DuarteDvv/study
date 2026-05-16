@@ -1,0 +1,1528 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FP-Growth: Visualização Completa do Algoritmo</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.8.5/d3.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            padding: 40px;
+        }
+        h1 {
+            color: #333;
+            text-align: center;
+            margin-bottom: 10px;
+            font-size: 28px;
+        }
+        .subtitle {
+            text-align: center;
+            color: #666;
+            font-size: 14px;
+            margin-bottom: 30px;
+        }
+        .controls {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 30px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+        button {
+            padding: 10px 20px;
+            font-size: 14px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-weight: bold;
+        }
+        .btn-primary {
+            background: #667eea;
+            color: white;
+        }
+        .btn-primary:hover {
+            background: #5568d3;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+        .btn-secondary {
+            background: #f0f0f0;
+            color: #333;
+        }
+        .btn-secondary:hover {
+            background: #e0e0e0;
+        }
+        .content {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+            margin-bottom: 30px;
+        }
+        .panel {
+            border: 2px solid #f0f0f0;
+            border-radius: 8px;
+            padding: 20px;
+            background: #fafafa;
+        }
+        .panel.active {
+            border-color: #667eea;
+            background: #f8f9ff;
+        }
+        .panel h2 {
+            color: #333;
+            font-size: 18px;
+            margin-bottom: 15px;
+            border-bottom: 2px solid #667eea;
+            padding-bottom: 10px;
+        }
+        .step-indicator {
+            background: #667eea;
+            color: white;
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+        svg {
+            background: white;
+            border: 1px solid #e0e0e0;
+            border-radius: 6px;
+            width: 100%;
+            height: auto;
+        }
+        .tree-node {
+            cursor: pointer;
+        }
+        .tree-node circle {
+            fill: #667eea;
+            stroke: #333;
+            stroke-width: 2px;
+        }
+        .tree-node.highlighted circle {
+            fill: #ff6b6b;
+            stroke: #c92a2a;
+            stroke-width: 3px;
+        }
+        .tree-node.path circle {
+            fill: #ffd43b;
+            stroke: #f08c00;
+            stroke-width: 2px;
+        }
+        .tree-node text {
+            font-size: 12px;
+            text-anchor: middle;
+            pointer-events: none;
+            fill: white;
+            font-weight: bold;
+        }
+        .tree-link {
+            stroke: #999;
+            stroke-width: 2px;
+            fill: none;
+        }
+        .tree-link.highlighted {
+            stroke: #ff6b6b;
+            stroke-width: 3px;
+        }
+        .tree-link.path {
+            stroke: #ffd43b;
+            stroke-width: 3px;
+        }
+        .info-box {
+            background: white;
+            border-left: 4px solid #667eea;
+            padding: 15px;
+            margin-bottom: 15px;
+            border-radius: 4px;
+            font-size: 13px;
+            line-height: 1.6;
+        }
+        .info-box.warning {
+            border-left-color: #ff6b6b;
+            background: #fff5f5;
+        }
+        .info-box.success {
+            border-left-color: #51cf66;
+            background: #f1fce4;
+        }
+        .code-block {
+            background: #f8f9fa;
+            border: 1px solid #e0e0e0;
+            padding: 12px;
+            border-radius: 4px;
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+            overflow-x: auto;
+            margin: 10px 0;
+        }
+        .highlight-yellow {
+            background: #ffd43b;
+            padding: 2px 4px;
+            border-radius: 2px;
+        }
+        .highlight-red {
+            background: #ff6b6b;
+            color: white;
+            padding: 2px 4px;
+            border-radius: 2px;
+        }
+        .highlight-green {
+            background: #51cf66;
+            color: white;
+            padding: 2px 4px;
+            border-radius: 2px;
+        }
+        .table-wrapper {
+            overflow-x: auto;
+            margin: 15px 0;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 12px;
+        }
+        th {
+            background: #667eea;
+            color: white;
+            padding: 8px;
+            text-align: left;
+            font-weight: bold;
+        }
+        td {
+            padding: 8px;
+            border-bottom: 1px solid #e0e0e0;
+        }
+        tr:nth-child(even) {
+            background: #f8f9fa;
+        }
+        .step-nav {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 30px;
+            padding-top: 20px;
+            border-top: 2px solid #f0f0f0;
+        }
+        .step-nav button {
+            flex: 1;
+            margin: 0 5px;
+        }
+        .legend {
+            display: flex;
+            gap: 15px;
+            margin-top: 15px;
+            flex-wrap: wrap;
+            font-size: 12px;
+        }
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+        .legend-color {
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            border: 2px solid #333;
+        }
+        .full-width {
+            grid-column: 1 / -1;
+        }
+        .tabpanel {
+            display: none;
+        }
+        .tabpanel.active {
+            display: block;
+        }
+        .tab-buttons {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+        .tab-btn {
+            padding: 8px 15px;
+            background: #f0f0f0;
+            border: 2px solid transparent;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: bold;
+            color: #666;
+        }
+        .tab-btn.active {
+            background: #667eea;
+            color: white;
+            border-color: #667eea;
+        }
+        .step-title {
+            font-size: 16px;
+            font-weight: bold;
+            color: #667eea;
+            margin-top: 20px;
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .transaction-box {
+            background: white;
+            border: 2px solid #e0e0e0;
+            border-radius: 6px;
+            padding: 10px;
+            margin: 8px 0;
+            font-size: 12px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .transaction-box.highlight {
+            border-color: #667eea;
+            background: #f8f9ff;
+        }
+        .item-badge {
+            background: #667eea;
+            color: white;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 11px;
+            font-weight: bold;
+            display: inline-block;
+            margin: 2px 2px;
+        }
+        .item-badge.removed {
+            background: #999;
+            text-decoration: line-through;
+        }
+        .arrow-right {
+            color: #667eea;
+            font-weight: bold;
+            margin: 0 5px;
+        }
+        .decision-box {
+            background: #fff5f5;
+            border-left: 4px solid #ff6b6b;
+            padding: 12px;
+            margin: 10px 0;
+            border-radius: 4px;
+            font-size: 12px;
+        }
+        .decision-box.yes {
+            background: #f1fce4;
+            border-left-color: #51cf66;
+        }
+        .animation-container {
+            position: relative;
+            height: 60px;
+            margin: 15px 0;
+            background: #f8f9fa;
+            border-radius: 6px;
+            overflow: hidden;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .animated-item {
+            position: absolute;
+            background: #667eea;
+            color: white;
+            padding: 6px 12px;
+            border-radius: 4px;
+            font-size: 11px;
+            font-weight: bold;
+            animation: slide 2s ease-in-out forwards;
+        }
+        @keyframes slide {
+            from {
+                left: 10px;
+                opacity: 1;
+            }
+            to {
+                left: calc(100% - 60px);
+                opacity: 0.5;
+            }
+        }
+        .frequency-bar {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin: 8px 0;
+            font-size: 12px;
+        }
+        .freq-label {
+            width: 80px;
+            text-align: right;
+        }
+        .freq-visual {
+            height: 24px;
+            background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+            border-radius: 4px;
+            display: flex;
+            align-items: center;
+            justify-content: flex-end;
+            padding-right: 8px;
+            color: white;
+            font-size: 11px;
+            font-weight: bold;
+            min-width: 40px;
+        }
+        .freq-count {
+            width: 40px;
+            text-align: left;
+        }
+        .mini-tree-comparison {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            margin: 15px 0;
+        }
+        .tree-comparison-item {
+            background: white;
+            border: 1px solid #e0e0e0;
+            border-radius: 6px;
+            padding: 12px;
+        }
+        .tree-comparison-item h4 {
+            color: #333;
+            font-size: 12px;
+            margin-bottom: 8px;
+            font-weight: bold;
+        }
+        .recursion-level {
+            margin-left: 20px;
+            padding-left: 15px;
+            border-left: 3px solid #667eea;
+            margin-bottom: 15px;
+        }
+        .recursion-level.level-1 {
+            border-left-color: #667eea;
+        }
+        .recursion-level.level-2 {
+            border-left-color: #764ba2;
+        }
+        .recursion-level.level-3 {
+            border-left-color: #e83e8c;
+        }
+        .conclusion-box {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px;
+            border-radius: 8px;
+            margin: 20px 0;
+            text-align: center;
+        }
+        .conclusion-box strong {
+            font-size: 14px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🌳 FP-Growth: Guia Completo e Intuitivo</h1>
+        <div class="subtitle">Passos 1, 2, 3, 4 e 5 — Com todas as decisões do algoritmo ilustradas</div>
+
+        <div class="controls">
+            <button class="btn-primary" onclick="nextStep()">▶ Próximo Passo</button>
+            <button class="btn-secondary" onclick="resetVisualization()">🔄 Reiniciar</button>
+        </div>
+
+        <div class="tab-buttons">
+            <button class="tab-btn active" onclick="switchTab('passo1')">Passo 1</button>
+            <button class="tab-btn" onclick="switchTab('passo2')">Passo 2</button>
+            <button class="tab-btn" onclick="switchTab('passo3')">Passo 3</button>
+            <button class="tab-btn" onclick="switchTab('passo4')">Passo 4</button>
+            <button class="tab-btn" onclick="switchTab('passo5')">Passo 5</button>
+        </div>
+
+        <!-- ============ PASSO 1 ============ -->
+        <div id="passo1" class="tabpanel active">
+            <div class="content full-width">
+                <div class="panel active">
+                    <div class="step-indicator">1</div>
+                    <h2>Scan 1: Contar Frequências Individuais</h2>
+                    <div class="info-box">
+                        <strong>Objetivo:</strong> Ler o banco de dados uma primeira vez e contar quantas vezes cada item aparece individualmente.
+                    </div>
+                </div>
+            </div>
+
+            <div class="panel full-width">
+                <h2>📊 Dataset de Exemplo (10 transações)</h2>
+                <div id="passo1-dataset" style="background: #f8f9fa; padding: 15px; border-radius: 6px; max-height: 300px; overflow-y: auto;">
+                    <div class="transaction-box">
+                        <strong style="width: 60px;">T1:</strong>
+                        <span class="item-badge">Pão</span>
+                        <span class="item-badge">Leite</span>
+                        <span class="item-badge">Manteiga</span>
+                        <span class="item-badge">Ovos</span>
+                    </div>
+                    <div class="transaction-box">
+                        <strong style="width: 60px;">T2:</strong>
+                        <span class="item-badge">Pão</span>
+                        <span class="item-badge">Leite</span>
+                        <span class="item-badge">Queijo</span>
+                    </div>
+                    <div class="transaction-box">
+                        <strong style="width: 60px;">T3:</strong>
+                        <span class="item-badge">Pão</span>
+                        <span class="item-badge">Manteiga</span>
+                    </div>
+                    <div class="transaction-box">
+                        <strong style="width: 60px;">T4:</strong>
+                        <span class="item-badge">Leite</span>
+                        <span class="item-badge">Manteiga</span>
+                        <span class="item-badge">Queijo</span>
+                    </div>
+                    <div class="transaction-box">
+                        <strong style="width: 60px;">T5:</strong>
+                        <span class="item-badge">Pão</span>
+                        <span class="item-badge">Leite</span>
+                        <span class="item-badge">Manteiga</span>
+                    </div>
+                    <div class="transaction-box">
+                        <strong style="width: 60px;">T6:</strong>
+                        <span class="item-badge">Pão</span>
+                        <span class="item-badge">Ovos</span>
+                    </div>
+                    <div class="transaction-box">
+                        <strong style="width: 60px;">T7:</strong>
+                        <span class="item-badge">Leite</span>
+                        <span class="item-badge">Queijo</span>
+                    </div>
+                    <div class="transaction-box">
+                        <strong style="width: 60px;">T8:</strong>
+                        <span class="item-badge">Pão</span>
+                        <span class="item-badge">Leite</span>
+                        <span class="item-badge">Queijo</span>
+                    </div>
+                    <div class="transaction-box">
+                        <strong style="width: 60px;">T9:</strong>
+                        <span class="item-badge">Manteiga</span>
+                        <span class="item-badge">Queijo</span>
+                    </div>
+                    <div class="transaction-box">
+                        <strong style="width: 60px;">T10:</strong>
+                        <span class="item-badge">Pão</span>
+                        <span class="item-badge">Leite</span>
+                        <span class="item-badge">Manteiga</span>
+                        <span class="item-badge">Queijo</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="panel full-width">
+                <h2>🔍 Frequências Contadas (min_support = 30%, ou 3/10 transações)</h2>
+                <div style="padding: 15px;">
+                    <div class="frequency-bar">
+                        <div class="freq-label">Pão</div>
+                        <div class="freq-visual" style="width: 70%;">
+                            <span>7/10 = 70%</span>
+                        </div>
+                        <div class="freq-count">✅ 7</div>
+                    </div>
+                    <div class="frequency-bar">
+                        <div class="freq-label">Leite</div>
+                        <div class="freq-visual" style="width: 70%;">
+                            <span>7/10 = 70%</span>
+                        </div>
+                        <div class="freq-count">✅ 7</div>
+                    </div>
+                    <div class="frequency-bar">
+                        <div class="freq-label">Manteiga</div>
+                        <div class="freq-visual" style="width: 60%;">
+                            <span>6/10 = 60%</span>
+                        </div>
+                        <div class="freq-count">✅ 6</div>
+                    </div>
+                    <div class="frequency-bar">
+                        <div class="freq-label">Queijo</div>
+                        <div class="freq-visual" style="width: 60%;">
+                            <span>6/10 = 60%</span>
+                        </div>
+                        <div class="freq-count">✅ 6</div>
+                    </div>
+                    <div class="frequency-bar">
+                        <div class="freq-label">Ovos</div>
+                        <div class="freq-visual" style="width: 20%;">
+                            <span>2/10 = 20%</span>
+                        </div>
+                        <div class="freq-count">❌ 2</div>
+                    </div>
+                </div>
+
+                <div class="decision-box" style="margin-top: 20px;">
+                    <strong>❌ Decisão:</strong> Ovos aparece em apenas 2/10 transações (20%).
+                    <strong>Não atinge o suporte mínimo e é descartado.</strong>
+                </div>
+            </div>
+
+            <div class="panel full-width">
+                <h2>📋 Resultado do Passo 1</h2>
+                <div class="info-box success">
+                    <strong>Itens frequentes (1-itemsets):</strong><br>
+                    {Pão}, {Leite}, {Manteiga}, {Queijo}<br>
+                    <span class="highlight-red">Ovos descartado (2/10)</span><br><br>
+                    <strong>Ordem para o Passo 2:</strong> Pão, Leite, Manteiga, Queijo.
+                </div>
+            </div>
+        </div>
+
+        <!-- ============ PASSO 2 ============ -->
+        <div id="passo2" class="tabpanel">
+            <div class="content full-width">
+                <div class="panel active">
+                    <div class="step-indicator">2</div>
+                    <h2>Scan 2: Construir a FP-Tree</h2>
+                    <div class="info-box">
+                        <strong>Objetivo:</strong> Ler o banco de dados uma segunda e última vez. Para cada transação:
+                        <ol style="margin-left: 15px; margin-top: 10px;">
+                            <li>Pegue apenas os itens frequentes</li>
+                            <li>Ordene-os por frequência (mais frequente primeiro)</li>
+                            <li>Insira na árvore compartilhando prefixos</li>
+                        </ol>
+                    </div>
+                </div>
+            </div>
+
+            <div class="panel full-width">
+                <h2>🔄 Construção Interativa da FP-Tree</h2>
+                <div style="padding: 15px; text-align: center;">
+                    <button class="btn-secondary" onclick="prevTransaction()" style="margin: 10px 5px;">◀ Transação Anterior</button>
+                    <button class="btn-primary" onclick="nextTransaction()" style="margin: 10px 5px;">Próxima Transação ▶</button>
+                    <button class="btn-secondary" onclick="resetTree()" style="margin: 10px 5px;">🔄 Recomeçar do Zero</button>
+                </div>
+
+                <div id="tree-step-info" style="background: #f8f9fa; padding: 15px; border-radius: 6px; margin: 15px 0;">
+                    <div id="current-transaction" style="font-size: 14px; font-weight: bold; color: #667eea; margin-bottom: 15px;">
+                        <!-- Preenchido com JavaScript -->
+                    </div>
+                    
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+                        <div>
+                            <strong style="color: #333;">Original (do banco):</strong>
+                            <div id="original-trans" style="background: white; padding: 10px; border-radius: 4px; border-left: 3px solid #ff6b6b; margin-top: 5px; font-size: 12px;">
+                                <!-- Preenchido com JavaScript -->
+                            </div>
+                        </div>
+                        <div>
+                            <strong style="color: #333;">Após ordenação por frequência:</strong>
+                            <div id="ordered-trans" style="background: white; padding: 10px; border-radius: 4px; border-left: 3px solid #51cf66; margin-top: 5px; font-size: 12px;">
+                                <!-- Preenchido com JavaScript -->
+                            </div>
+                        </div>
+                    </div>
+
+                    <div id="insertion-steps" style="margin-top: 15px; font-size: 12px;">
+                        <!-- Preenchido com JavaScript -->
+                    </div>
+                </div>
+            </div>
+
+            <div class="panel full-width">
+                <h2>🌳 FP-Tree em Construção</h2>
+                <div style="text-align: center; margin-bottom: 10px;">
+                    <span id="transaction-counter" style="font-size: 12px; color: #666;">Transação 0/10</span>
+                </div>
+                <svg id="tree-passo2" width="100%" height="400"></svg>
+                <div class="legend">
+                    <div class="legend-item">
+                        <div class="legend-color" style="background: #667eea;"></div>
+                        <span>Nó existente</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-color" style="background: #51cf66;"></div>
+                        <span>Nó adicionado nesta transação</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-color" style="background: #764ba2;"></div>
+                        <span>Raiz (ponto de partida)</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-color" style="background: #ffd43b;"></div>
+                        <span>Frequência aumentada</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="panel full-width">
+                <h2>💡 Como Funciona o Compartilhamento de Prefixos?</h2>
+                <div class="info-box">
+                    <strong>Observação importante:</strong><br><br>
+                    Quando duas transações começam com os mesmos itens (ex: T1 começa com Pão→Leite e T2 também começa com Pão→Leite), 
+                    a árvore <span class="highlight-yellow">compartilha o mesmo caminho</span>, apenas <span class="highlight-yellow">incrementando as frequências</span>.<br><br>
+                    Isso economiza espaço de memória e torna o processamento muito mais rápido que o Apriori!
+                </div>
+            </div>
+        </div>
+        <!-- ============ PASSO 3 ============ -->
+        <div id="passo3" class="tabpanel">
+            <div class="content full-width">
+                <div class="panel active">
+                    <div class="step-indicator">3</div>
+                    <h2>Extrair Base de Padrões Condicionais</h2>
+                    <div class="info-box">
+                        <strong>Objetivo:</strong> Para cada item (começando pelos <span class="highlight-yellow">menos frequentes nas folhas</span>), 
+                        traçar o caminho até a raiz e descobrir quais itens vieram antes dele.
+                    </div>
+                    <div class="info-box success">
+                        <strong>✓ Ideia chave:</strong> Os padrões que levam a um item são <strong>exatamente</strong> as transações que contêm aquele item. 
+                        Não precisamos adivinhar!
+                    </div>
+                </div>
+            </div>
+
+            <div class="panel full-width">
+                <h2>🌳 FP-Tree (clique em um item para ver seu caminho)</h2>
+                <svg id="tree-passo3" width="100%" height="400"></svg>
+                <div class="legend">
+                    <div class="legend-item">
+                        <div class="legend-color" style="background: #667eea;"></div>
+                        <span>Item normal</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-color" style="background: #ff6b6b;"></div>
+                        <span>Item selecionado</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-color" style="background: #ffd43b;"></div>
+                        <span>Caminho até raiz</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="panel full-width">
+                <h2>🎯 Base de Padrões Condicionais</h2>
+                <div id="passo3-result" style="min-height: 200px; padding: 15px;">
+                    <p style="color: #999; text-align: center; padding: 40px;">
+                        👆 Clique em um item na árvore acima para ver sua base de padrões...
+                    </p>
+                </div>
+            </div>
+
+            <div class="panel full-width">
+                <h2>📖 Exemplo Passo a Passo: Extrair Base para "Queijo"</h2>
+                <div style="padding: 15px;">
+                    <div class="step-title">1️⃣ Encontre "Queijo" na árvore</div>
+                    <div class="info-box">
+                        "Queijo" aparece em 5 lugares diferentes na árvore (com frequências 2, 1, 1, 1 e 1)
+                    </div>
+
+                    <div class="step-title">2️⃣ Trace o caminho para cada ocorrência</div>
+                    <div class="info-box">
+                        <strong>Ocorrência 1:</strong> Queijo:2 ← Leite:5 ← Pão:7<br>
+                        <strong>Ocorrência 2:</strong> Queijo:1 ← Manteiga:3 ← Leite:5 ← Pão:7<br>
+                        <strong>Ocorrência 3:</strong> Queijo:1 ← Leite:2 ← Raiz<br>
+                        <strong>Ocorrência 4:</strong> Queijo:1 ← Manteiga:1 ← Leite:2 ← Raiz<br>
+                        <strong>Ocorrência 5:</strong> Queijo:1 ← Manteiga:1 ← Raiz
+                    </div>
+
+                    <div class="step-title">3️⃣ Remova "Queijo" e agregue caminhos</div>
+                    <div class="info-box success">
+                        <strong>Base de Padrões Condicionais = {Queijo}:</strong><br>
+                        • Pão, Leite: 2 (ocorrência 1)<br>
+                        • Pão, Leite, Manteiga: 1 (ocorrência 2)<br>
+                        • Leite: 1 (ocorrência 3)<br>
+                        • Leite, Manteiga: 1 (ocorrência 4)<br>
+                        • Manteiga: 1 (ocorrência 5)<br><br>
+                        <strong>Agregado (contando cada item):</strong><br>
+                        • Pão: 3<br>
+                        • Leite: 5<br>
+                        • Manteiga: 3
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ============ PASSO 4 ============ -->
+        <!-- ============ PASSO 4 ============ -->
+        <div id="passo4" class="tabpanel">
+            <div class="content full-width">
+                <div class="panel active">
+                    <div class="step-indicator">4</div>
+                    <h2>Construir Árvore Condicional (Mini FP-Tree)</h2>
+                    <div class="info-box">
+                        <strong>Entrada:</strong> Base de Padrões Condicionais do Passo 3<br>
+                        <strong>Processo:</strong> Construir uma nova árvore com APENAS os caminhos da base, 
+                        aplicando min_support novamente dentro desse contexto menor.
+                    </div>
+                    <div class="info-box success">
+                        <strong>✓ Vantagem:</strong> A mini-árvore é <strong>muito menor</strong> que a original → processamento rápido!
+                    </div>
+                </div>
+            </div>
+
+            <div class="panel full-width">
+                <h2>📊 Exemplo: Construindo Mini-Árvore para "Queijo"</h2>
+                <div style="padding: 15px;">
+                    <div class="step-title">1️⃣ Base de Padrões Condicionais para Queijo</div>
+                    <div class="frequency-bar">
+                        <div class="freq-label">Pão</div>
+                        <div class="freq-visual" style="width: 60%;">3</div>
+                        <div class="freq-count">✅</div>
+                    </div>
+                    <div class="frequency-bar">
+                        <div class="freq-label">Leite</div>
+                        <div class="freq-visual" style="width: 100%;">5</div>
+                        <div class="freq-count">✅</div>
+                    </div>
+                    <div class="frequency-bar">
+                        <div class="freq-label">Manteiga</div>
+                        <div class="freq-visual" style="width: 60%;">3</div>
+                        <div class="freq-count">✅</div>
+                    </div>
+
+                    <div class="step-title">2️⃣ Aplicar min_support = 3 na base</div>
+                    <div class="decision-box yes">
+                        <strong>✅ Pão: 3</strong><br>Atinge o suporte. <strong>MANTÉM!</strong>
+                    </div>
+                    <div class="decision-box yes">
+                        <strong>✅ Leite: 5</strong><br>Atinge o suporte. <strong>MANTÉM!</strong>
+                    </div>
+                    <div class="decision-box yes">
+                        <strong>✅ Manteiga: 3</strong><br>Atinge o suporte. <strong>MANTÉM!</strong>
+                    </div>
+
+                    <div class="step-title">3️⃣ Mini-Árvore Condicional para Queijo</div>
+                    <div class="info-box success">
+                        <strong>Mini-Árvore (resumo):</strong><br>
+                        Raiz<br>
+                        ├─ Leite: 5<br>
+                        │  ├─ Pão: 3 → Manteiga: 1<br>
+                        │  └─ Manteiga: 1<br>
+                        └─ Manteiga: 1<br><br>
+                        <strong>Padrões gerados (principais):</strong> {Leite, Queijo}, {Pão, Queijo}, {Manteiga, Queijo}, {Pão, Leite, Queijo}
+                    </div>
+                </div>
+            </div>
+
+            <div class="panel full-width">
+                <h2>🔄 Construção Interativa da Mini-Árvore (Queijo)</h2>
+                <div class="info-box">
+                    Usamos as <strong>bases condicionais do Passo 3</strong> e inserimos uma a uma,
+                    exatamente como no Passo 2. Aqui, a ordem segue as frequências <strong>dentro da base do Queijo</strong>.
+                </div>
+                <div style="padding: 15px; text-align: center;">
+                    <button class="btn-secondary" onclick="prevConditional()" style="margin: 10px 5px;">◀ Caminho Anterior</button>
+                    <button class="btn-primary" onclick="nextConditional()" style="margin: 10px 5px;">Próximo Caminho ▶</button>
+                    <button class="btn-secondary" onclick="resetConditional()" style="margin: 10px 5px;">🔄 Recomeçar</button>
+                </div>
+
+                <div id="conditional-step-info" style="background: #f8f9fa; padding: 15px; border-radius: 6px; margin: 15px 0;">
+                    <div id="conditional-current" style="font-size: 14px; font-weight: bold; color: #667eea; margin-bottom: 15px;">
+                        <!-- Preenchido com JavaScript -->
+                    </div>
+
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+                        <div>
+                            <strong style="color: #333;">Caminho da base (Passo 3):</strong>
+                            <div id="conditional-original" style="background: white; padding: 10px; border-radius: 4px; border-left: 3px solid #ff6b6b; margin-top: 5px; font-size: 12px;">
+                                <!-- Preenchido com JavaScript -->
+                            </div>
+                        </div>
+                        <div>
+                            <strong style="color: #333;">Após ordenar por frequência na base:</strong>
+                            <div id="conditional-ordered" style="background: white; padding: 10px; border-radius: 4px; border-left: 3px solid #51cf66; margin-top: 5px; font-size: 12px;">
+                                <!-- Preenchido com JavaScript -->
+                            </div>
+                        </div>
+                    </div>
+
+                    <div id="conditional-steps" style="margin-top: 15px; font-size: 12px;">
+                        <!-- Preenchido com JavaScript -->
+                    </div>
+                </div>
+            </div>
+
+            <div class="panel full-width">
+                <h2>🌿 Mini-Árvore em Construção (Queijo)</h2>
+                <div style="text-align: center; margin-bottom: 10px;">
+                    <span id="conditional-counter" style="font-size: 12px; color: #666;">Caminho 0/0</span>
+                </div>
+                <svg id="tree-passo4-step" width="100%" height="400"></svg>
+                <div class="legend">
+                    <div class="legend-item">
+                        <div class="legend-color" style="background: #667eea;"></div>
+                        <span>Nó existente</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-color" style="background: #51cf66;"></div>
+                        <span>Nó adicionado neste caminho</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-color" style="background: #764ba2;"></div>
+                        <span>Raiz (ponto de partida)</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="panel full-width">
+                <h2>🧩 Como essa mini-árvore foi construída</h2>
+                <div class="info-box">
+                    <strong>Base condicional do Queijo (após remover "Queijo"):</strong><br>
+                    • Pão, Leite (x2)<br>
+                    • Pão, Leite, Manteiga (x1)<br>
+                    • Leite (x1)<br>
+                    • Leite, Manteiga (x1)<br>
+                    • Manteiga (x1)
+                </div>
+                <div class="info-box success">
+                    <strong>Frequências na base:</strong> Leite: 5, Pão: 3, Manteiga: 3<br>
+                    <strong>Ordem usada:</strong> Leite → Pão → Manteiga
+                </div>
+                <div class="info-box">
+                    <strong>Inserindo os caminhos (com contagem):</strong><br>
+                    1) Leite → Pão (x2) cria Leite:2 e Pão:2<br>
+                    2) Leite → Pão → Manteiga (x1) vira Leite:3, Pão:3, Manteiga:1<br>
+                    3) Leite (x1) vira Leite:4<br>
+                    4) Leite → Manteiga (x1) cria Manteiga:1 sob Leite<br>
+                    5) Manteiga (x1) cria Manteiga:1 direto na raiz
+                </div>
+            </div>
+
+            <div class="panel full-width">
+                <h2>🌿 Árvore Condicional do Queijo (visualização)</h2>
+                <div class="info-box">
+                    Esta é a FP-Tree construída <strong>apenas</strong> com a base condicional do Queijo.
+                    As contagens nos nós representam o <strong>prefixo daquele caminho</strong>.
+                </div>
+                <svg id="tree-passo4" width="100%" height="400"></svg>
+            </div>
+
+            <div class="panel full-width">
+                <h2>🎯 Comparação: Árvore Original vs Mini-Árvores</h2>
+                <div class="mini-tree-comparison">
+                    <div class="tree-comparison-item">
+                        <h4>🌳 Árvore Original (após Passo 2)</h4>
+                        <ul style="font-size: 12px; line-height: 1.6; margin-left: 15px;">
+                            <li>Raiz
+                                <ul>
+                                    <li>Pão: 7
+                                        <ul>
+                                            <li>Leite: 5
+                                                <ul>
+                                                    <li>Manteiga: 3
+                                                        <ul>
+                                                            <li>Queijo: 1</li>
+                                                        </ul>
+                                                    </li>
+                                                    <li>Queijo: 2</li>
+                                                </ul>
+                                            </li>
+                                            <li>Manteiga: 1</li>
+                                        </ul>
+                                    </li>
+                                    <li>Leite: 2
+                                        <ul>
+                                            <li>Manteiga: 1
+                                                <ul>
+                                                    <li>Queijo: 1</li>
+                                                </ul>
+                                            </li>
+                                            <li>Queijo: 1</li>
+                                        </ul>
+                                    </li>
+                                    <li>Manteiga: 1
+                                        <ul>
+                                            <li>Queijo: 1</li>
+                                        </ul>
+                                    </li>
+                                </ul>
+                            </li>
+                        </ul>
+                    </div>
+                    <div class="tree-comparison-item">
+                        <h4>🌿 Mini-Árvore para Queijo (após Passo 3)</h4>
+                        <ul style="font-size: 12px; line-height: 1.6; margin-left: 15px;">
+                            <li>Raiz
+                                <ul>
+                                    <li><span style="color: #51cf66; font-weight: bold;">Leite: 5</span>
+                                        <ul>
+                                            <li>Pão: 3
+                                                <ul>
+                                                    <li>Manteiga: 1</li>
+                                                </ul>
+                                            </li>
+                                            <li>Manteiga: 1</li>
+                                        </ul>
+                                    </li>
+                                    <li>Manteiga: 1</li>
+                                </ul>
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+
+            <div class="panel full-width">
+                <h2>📋 Resultado do Passo 4</h2>
+                <div class="info-box success">
+                    <strong>Itemset Frequente Descoberto:</strong><br>
+                    {Leite, Queijo} com suporte 5/10 = 50%<br>
+                    {Pão, Queijo} com suporte 3/10 = 30%<br>
+                    {Manteiga, Queijo} com suporte 3/10 = 30%<br>
+                    {Pão, Leite, Queijo} com suporte 3/10 = 30%<br><br>
+                    <strong>Próximo:</strong> Recursão! Vamos minerar a mini-árvore recursivamente no Passo 5.
+                </div>
+            </div>
+        </div>
+
+        <!-- ============ PASSO 5 ============ -->
+        <!-- ============ PASSO 5 ============ -->
+        <div id="passo5" class="tabpanel">
+            <div class="content full-width">
+                <div class="panel active">
+                    <div class="step-indicator">5</div>
+                    <h2>Mineração Recursiva (Dentro da Árvore do Queijo)</h2>
+                    <div class="info-box">
+                        <strong>O Segredo do FP-Growth:</strong> A mini-árvore do Queijo gerada no Passo 4 agora é tratada como se fosse a árvore original. 
+                        Vamos aplicar a <strong>mesma regra</strong>: olhar os itens de baixo para cima (menos frequentes primeiro) para descobrir o que vem antes deles.
+                    </div>
+                    <div class="info-box success">
+                        <strong>Contexto Atual (Sufixo):</strong> Tudo o que encontrarmos agora será combinado com <strong>{Queijo}</strong>.
+                    </div>
+                </div>
+            </div>
+
+            <div class="panel full-width">
+                <h2>🔍 Minerando a Mini-Árvore do Queijo (Ordem: Manteiga → Pão → Leite)</h2>
+                
+                <div style="padding: 15px;">
+                    <div class="step-title" style="color: #e83e8c;">Alvo 1: Manteiga (Sufixo = {Manteiga, Queijo})</div>
+                    <div class="info-box">
+                        Ao olhar para a mini-árvore do Queijo, o que está acima da Manteiga?<br>
+                        • Caminho 1: <code>Leite → Pão</code> (contagem: 1)<br>
+                        • Caminho 2: <code>Leite</code> (contagem: 1)<br>
+                        • Caminho 3: Raiz direta (contagem: 1)
+                    </div>
+                    <div class="decision-box">
+                        <strong>Soma das frequências acima da Manteiga:</strong> Leite (2) e Pão (1).<br>
+                        ❌ Nenhum atinge o <code>min_support = 3</code>. A recursão para a Manteiga morre aqui. Não geramos trios com ela.
+                    </div>
+
+                    <div class="step-title" style="color: #e83e8c; margin-top: 30px;">Alvo 2: Pão (Sufixo = {Pão, Queijo})</div>
+                    <div class="info-box">
+                        Ao olhar para a mini-árvore do Queijo, o que está acima do Pão?<br>
+                        • Único caminho: <code>Leite</code> (contagem do nó Pão: 3)
+                    </div>
+                    <div class="decision-box yes">
+                        <strong>Soma das frequências acima do Pão:</strong> Leite (3).<br>
+                        ✅ O Leite atinge o <code>min_support = 3</code>! Ele sobreviveu.
+                    </div>
+                    
+                    <div class="recursion-level level-2">
+                        <h4>Nasce a Mini-Mini-Árvore de {Pão, Queijo}</h4>
+                        <p style="font-size: 13px; margin: 10px 0;">O sobrevivente "Leite" forma uma nova árvore minúscula: <code>Raiz → Leite:3</code></p>
+                        <div class="info-box success" style="background: #e3fafc; border-left-color: #15aabf;">
+                            <strong>🎉 NOVO ITEMSET GERADO (Tamanho 3):</strong><br>
+                            Juntamos o sobrevivente (Leite) + o Sufixo atual ({Pão, Queijo}):<br>
+                            <strong style="font-size: 16px; color: #0b7285;">{Leite, Pão, Queijo} (Suporte: 3)</strong>
+                        </div>
+                        <p style="font-size: 12px; color: #666;">*Se tentarmos minerar o Leite nesta nova arvorezinha, não há nada acima dele. A recursão fecha com sucesso.</p>
+                    </div>
+
+                    <div class="step-title" style="color: #e83e8c; margin-top: 30px;">Alvo 3: Leite (Sufixo = {Leite, Queijo})</div>
+                    <div class="info-box">
+                        Ao olhar para a mini-árvore do Queijo, o que está acima do Leite?<br>
+                        • <code>Nada</code> (O Leite está conectado direto na Raiz).<br>
+                        A recursão para o Leite acaba imediatamente.
+                    </div>
+                </div>
+            </div>
+
+            <div class="panel full-width">
+                <h2>✅ Fim da Linha: Resumo dos Padrões Extraídos</h2>
+                <div class="conclusion-box">
+                    <strong>🎯 O que o FP-Growth descobriu apenas explorando ramos (sem gerar candidatos falsos):</strong><br><br>
+                    <div style="text-align: left; display: inline-block; background: rgba(255,255,255,0.1); padding: 15px; border-radius: 8px;">
+                        <span style="color: #ffd43b;">Tamanho 1 (Passo 1):</span><br>
+                        {Pão: 7}, {Leite: 7}, {Manteiga: 6}, {Queijo: 6}<br><br>
+                        
+                        <span style="color: #ffd43b;">Tamanho 2 (Minerando as Mini-Árvores base):</span><br>
+                        {Pão, Leite: 5}, {Pão, Manteiga: 4}, {Leite, Manteiga: 4},<br>
+                        {Pão, Queijo: 3}, {Leite, Queijo: 5}, {Manteiga, Queijo: 3}<br><br>
+                        
+                        <span style="color: #ffd43b;">Tamanho 3 (Pela Recursão Profunda mostrada acima):</span><br>
+                        {Pão, Leite, Manteiga: 3}, <strong>{Pão, Leite, Queijo: 3}</strong>
+                    </div>
+                </div>
+
+                <div class="info-box success" style="margin-top: 20px;">
+                    <strong>⚡ Por que isso esmaga o Apriori em performance?</strong><br><br>
+                    Para achar o trio <strong>{Pão, Leite, Queijo}</strong>, o Apriori teria gerado dezenas de combinações inúteis no Nível 2 e Nível 3, indo ao banco de dados repetidas vezes.<br>
+                    O FP-Growth achou o mesmo trio apenas "andando para cima" na memória RAM, dividindo o problema em árvores cada vez menores.
+                </div>
+            </div>
+        </div>
+
+        <div class="step-nav">
+            <button class="btn-secondary" onclick="previousStep()">◀ Anterior</button>
+            <button class="btn-primary" onclick="nextStep()">Próximo ▶</button>
+        </div>
+    </div>
+
+    <script>
+        let currentStep = 0;
+        const steps = ['passo1', 'passo2', 'passo3', 'passo4', 'passo5'];
+        let currentTransactionStep = 0;
+        let currentConditionalStep = 0;
+
+        // Dataset de exemplo
+        const dataset = [
+            ['Pão', 'Leite', 'Manteiga', 'Ovos'],
+            ['Pão', 'Leite', 'Queijo'],
+            ['Pão', 'Manteiga'],
+            ['Leite', 'Manteiga', 'Queijo'],
+            ['Pão', 'Leite', 'Manteiga'],
+            ['Pão', 'Ovos'],
+            ['Leite', 'Queijo'],
+            ['Pão', 'Leite', 'Queijo'],
+            ['Manteiga', 'Queijo'],
+            ['Pão', 'Leite', 'Manteiga', 'Queijo']
+        ];
+
+        let frequencies = {
+            'Pão': 7,
+            'Leite': 7,
+            'Manteiga': 6,
+            'Queijo': 6,
+            'Ovos': 2
+        };
+
+        const itemOrder = ['Pão', 'Leite', 'Manteiga', 'Queijo', 'Ovos'];
+
+        // Dados da FP-Tree e progressao sao calculados a partir do dataset
+        let treeData = { name: "", value: 0, children: [] };
+        let treeProgression = [];
+
+        const minSupportCount = 3;
+        const totalTransactions = dataset.length;
+
+        frequencies = dataset.reduce((acc, transaction) => {
+            transaction.forEach((item) => {
+                acc[item] = (acc[item] || 0) + 1;
+            });
+            return acc;
+        }, {});
+
+        const sortByMap = (items, freqMap) => {
+            return items.slice().sort((a, b) => {
+                const diff = (freqMap[b] || 0) - (freqMap[a] || 0);
+                if (diff !== 0) return diff;
+                return itemOrder.indexOf(a) - itemOrder.indexOf(b);
+            });
+        };
+
+        const sortByFrequency = (items) => sortByMap(items, frequencies);
+
+        const cloneTree = (node) => ({
+            name: node.name,
+            value: node.value,
+            children: node.children.map(cloneTree)
+        });
+
+        function buildTreeProgression(transactions) {
+            const root = { name: "", value: 0, children: [] };
+            const progression = [];
+
+            transactions.forEach((transaction) => {
+                const ordered = sortByFrequency(
+                    transaction.filter((item) => frequencies[item] >= minSupportCount)
+                );
+                const newNodes = [];
+                let current = root;
+
+                ordered.forEach((item) => {
+                    let child = current.children.find((c) => c.name === item);
+                    if (!child) {
+                        child = { name: item, value: 1, children: [] };
+                        current.children.push(child);
+                        newNodes.push(item);
+                    } else {
+                        child.value += 1;
+                    }
+                    current = child;
+                });
+
+                const snapshot = cloneTree(root);
+                snapshot.newNodes = newNodes;
+                progression.push(snapshot);
+            });
+
+            return { treeData: cloneTree(root), treeProgression: progression };
+        }
+
+        function buildTreeProgressionWithFrequencies(transactions, freqMap) {
+            const root = { name: "", value: 0, children: [] };
+            const progression = [];
+
+            transactions.forEach((transaction) => {
+                const ordered = sortByMap(
+                    transaction.filter((item) => (freqMap[item] || 0) >= minSupportCount),
+                    freqMap
+                );
+                const newNodes = [];
+                let current = root;
+
+                ordered.forEach((item) => {
+                    let child = current.children.find((c) => c.name === item);
+                    if (!child) {
+                        child = { name: item, value: 1, children: [] };
+                        current.children.push(child);
+                        newNodes.push(item);
+                    } else {
+                        child.value += 1;
+                    }
+                    current = child;
+                });
+
+                const snapshot = cloneTree(root);
+                snapshot.newNodes = newNodes;
+                progression.push(snapshot);
+            });
+
+            return { treeData: cloneTree(root), treeProgression: progression };
+        }
+
+        const computedTree = buildTreeProgression(dataset);
+        treeData = computedTree.treeData;
+        treeProgression = computedTree.treeProgression;
+
+        const conditionalBaseQueijo = [
+            { path: ['Pão', 'Leite'], count: 2 },
+            { path: ['Pão', 'Leite', 'Manteiga'], count: 1 },
+            { path: ['Leite'], count: 1 },
+            { path: ['Leite', 'Manteiga'], count: 1 },
+            { path: ['Manteiga'], count: 1 }
+        ];
+
+        const expandConditionalBase = (base) => {
+            const expanded = [];
+            base.forEach((entry) => {
+                for (let i = 0; i < entry.count; i += 1) {
+                    expanded.push(entry.path);
+                }
+            });
+            return expanded;
+        };
+
+        const conditionalTransactions = expandConditionalBase(conditionalBaseQueijo);
+        const conditionalFrequencies = conditionalTransactions.reduce((acc, transaction) => {
+            transaction.forEach((item) => {
+                acc[item] = (acc[item] || 0) + 1;
+            });
+            return acc;
+        }, {});
+
+        const conditionalComputed = buildTreeProgressionWithFrequencies(
+            conditionalTransactions,
+            conditionalFrequencies
+        );
+        const conditionalTreeQueijo = conditionalComputed.treeData;
+        const conditionalTreeProgression = conditionalComputed.treeProgression;
+
+        function drawTree(svgId, data, width = 500, height = 400, highlightedNodes = []) {
+            d3.select(`#${svgId}`).selectAll("*").remove();
+
+            const svg = d3.select(`#${svgId}`)
+                .attr('width', width)
+                .attr('height', height);
+
+            const g = svg.append('g')
+                .attr('transform', 'translate(50, 30)');
+
+            const tree = d3.tree().size([width - 100, height - 60]);
+            const root = d3.hierarchy(data);
+            const nodes = tree(root);
+
+            // Links
+            g.selectAll('.tree-link')
+                .data(nodes.links())
+                .enter()
+                .append('line')
+                .attr('class', 'tree-link')
+                .attr('x1', d => d.source.x)
+                .attr('y1', d => d.source.y)
+                .attr('x2', d => d.target.x)
+                .attr('y2', d => d.target.y)
+                .attr('stroke', '#999')
+                .attr('stroke-width', 2);
+
+            // Nodes
+            const nodeGroups = g.selectAll('.tree-node')
+                .data(nodes.descendants())
+                .enter()
+                .append('g')
+                .attr('class', 'tree-node')
+                .attr('transform', d => `translate(${d.x}, ${d.y})`);
+
+            nodeGroups.append('circle')
+                .attr('r', 22)
+                .attr('fill', d => {
+                    if (!d.parent) return '#764ba2'; // raiz
+                    if (highlightedNodes.includes(d.data.name)) return '#51cf66'; // novo nó
+                    return '#667eea'; // nó existente
+                })
+                .attr('stroke', '#333')
+                .attr('stroke-width', 2)
+                .on('click', function(event, d) {
+                    if (currentStep === 2) showConditionalPattern(d.data.name);
+                });
+
+            nodeGroups.append('text')
+                .text(d => d.data.name ? `${d.data.name}:${d.data.value}` : 'R')
+                .attr('dy', '0.3em')
+                .attr('font-size', '11px')
+                .attr('text-anchor', 'middle')
+                .attr('fill', 'white')
+                .attr('font-weight', 'bold');
+        }
+
+        function updatePasso2Display() {
+            if (currentTransactionStep === 0) {
+                document.getElementById('current-transaction').textContent = 'Árvore Vazia — Começamos...';
+                document.getElementById('original-trans').innerHTML = 'Vazio';
+                document.getElementById('ordered-trans').innerHTML = 'Vazio';
+                document.getElementById('insertion-steps').innerHTML = '<div class="info-box success"><strong>ℹ️ Frequência:</strong> Número de vezes que um item aparece no banco de dados inteiro (não apenas nesta transação).<br><br>Raiz criada. Pronto para inserir transações!</div>';
+                document.getElementById('transaction-counter').textContent = 'Estado Inicial: 0/10 transações processadas';
+            } else {
+                const transIdx = currentTransactionStep - 1;
+                const original = dataset[transIdx];
+                const ordered = sortByFrequency(
+                    original.filter(item => frequencies[item] >= minSupportCount)
+                );
+                
+                document.getElementById('current-transaction').textContent = `Transação ${transIdx + 1}: [${original.join(', ')}]`;
+                
+                document.getElementById('original-trans').innerHTML = `<strong>Itens nesta transação:</strong><br>${original.map(item => 
+                    `<span class="item-badge" title="Frequência global: ${frequencies[item]}/${totalTransactions}">${item}</span>`
+                ).join('')}`;
+                
+                document.getElementById('ordered-trans').innerHTML = `<strong>Após ordenar por frequência GLOBAL:</strong><br>${ordered.map(item => 
+                    `<span class="item-badge" style="background: linear-gradient(90deg, #51cf66 0%, #667eea 100%); position: relative;" title="Aparece ${frequencies[item]} vezes no total">${item} <span style="font-weight: bold; color: #ffd43b;">(${frequencies[item]}/${totalTransactions})</span></span>`
+                ).join('')}`;
+
+                let stepsHTML = '<div class="info-box success"><strong>📊 Processo de inserção:</strong><br>';
+                stepsHTML += `<br>🔢 <strong>Frequência Global (de todo o banco):</strong><br>`;
+                stepsHTML += Object.entries(frequencies).map(([item, freq]) => 
+                    `&nbsp;&nbsp;• ${item}: ${freq}/${totalTransactions} transações`
+                ).join('<br>');
+                stepsHTML += `<br><br>📝 <strong>Passo a passo:</strong><br>`;
+                stepsHTML += `1️⃣ Pegar itens desta transação: [${original.join(', ')}]<br>`;
+                stepsHTML += `2️⃣ Ordenar por frequência GLOBAL: [${ordered.join(', ')}]<br>`;
+                stepsHTML += `3️⃣ Inserir na árvore compartilhando prefixos<br>`;
+                if (transIdx > 0) {
+                    stepsHTML += `4️⃣ Incrementar frequências de nós existentes`;
+                }
+                stepsHTML += '</div>';
+                document.getElementById('insertion-steps').innerHTML = stepsHTML;
+
+                document.getElementById('transaction-counter').textContent = `Transação ${transIdx + 1}/${totalTransactions} processada • Frequências mostram quanto cada item foi visto NO TOTAL`;
+            }
+
+            // Desenhar árvore
+            const currentTree = currentTransactionStep === 0 ? { name: "", value: 0, children: [] } : treeProgression[currentTransactionStep - 1];
+            const highlighted = currentTransactionStep === 0 ? [] : treeProgression[currentTransactionStep - 1].newNodes || [];
+            drawTree('tree-passo2', currentTree, 450, 400, highlighted);
+        }
+
+        function nextTransaction() {
+            if (currentTransactionStep < dataset.length) {
+                currentTransactionStep++;
+                updatePasso2Display();
+            }
+        }
+
+        function prevTransaction() {
+            if (currentTransactionStep > 0) {
+                currentTransactionStep--;
+                updatePasso2Display();
+            }
+        }
+
+        function resetTree() {
+            currentTransactionStep = 0;
+            updatePasso2Display();
+        }
+
+        function updatePasso4Display() {
+            const total = conditionalTransactions.length;
+
+            if (currentConditionalStep === 0) {
+                document.getElementById('conditional-current').textContent = 'Mini-árvore vazia — pronto para inserir caminhos...';
+                document.getElementById('conditional-original').innerHTML = 'Vazio';
+                document.getElementById('conditional-ordered').innerHTML = 'Vazio';
+                document.getElementById('conditional-steps').innerHTML =
+                    '<div class="info-box success"><strong>ℹ️ Base condicional:</strong> Cada caminho veio do Passo 3 (Queijo) e sera inserido na mini-arvore.</div>';
+                document.getElementById('conditional-counter').textContent = `Caminho 0/${total}`;
+                drawTree('tree-passo4-step', { name: "", value: 0, children: [] }, 450, 400, []);
+                return;
+            }
+
+            const idx = currentConditionalStep - 1;
+            const original = conditionalTransactions[idx];
+            const ordered = sortByMap(
+                original.filter((item) => (conditionalFrequencies[item] || 0) >= minSupportCount),
+                conditionalFrequencies
+            );
+
+            document.getElementById('conditional-current').textContent =
+                `Caminho ${idx + 1}: Inserindo [${original.join(', ')}]`;
+
+            document.getElementById('conditional-original').innerHTML =
+                original.map((item) =>
+                    `<span class="item-badge" title="Frequência na base: ${conditionalFrequencies[item] || 0}/${total}">${item}</span>`
+                ).join('');
+
+            document.getElementById('conditional-ordered').innerHTML =
+                ordered.map((item) =>
+                    `<span class="item-badge" style="background: linear-gradient(90deg, #51cf66 0%, #667eea 100%); position: relative;" title="Frequência na base: ${conditionalFrequencies[item] || 0}/${total}">${item} <span style="font-weight: bold; color: #ffd43b;">(${conditionalFrequencies[item] || 0})</span></span>`
+                ).join('');
+
+            let stepsHTML = '<div class="info-box success"><strong>📊 Inserção na mini-árvore:</strong><br>';
+            stepsHTML += `<br>🔢 <strong>Frequências na base (Queijo):</strong><br>`;
+            stepsHTML += Object.entries(conditionalFrequencies).map(([item, freq]) =>
+                `&nbsp;&nbsp;• ${item}: ${freq}/${total} caminhos`
+            ).join('<br>');
+            stepsHTML += `<br><br>📝 <strong>Passo a passo:</strong><br>`;
+            stepsHTML += `1️⃣ Pegar caminho da base: [${original.join(', ')}]<br>`;
+            stepsHTML += `2️⃣ Ordenar por frequência na base: [${ordered.join(', ')}]<br>`;
+            stepsHTML += `3️⃣ Inserir na mini-árvore compartilhando prefixos`;
+            stepsHTML += '</div>';
+            document.getElementById('conditional-steps').innerHTML = stepsHTML;
+
+            document.getElementById('conditional-counter').textContent = `Caminho ${idx + 1}/${total} inserido`;
+
+            const currentTree = conditionalTreeProgression[idx];
+            const highlighted = conditionalTreeProgression[idx].newNodes || [];
+            drawTree('tree-passo4-step', currentTree, 450, 400, highlighted);
+        }
+
+        function nextConditional() {
+            if (currentConditionalStep < conditionalTransactions.length) {
+                currentConditionalStep += 1;
+                updatePasso4Display();
+            }
+        }
+
+        function prevConditional() {
+            if (currentConditionalStep > 0) {
+                currentConditionalStep -= 1;
+                updatePasso4Display();
+            }
+        }
+
+        function resetConditional() {
+            currentConditionalStep = 0;
+            updatePasso4Display();
+        }
+
+        function showConditionalPattern(itemName) {
+            const patterns = {
+                "Pão": `<strong>Base de Padrões Condicionais para Pão:</strong><br><br>
+                    Pão é raiz frequente. Base = vazio (não há prefixo).<br>
+                    <span class="highlight-yellow">Padrão gerado: {Pão}</span>`,
+                
+                "Leite": `<strong>Base de Padrões Condicionais para Leite:</strong><br><br>
+                    Caminhos até raiz:<br>
+                    • Pão:5 (Leite aparece após Pão em 5 transações)<br>
+                    • ∅ (Leite isolado em 2 transações)<br><br>
+                    Agregado: Pão: 5<br>
+                    <span class="highlight-yellow">Padrão gerado: {Pão, Leite}</span>`,
+                
+                "Manteiga": `<strong>Base de Padrões Condicionais para Manteiga:</strong><br><br>
+                    Caminhos até raiz:<br>
+                    • Pão:3, Leite:3 (prefixo após Pão→Leite)<br>
+                    • Pão:1 (Manteiga após Pão apenas)<br>
+                    • Leite:1 (Manteiga após Leite apenas)<br><br>
+                    Agregado: Pão: 4, Leite: 4<br>
+                    <span class="highlight-yellow">Padrões gerados: {Pão, Manteiga}, {Leite, Manteiga}, {Pão, Leite, Manteiga}</span>`,
+                
+                "Queijo": `<strong>Base de Padrões Condicionais para Queijo:</strong><br><br>
+                    Caminhos até raiz:<br>
+                    • Pão:7, Leite:5 (em Pão→Leite→Queijo, freq 2)<br>
+                    • Pão:7, Leite:5, Manteiga:3 (em Pão→Leite→Manteiga→Queijo)<br>
+                    • Leite:2 (em Leite→Queijo)<br>
+                    • Leite:2, Manteiga:1 (em Leite→Manteiga→Queijo)<br>
+                    • Manteiga:1 (em Manteiga→Queijo)<br><br>
+                    Agregado: Pão: 3, Leite: 5, Manteiga: 3<br>
+                    <span class="highlight-yellow">Padrões gerados: {Leite, Queijo}, {Pão, Queijo}, {Manteiga, Queijo}, {Pão, Leite, Queijo}</span>`,
+                
+                "Ovos": `<strong>Base de Padrões Condicionais para Ovos:</strong><br><br>
+                    Ovos apareceu em apenas 2/10 transações e foi <strong>descartado no Passo 1</strong>.<br>
+                    Por isso, <strong>não entra na FP-Tree</strong> e não possui base condicional.`
+            };
+            document.getElementById('passo3-result').innerHTML = 
+                `<div class="info-box">${patterns[itemName] || 'Selecione um item válido'}</div>`;
+        }
+
+        function switchTab(tabName) {
+            // Hide all panels
+            document.querySelectorAll('.tabpanel').forEach(p => p.classList.remove('active'));
+            document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+            
+            // Show selected
+            document.getElementById(tabName).classList.add('active');
+            event.target.classList.add('active');
+            
+            // Update currentStep
+            currentStep = steps.indexOf(tabName);
+            
+            // Draw appropriate visualizations
+            if (tabName === 'passo2') {
+                setTimeout(() => {
+                    updatePasso2Display();
+                }, 100);
+            } else if (tabName === 'passo3') {
+                setTimeout(() => drawTree('tree-passo3', treeData, 500, 400), 100);
+            } else if (tabName === 'passo4') {
+                setTimeout(() => {
+                    updatePasso4Display();
+                    drawTree('tree-passo4', conditionalTreeQueijo, 500, 400);
+                }, 100);
+            } else if (tabName === 'passo5') {
+                setTimeout(() => drawTree('tree-passo5', conditionalTreeQueijo, 500, 400), 100);
+            }
+        }
+
+        function nextStep() {
+            currentStep = (currentStep + 1) % steps.length;
+            switchTab(steps[currentStep]);
+        }
+
+        function previousStep() {
+            currentStep = (currentStep - 1 + steps.length) % steps.length;
+            switchTab(steps[currentStep]);
+        }
+
+        function resetVisualization() {
+            currentStep = 0;
+            currentTransactionStep = 0;
+            currentConditionalStep = 0;
+            switchTab('passo1');
+        }
+
+        // Initialize
+        window.addEventListener('load', () => {
+            // Passo 2 já será desenhado quando acessado
+        });
+    </script>
+</body>
+</html>
