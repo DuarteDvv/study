@@ -18,7 +18,7 @@ O algoritmo funciona em duas grandes fases: primeiro ele constrói a árvore e, 
 2. **A Construção da Árvore (Scan 2 e ÚLTIMO):** Ele volta ao banco de dados pela segunda e última vez. Para cada transação, ele pega os itens frequentes (na ordem que definimos no passo 1) e os insere em uma árvore de prefixos (a FP-Tree). 
     *   *Exemplo:* Se a transação 1 é `{Pão, Leite}` e a transação 2 é `{Pão, Café}`, a árvore cria um nó forte para `{Pão}` e depois o divide em dois galhos: um para `{Leite}` e outro para `{Café}`. Transações parecidas compartilham o mesmo caminho, o que comprime enormemente os dados.
 
-3. **A Base de Padrões Condicionais (Divisão):** Com a árvore pronta, o banco de dados não é mais usado. O algoritmo olha para a árvore começando pelos itens **menos frequentes** (que ficam nas folhas da árvore). Para cada item, ele traça o caminho de volta até a raiz para descobrir quais itens vieram antes dele. Esses caminhos formam a "Base de Padrões Condicionais" daquele item.
+3. **A Base de Padrões Condicionais (Divisão):** Com a árvore pronta, o banco de dados não é mais usado. O algoritmo olha para a árvore começando pelos itens **menos frequentes** da tabela ordenada por suporte (que ficam geralmente nas folhas da árvore). Para cada item da tabela, ele traça o caminho de volta até a raiz para descobrir quais itens vieram antes dele. Esses caminhos formam a "Base de Padrões Condicionais" daquele item.
 
 4. **A Árvore Condicional (Filtro Interno):** Usando apenas os caminhos descobertos no Passo 3, ele constrói uma "Mini FP-Tree" exclusiva para aquele item que está sendo analisado, descartando novamente o que não atingir o `min_support` dentro daquele contexto menor.
 
