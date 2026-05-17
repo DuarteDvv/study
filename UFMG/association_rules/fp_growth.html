@@ -1,1528 +1,674 @@
-<!DOCTYPE html>
-<html lang="pt-BR">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>FP-Growth: Visualização Completa do Algoritmo</title>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.8.5/d3.min.js"></script>
-    <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-        body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            min-height: 100vh;
-            padding: 20px;
-        }
-        .container {
-            max-width: 1400px;
-            margin: 0 auto;
-            background: white;
-            border-radius: 12px;
-            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
-            padding: 40px;
-        }
-        h1 {
-            color: #333;
-            text-align: center;
-            margin-bottom: 10px;
-            font-size: 28px;
-        }
-        .subtitle {
-            text-align: center;
-            color: #666;
-            font-size: 14px;
-            margin-bottom: 30px;
-        }
-        .controls {
-            display: flex;
-            gap: 15px;
-            margin-bottom: 30px;
-            justify-content: center;
-            flex-wrap: wrap;
-        }
-        button {
-            padding: 10px 20px;
-            font-size: 14px;
-            border: none;
-            border-radius: 6px;
-            cursor: pointer;
-            transition: all 0.3s;
-            font-weight: bold;
-        }
-        .btn-primary {
-            background: #667eea;
-            color: white;
-        }
-        .btn-primary:hover {
-            background: #5568d3;
-            transform: translateY(-2px);
-            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
-        }
-        .btn-secondary {
-            background: #f0f0f0;
-            color: #333;
-        }
-        .btn-secondary:hover {
-            background: #e0e0e0;
-        }
-        .content {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 30px;
-            margin-bottom: 30px;
-        }
-        .panel {
-            border: 2px solid #f0f0f0;
-            border-radius: 8px;
-            padding: 20px;
-            background: #fafafa;
-        }
-        .panel.active {
-            border-color: #667eea;
-            background: #f8f9ff;
-        }
-        .panel h2 {
-            color: #333;
-            font-size: 18px;
-            margin-bottom: 15px;
-            border-bottom: 2px solid #667eea;
-            padding-bottom: 10px;
-        }
-        .step-indicator {
-            background: #667eea;
-            color: white;
-            width: 30px;
-            height: 30px;
-            border-radius: 50%;
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            font-weight: bold;
-            margin-bottom: 10px;
-        }
-        svg {
-            background: white;
-            border: 1px solid #e0e0e0;
-            border-radius: 6px;
-            width: 100%;
-            height: auto;
-        }
-        .tree-node {
-            cursor: pointer;
-        }
-        .tree-node circle {
-            fill: #667eea;
-            stroke: #333;
-            stroke-width: 2px;
-        }
-        .tree-node.highlighted circle {
-            fill: #ff6b6b;
-            stroke: #c92a2a;
-            stroke-width: 3px;
-        }
-        .tree-node.path circle {
-            fill: #ffd43b;
-            stroke: #f08c00;
-            stroke-width: 2px;
-        }
-        .tree-node text {
-            font-size: 12px;
-            text-anchor: middle;
-            pointer-events: none;
-            fill: white;
-            font-weight: bold;
-        }
-        .tree-link {
-            stroke: #999;
-            stroke-width: 2px;
-            fill: none;
-        }
-        .tree-link.highlighted {
-            stroke: #ff6b6b;
-            stroke-width: 3px;
-        }
-        .tree-link.path {
-            stroke: #ffd43b;
-            stroke-width: 3px;
-        }
-        .info-box {
-            background: white;
-            border-left: 4px solid #667eea;
-            padding: 15px;
-            margin-bottom: 15px;
-            border-radius: 4px;
-            font-size: 13px;
-            line-height: 1.6;
-        }
-        .info-box.warning {
-            border-left-color: #ff6b6b;
-            background: #fff5f5;
-        }
-        .info-box.success {
-            border-left-color: #51cf66;
-            background: #f1fce4;
-        }
-        .code-block {
-            background: #f8f9fa;
-            border: 1px solid #e0e0e0;
-            padding: 12px;
-            border-radius: 4px;
-            font-family: 'Courier New', monospace;
-            font-size: 12px;
-            overflow-x: auto;
-            margin: 10px 0;
-        }
-        .highlight-yellow {
-            background: #ffd43b;
-            padding: 2px 4px;
-            border-radius: 2px;
-        }
-        .highlight-red {
-            background: #ff6b6b;
-            color: white;
-            padding: 2px 4px;
-            border-radius: 2px;
-        }
-        .highlight-green {
-            background: #51cf66;
-            color: white;
-            padding: 2px 4px;
-            border-radius: 2px;
-        }
-        .table-wrapper {
-            overflow-x: auto;
-            margin: 15px 0;
-        }
-        table {
-            width: 100%;
-            border-collapse: collapse;
-            font-size: 12px;
-        }
-        th {
-            background: #667eea;
-            color: white;
-            padding: 8px;
-            text-align: left;
-            font-weight: bold;
-        }
-        td {
-            padding: 8px;
-            border-bottom: 1px solid #e0e0e0;
-        }
-        tr:nth-child(even) {
-            background: #f8f9fa;
-        }
-        .step-nav {
-            display: flex;
-            justify-content: space-between;
-            margin-top: 30px;
-            padding-top: 20px;
-            border-top: 2px solid #f0f0f0;
-        }
-        .step-nav button {
-            flex: 1;
-            margin: 0 5px;
-        }
-        .legend {
-            display: flex;
-            gap: 15px;
-            margin-top: 15px;
-            flex-wrap: wrap;
-            font-size: 12px;
-        }
-        .legend-item {
-            display: flex;
-            align-items: center;
-            gap: 5px;
-        }
-        .legend-color {
-            width: 16px;
-            height: 16px;
-            border-radius: 50%;
-            border: 2px solid #333;
-        }
-        .full-width {
-            grid-column: 1 / -1;
-        }
-        .tabpanel {
-            display: none;
-        }
-        .tabpanel.active {
-            display: block;
-        }
-        .tab-buttons {
-            display: flex;
-            gap: 10px;
-            margin-bottom: 20px;
-        }
-        .tab-btn {
-            padding: 8px 15px;
-            background: #f0f0f0;
-            border: 2px solid transparent;
-            border-radius: 4px;
-            cursor: pointer;
-            font-weight: bold;
-            color: #666;
-        }
-        .tab-btn.active {
-            background: #667eea;
-            color: white;
-            border-color: #667eea;
-        }
-        .step-title {
-            font-size: 16px;
-            font-weight: bold;
-            color: #667eea;
-            margin-top: 20px;
-            margin-bottom: 10px;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-        .transaction-box {
-            background: white;
-            border: 2px solid #e0e0e0;
-            border-radius: 6px;
-            padding: 10px;
-            margin: 8px 0;
-            font-size: 12px;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-        .transaction-box.highlight {
-            border-color: #667eea;
-            background: #f8f9ff;
-        }
-        .item-badge {
-            background: #667eea;
-            color: white;
-            padding: 4px 8px;
-            border-radius: 4px;
-            font-size: 11px;
-            font-weight: bold;
-            display: inline-block;
-            margin: 2px 2px;
-        }
-        .item-badge.removed {
-            background: #999;
-            text-decoration: line-through;
-        }
-        .arrow-right {
-            color: #667eea;
-            font-weight: bold;
-            margin: 0 5px;
-        }
-        .decision-box {
-            background: #fff5f5;
-            border-left: 4px solid #ff6b6b;
-            padding: 12px;
-            margin: 10px 0;
-            border-radius: 4px;
-            font-size: 12px;
-        }
-        .decision-box.yes {
-            background: #f1fce4;
-            border-left-color: #51cf66;
-        }
-        .animation-container {
-            position: relative;
-            height: 60px;
-            margin: 15px 0;
-            background: #f8f9fa;
-            border-radius: 6px;
-            overflow: hidden;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-        .animated-item {
-            position: absolute;
-            background: #667eea;
-            color: white;
-            padding: 6px 12px;
-            border-radius: 4px;
-            font-size: 11px;
-            font-weight: bold;
-            animation: slide 2s ease-in-out forwards;
-        }
-        @keyframes slide {
-            from {
-                left: 10px;
-                opacity: 1;
-            }
-            to {
-                left: calc(100% - 60px);
-                opacity: 0.5;
-            }
-        }
-        .frequency-bar {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            margin: 8px 0;
-            font-size: 12px;
-        }
-        .freq-label {
-            width: 80px;
-            text-align: right;
-        }
-        .freq-visual {
-            height: 24px;
-            background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
-            border-radius: 4px;
-            display: flex;
-            align-items: center;
-            justify-content: flex-end;
-            padding-right: 8px;
-            color: white;
-            font-size: 11px;
-            font-weight: bold;
-            min-width: 40px;
-        }
-        .freq-count {
-            width: 40px;
-            text-align: left;
-        }
-        .mini-tree-comparison {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 15px;
-            margin: 15px 0;
-        }
-        .tree-comparison-item {
-            background: white;
-            border: 1px solid #e0e0e0;
-            border-radius: 6px;
-            padding: 12px;
-        }
-        .tree-comparison-item h4 {
-            color: #333;
-            font-size: 12px;
-            margin-bottom: 8px;
-            font-weight: bold;
-        }
-        .recursion-level {
-            margin-left: 20px;
-            padding-left: 15px;
-            border-left: 3px solid #667eea;
-            margin-bottom: 15px;
-        }
-        .recursion-level.level-1 {
-            border-left-color: #667eea;
-        }
-        .recursion-level.level-2 {
-            border-left-color: #764ba2;
-        }
-        .recursion-level.level-3 {
-            border-left-color: #e83e8c;
-        }
-        .conclusion-box {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            padding: 20px;
-            border-radius: 8px;
-            margin: 20px 0;
-            text-align: center;
-        }
-        .conclusion-box strong {
-            font-size: 14px;
-        }
-    </style>
-</head>
-<body>
-    <div class="container">
-        <h1>🌳 FP-Growth: Guia Completo e Intuitivo</h1>
-        <div class="subtitle">Passos 1, 2, 3, 4 e 5 — Com todas as decisões do algoritmo ilustradas</div>
 
-        <div class="controls">
-            <button class="btn-primary" onclick="nextStep()">▶ Próximo Passo</button>
-            <button class="btn-secondary" onclick="resetVisualization()">🔄 Reiniciar</button>
-        </div>
+<style>
+:root {
+  --font-sans: "IBM Plex Sans", "Source Sans 3", "Noto Sans", sans-serif;
+  --color-background-primary: #ffffff;
+  --color-background-secondary: #f6f7f9;
+  --color-background-info: #e9f2ff;
+  --color-background-success: #e9f7ef;
+  --color-background-warning: #fff5e6;
+  --color-text-primary: #1a1d21;
+  --color-text-secondary: #5b6067;
+  --color-text-tertiary: #8a9098;
+  --color-text-info: #0b4ea2;
+  --color-text-success: #1f7a4d;
+  --color-text-warning: #a25c00;
+  --color-border-secondary: #d7dbe0;
+  --color-border-tertiary: #e3e6ea;
+  --color-border-info: #b6d0f4;
+  --color-border-success: #b8e1c7;
+  --color-border-warning: #f7d2a6;
+  --border-radius-md: 10px;
+  --border-radius-lg: 14px;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: var(--font-sans); background: #ffffff; color: var(--color-text-primary); }
+#fp-root { padding: 1rem 0; }
+.phase-bar { display:flex; gap:6px; flex-wrap:wrap; margin-bottom:1.5rem; }
+.phase-pill { padding:5px 14px; border-radius:20px; font-size:12px; cursor:pointer; border:0.5px solid var(--color-border-secondary); color:var(--color-text-secondary); background:var(--color-background-secondary); transition:all .2s; }
+.phase-pill.active { background:var(--color-background-info); color:var(--color-text-info); border-color:var(--color-border-info); font-weight:500; }
 
-        <div class="tab-buttons">
-            <button class="tab-btn active" onclick="switchTab('passo1')">Passo 1</button>
-            <button class="tab-btn" onclick="switchTab('passo2')">Passo 2</button>
-            <button class="tab-btn" onclick="switchTab('passo3')">Passo 3</button>
-            <button class="tab-btn" onclick="switchTab('passo4')">Passo 4</button>
-            <button class="tab-btn" onclick="switchTab('passo5')">Passo 5</button>
-        </div>
+.step-header { display:flex; align-items:center; gap:12px; margin-bottom:1rem; }
+.step-badge { width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:500;flex-shrink:0;background:var(--color-background-info);color:var(--color-text-info); }
+.step-title { font-size:16px; font-weight:500; color:var(--color-text-primary); }
+.step-subtitle { font-size:13px; color:var(--color-text-secondary); margin-top:2px; }
 
-        <!-- ============ PASSO 1 ============ -->
-        <div id="passo1" class="tabpanel active">
-            <div class="content full-width">
-                <div class="panel active">
-                    <div class="step-indicator">1</div>
-                    <h2>Scan 1: Contar Frequências Individuais</h2>
-                    <div class="info-box">
-                        <strong>Objetivo:</strong> Ler o banco de dados uma primeira vez e contar quantas vezes cada item aparece individualmente.
-                    </div>
-                </div>
-            </div>
+.card { background:var(--color-background-primary); border:0.5px solid var(--color-border-tertiary); border-radius:var(--border-radius-lg); padding:1rem 1.25rem; margin-bottom:1rem; }
+.card-label { font-size:11px; font-weight:500; color:var(--color-text-tertiary); letter-spacing:.04em; text-transform:uppercase; margin-bottom:.75rem; }
 
-            <div class="panel full-width">
-                <h2>📊 Dataset de Exemplo (10 transações)</h2>
-                <div id="passo1-dataset" style="background: #f8f9fa; padding: 15px; border-radius: 6px; max-height: 300px; overflow-y: auto;">
-                    <div class="transaction-box">
-                        <strong style="width: 60px;">T1:</strong>
-                        <span class="item-badge">Pão</span>
-                        <span class="item-badge">Leite</span>
-                        <span class="item-badge">Manteiga</span>
-                        <span class="item-badge">Ovos</span>
-                    </div>
-                    <div class="transaction-box">
-                        <strong style="width: 60px;">T2:</strong>
-                        <span class="item-badge">Pão</span>
-                        <span class="item-badge">Leite</span>
-                        <span class="item-badge">Queijo</span>
-                    </div>
-                    <div class="transaction-box">
-                        <strong style="width: 60px;">T3:</strong>
-                        <span class="item-badge">Pão</span>
-                        <span class="item-badge">Manteiga</span>
-                    </div>
-                    <div class="transaction-box">
-                        <strong style="width: 60px;">T4:</strong>
-                        <span class="item-badge">Leite</span>
-                        <span class="item-badge">Manteiga</span>
-                        <span class="item-badge">Queijo</span>
-                    </div>
-                    <div class="transaction-box">
-                        <strong style="width: 60px;">T5:</strong>
-                        <span class="item-badge">Pão</span>
-                        <span class="item-badge">Leite</span>
-                        <span class="item-badge">Manteiga</span>
-                    </div>
-                    <div class="transaction-box">
-                        <strong style="width: 60px;">T6:</strong>
-                        <span class="item-badge">Pão</span>
-                        <span class="item-badge">Ovos</span>
-                    </div>
-                    <div class="transaction-box">
-                        <strong style="width: 60px;">T7:</strong>
-                        <span class="item-badge">Leite</span>
-                        <span class="item-badge">Queijo</span>
-                    </div>
-                    <div class="transaction-box">
-                        <strong style="width: 60px;">T8:</strong>
-                        <span class="item-badge">Pão</span>
-                        <span class="item-badge">Leite</span>
-                        <span class="item-badge">Queijo</span>
-                    </div>
-                    <div class="transaction-box">
-                        <strong style="width: 60px;">T9:</strong>
-                        <span class="item-badge">Manteiga</span>
-                        <span class="item-badge">Queijo</span>
-                    </div>
-                    <div class="transaction-box">
-                        <strong style="width: 60px;">T10:</strong>
-                        <span class="item-badge">Pão</span>
-                        <span class="item-badge">Leite</span>
-                        <span class="item-badge">Manteiga</span>
-                        <span class="item-badge">Queijo</span>
-                    </div>
-                </div>
-            </div>
+.db-table { width:100%; border-collapse:collapse; font-size:13px; }
+.db-table th { font-weight:500; font-size:11px; color:var(--color-text-tertiary); text-align:left; padding:4px 8px; border-bottom:0.5px solid var(--color-border-tertiary); }
+.db-table td { padding:5px 8px; color:var(--color-text-primary); border-bottom:0.5px solid var(--color-border-tertiary); transition:background .3s; }
+.db-table tr.highlight td { background:var(--color-background-info); }
 
-            <div class="panel full-width">
-                <h2>🔍 Frequências Contadas (min_support = 30%, ou 3/10 transações)</h2>
-                <div style="padding: 15px;">
-                    <div class="frequency-bar">
-                        <div class="freq-label">Pão</div>
-                        <div class="freq-visual" style="width: 70%;">
-                            <span>7/10 = 70%</span>
-                        </div>
-                        <div class="freq-count">✅ 7</div>
-                    </div>
-                    <div class="frequency-bar">
-                        <div class="freq-label">Leite</div>
-                        <div class="freq-visual" style="width: 70%;">
-                            <span>7/10 = 70%</span>
-                        </div>
-                        <div class="freq-count">✅ 7</div>
-                    </div>
-                    <div class="frequency-bar">
-                        <div class="freq-label">Manteiga</div>
-                        <div class="freq-visual" style="width: 60%;">
-                            <span>6/10 = 60%</span>
-                        </div>
-                        <div class="freq-count">✅ 6</div>
-                    </div>
-                    <div class="frequency-bar">
-                        <div class="freq-label">Queijo</div>
-                        <div class="freq-visual" style="width: 60%;">
-                            <span>6/10 = 60%</span>
-                        </div>
-                        <div class="freq-count">✅ 6</div>
-                    </div>
-                    <div class="frequency-bar">
-                        <div class="freq-label">Ovos</div>
-                        <div class="freq-visual" style="width: 20%;">
-                            <span>2/10 = 20%</span>
-                        </div>
-                        <div class="freq-count">❌ 2</div>
-                    </div>
-                </div>
+.item-chip { display:inline-block; padding:2px 8px; border-radius:12px; font-size:11px; font-weight:500; margin:1px; }
+.chip-bread  { background:#E6F1FB; color:#0C447C; }
+.chip-milk   { background:#EAF3DE; color:#27500A; }
+.chip-eggs   { background:#FAEEDA; color:#633806; }
+.chip-butter { background:#FBEAF0; color:#72243E; }
+.chip-coffee { background:#EEEDFE; color:#3C3489; }
+.chip-sugar  { background:#FAEEda; color:#854F0B; }
 
-                <div class="decision-box" style="margin-top: 20px;">
-                    <strong>❌ Decisão:</strong> Ovos aparece em apenas 2/10 transações (20%).
-                    <strong>Não atinge o suporte mínimo e é descartado.</strong>
-                </div>
-            </div>
+.support-bar-wrap { display:flex; align-items:center; gap:8px; margin:4px 0; }
+.support-bar-label { font-size:12px; color:var(--color-text-primary); width:56px; flex-shrink:0; }
+.support-bar { height:16px; border-radius:4px; transition:width .6s cubic-bezier(.4,0,.2,1); display:flex;align-items:center;padding-left:6px; font-size:10px; font-weight:500; }
+.support-count { font-size:12px; color:var(--color-text-secondary); }
+.eliminated { opacity:.35; text-decoration:line-through; }
 
-            <div class="panel full-width">
-                <h2>📋 Resultado do Passo 1</h2>
-                <div class="info-box success">
-                    <strong>Itens frequentes (1-itemsets):</strong><br>
-                    {Pão}, {Leite}, {Manteiga}, {Queijo}<br>
-                    <span class="highlight-red">Ovos descartado (2/10)</span><br><br>
-                    <strong>Ordem para o Passo 2:</strong> Pão, Leite, Manteiga, Queijo.
-                </div>
-            </div>
-        </div>
+.tree-svg-wrap { overflow:visible; }
 
-        <!-- ============ PASSO 2 ============ -->
-        <div id="passo2" class="tabpanel">
-            <div class="content full-width">
-                <div class="panel active">
-                    <div class="step-indicator">2</div>
-                    <h2>Scan 2: Construir a FP-Tree</h2>
-                    <div class="info-box">
-                        <strong>Objetivo:</strong> Ler o banco de dados uma segunda e última vez. Para cada transação:
-                        <ol style="margin-left: 15px; margin-top: 10px;">
-                            <li>Pegue apenas os itens frequentes</li>
-                            <li>Ordene-os por frequência (mais frequente primeiro)</li>
-                            <li>Insira na árvore compartilhando prefixos</li>
-                        </ol>
-                    </div>
-                </div>
-            </div>
+.nav-row { display:flex; gap:8px; align-items:center; margin-top:1rem; }
+.btn { padding:6px 16px; border-radius:var(--border-radius-md); border:0.5px solid var(--color-border-secondary); background:transparent; cursor:pointer; font-size:13px; color:var(--color-text-primary); transition:background .15s; }
+.btn:hover { background:var(--color-background-secondary); }
+.btn.primary { background:var(--color-background-info); color:var(--color-text-info); border-color:var(--color-border-info); }
+.btn:disabled { opacity:.4; cursor:not-allowed; }
+.step-counter { font-size:12px; color:var(--color-text-tertiary); margin-left:auto; }
 
-            <div class="panel full-width">
-                <h2>🔄 Construção Interativa da FP-Tree</h2>
-                <div style="padding: 15px; text-align: center;">
-                    <button class="btn-secondary" onclick="prevTransaction()" style="margin: 10px 5px;">◀ Transação Anterior</button>
-                    <button class="btn-primary" onclick="nextTransaction()" style="margin: 10px 5px;">Próxima Transação ▶</button>
-                    <button class="btn-secondary" onclick="resetTree()" style="margin: 10px 5px;">🔄 Recomeçar do Zero</button>
-                </div>
+.callout { border-left:3px solid var(--color-border-info); background:var(--color-background-info); border-radius:0 var(--border-radius-md) var(--border-radius-md) 0; padding:.75rem 1rem; font-size:13px; color:var(--color-text-info); margin-bottom:1rem; }
+.callout.success { border-color:var(--color-border-success); background:var(--color-background-success); color:var(--color-text-success); }
+.callout.warn { border-color:var(--color-border-warning); background:var(--color-background-warning); color:var(--color-text-warning); }
 
-                <div id="tree-step-info" style="background: #f8f9fa; padding: 15px; border-radius: 6px; margin: 15px 0;">
-                    <div id="current-transaction" style="font-size: 14px; font-weight: bold; color: #667eea; margin-bottom: 15px;">
-                        <!-- Preenchido com JavaScript -->
-                    </div>
-                    
-                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
-                        <div>
-                            <strong style="color: #333;">Original (do banco):</strong>
-                            <div id="original-trans" style="background: white; padding: 10px; border-radius: 4px; border-left: 3px solid #ff6b6b; margin-top: 5px; font-size: 12px;">
-                                <!-- Preenchido com JavaScript -->
-                            </div>
-                        </div>
-                        <div>
-                            <strong style="color: #333;">Após ordenação por frequência:</strong>
-                            <div id="ordered-trans" style="background: white; padding: 10px; border-radius: 4px; border-left: 3px solid #51cf66; margin-top: 5px; font-size: 12px;">
-                                <!-- Preenchido com JavaScript -->
-                            </div>
-                        </div>
-                    </div>
+.result-chip { display:inline-flex; align-items:center; gap:6px; padding:4px 12px; border-radius:12px; font-size:12px; font-weight:500; border:0.5px solid var(--color-border-secondary); margin:3px; background:var(--color-background-secondary); color:var(--color-text-primary); }
+.result-chip .sup { font-size:10px; color:var(--color-text-secondary); }
 
-                    <div id="insertion-steps" style="margin-top: 15px; font-size: 12px;">
-                        <!-- Preenchido com JavaScript -->
-                    </div>
-                </div>
-            </div>
+.anim-node { transition: opacity .4s, transform .4s; }
+.anim-node.hidden { opacity:0; pointer-events:none; }
 
-            <div class="panel full-width">
-                <h2>🌳 FP-Tree em Construção</h2>
-                <div style="text-align: center; margin-bottom: 10px;">
-                    <span id="transaction-counter" style="font-size: 12px; color: #666;">Transação 0/10</span>
-                </div>
-                <svg id="tree-passo2" width="100%" height="400"></svg>
-                <div class="legend">
-                    <div class="legend-item">
-                        <div class="legend-color" style="background: #667eea;"></div>
-                        <span>Nó existente</span>
-                    </div>
-                    <div class="legend-item">
-                        <div class="legend-color" style="background: #51cf66;"></div>
-                        <span>Nó adicionado nesta transação</span>
-                    </div>
-                    <div class="legend-item">
-                        <div class="legend-color" style="background: #764ba2;"></div>
-                        <span>Raiz (ponto de partida)</span>
-                    </div>
-                    <div class="legend-item">
-                        <div class="legend-color" style="background: #ffd43b;"></div>
-                        <span>Frequência aumentada</span>
-                    </div>
-                </div>
-            </div>
+.two-col { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+@media(max-width:500px){.two-col{grid-template-columns:1fr;}}
 
-            <div class="panel full-width">
-                <h2>💡 Como Funciona o Compartilhamento de Prefixos?</h2>
-                <div class="info-box">
-                    <strong>Observação importante:</strong><br><br>
-                    Quando duas transações começam com os mesmos itens (ex: T1 começa com Pão→Leite e T2 também começa com Pão→Leite), 
-                    a árvore <span class="highlight-yellow">compartilha o mesmo caminho</span>, apenas <span class="highlight-yellow">incrementando as frequências</span>.<br><br>
-                    Isso economiza espaço de memória e torna o processamento muito mais rápido que o Apriori!
-                </div>
-            </div>
-        </div>
-        <!-- ============ PASSO 3 ============ -->
-        <div id="passo3" class="tabpanel">
-            <div class="content full-width">
-                <div class="panel active">
-                    <div class="step-indicator">3</div>
-                    <h2>Extrair Base de Padrões Condicionais</h2>
-                    <div class="info-box">
-                        <strong>Objetivo:</strong> Para cada item (começando pelos <span class="highlight-yellow">menos frequentes nas folhas</span>), 
-                        traçar o caminho até a raiz e descobrir quais itens vieram antes dele.
-                    </div>
-                    <div class="info-box success">
-                        <strong>✓ Ideia chave:</strong> Os padrões que levam a um item são <strong>exatamente</strong> as transações que contêm aquele item. 
-                        Não precisamos adivinhar!
-                    </div>
-                </div>
-            </div>
+.t-header { display:flex; gap:4px; align-items:center; justify-content:space-between; font-size:12px; color:var(--color-text-secondary); margin-bottom:8px; }
+.ordered-item { display:flex; align-items:center; gap:8px; padding:5px 8px; border-radius:6px; font-size:12px; margin:3px 0; border:0.5px solid var(--color-border-tertiary); }
+.ordered-item .rank { width:18px; height:18px; border-radius:50%; background:var(--color-background-secondary); display:flex; align-items:center; justify-content:center; font-size:10px; font-weight:500; }
 
-            <div class="panel full-width">
-                <h2>🌳 FP-Tree (clique em um item para ver seu caminho)</h2>
-                <svg id="tree-passo3" width="100%" height="400"></svg>
-                <div class="legend">
-                    <div class="legend-item">
-                        <div class="legend-color" style="background: #667eea;"></div>
-                        <span>Item normal</span>
-                    </div>
-                    <div class="legend-item">
-                        <div class="legend-color" style="background: #ff6b6b;"></div>
-                        <span>Item selecionado</span>
-                    </div>
-                    <div class="legend-item">
-                        <div class="legend-color" style="background: #ffd43b;"></div>
-                        <span>Caminho até raiz</span>
-                    </div>
-                </div>
-            </div>
+.path-highlight { animation: pathpulse 1s ease-in-out infinite alternate; }
+@keyframes pathpulse { from{opacity:.5} to{opacity:1} }
 
-            <div class="panel full-width">
-                <h2>🎯 Base de Padrões Condicionais</h2>
-                <div id="passo3-result" style="min-height: 200px; padding: 15px;">
-                    <p style="color: #999; text-align: center; padding: 40px;">
-                        👆 Clique em um item na árvore acima para ver sua base de padrões...
-                    </p>
-                </div>
-            </div>
+#step-content { min-height:300px; }
+.sr-only { position:absolute; width:1px; height:1px; padding:0; margin:-1px; overflow:hidden; clip:rect(0,0,0,0); white-space:nowrap; border:0; }
+</style>
 
-            <div class="panel full-width">
-                <h2>📖 Exemplo Passo a Passo: Extrair Base para "Queijo"</h2>
-                <div style="padding: 15px;">
-                    <div class="step-title">1️⃣ Encontre "Queijo" na árvore</div>
-                    <div class="info-box">
-                        "Queijo" aparece em 5 lugares diferentes na árvore (com frequências 2, 1, 1, 1 e 1)
-                    </div>
+<div id="fp-root">
+<h2 class="sr-only">Visualização passo a passo do algoritmo FP-Growth</h2>
 
-                    <div class="step-title">2️⃣ Trace o caminho para cada ocorrência</div>
-                    <div class="info-box">
-                        <strong>Ocorrência 1:</strong> Queijo:2 ← Leite:5 ← Pão:7<br>
-                        <strong>Ocorrência 2:</strong> Queijo:1 ← Manteiga:3 ← Leite:5 ← Pão:7<br>
-                        <strong>Ocorrência 3:</strong> Queijo:1 ← Leite:2 ← Raiz<br>
-                        <strong>Ocorrência 4:</strong> Queijo:1 ← Manteiga:1 ← Leite:2 ← Raiz<br>
-                        <strong>Ocorrência 5:</strong> Queijo:1 ← Manteiga:1 ← Raiz
-                    </div>
+<div class="phase-bar" id="phase-bar"></div>
 
-                    <div class="step-title">3️⃣ Remova "Queijo" e agregue caminhos</div>
-                    <div class="info-box success">
-                        <strong>Base de Padrões Condicionais = {Queijo}:</strong><br>
-                        • Pão, Leite: 2 (ocorrência 1)<br>
-                        • Pão, Leite, Manteiga: 1 (ocorrência 2)<br>
-                        • Leite: 1 (ocorrência 3)<br>
-                        • Leite, Manteiga: 1 (ocorrência 4)<br>
-                        • Manteiga: 1 (ocorrência 5)<br><br>
-                        <strong>Agregado (contando cada item):</strong><br>
-                        • Pão: 3<br>
-                        • Leite: 5<br>
-                        • Manteiga: 3
-                    </div>
-                </div>
-            </div>
-        </div>
+<div id="step-content"></div>
 
-        <!-- ============ PASSO 4 ============ -->
-        <!-- ============ PASSO 4 ============ -->
-        <div id="passo4" class="tabpanel">
-            <div class="content full-width">
-                <div class="panel active">
-                    <div class="step-indicator">4</div>
-                    <h2>Construir Árvore Condicional (Mini FP-Tree)</h2>
-                    <div class="info-box">
-                        <strong>Entrada:</strong> Base de Padrões Condicionais do Passo 3<br>
-                        <strong>Processo:</strong> Construir uma nova árvore com APENAS os caminhos da base, 
-                        aplicando min_support novamente dentro desse contexto menor.
-                    </div>
-                    <div class="info-box success">
-                        <strong>✓ Vantagem:</strong> A mini-árvore é <strong>muito menor</strong> que a original → processamento rápido!
-                    </div>
-                </div>
-            </div>
+<div class="nav-row">
+  <button class="btn" id="btn-prev" onclick="navigate(-1)">← Anterior</button>
+  <button class="btn primary" id="btn-next" onclick="navigate(1)">Próximo →</button>
+  <span class="step-counter" id="step-counter"></span>
+</div>
+</div>
 
-            <div class="panel full-width">
-                <h2>📊 Exemplo: Construindo Mini-Árvore para "Queijo"</h2>
-                <div style="padding: 15px;">
-                    <div class="step-title">1️⃣ Base de Padrões Condicionais para Queijo</div>
-                    <div class="frequency-bar">
-                        <div class="freq-label">Pão</div>
-                        <div class="freq-visual" style="width: 60%;">3</div>
-                        <div class="freq-count">✅</div>
-                    </div>
-                    <div class="frequency-bar">
-                        <div class="freq-label">Leite</div>
-                        <div class="freq-visual" style="width: 100%;">5</div>
-                        <div class="freq-count">✅</div>
-                    </div>
-                    <div class="frequency-bar">
-                        <div class="freq-label">Manteiga</div>
-                        <div class="freq-visual" style="width: 60%;">3</div>
-                        <div class="freq-count">✅</div>
-                    </div>
+<script>
+const DB = [
+  {id:'T1', items:['Pão','Leite','Manteiga','Ovos']},
+  {id:'T2', items:['Pão','Leite','Café']},
+  {id:'T3', items:['Pão','Ovos','Manteiga']},
+  {id:'T4', items:['Leite','Ovos','Manteiga']},
+  {id:'T5', items:['Pão','Leite']},
+  {id:'T6', items:['Pão','Café','Açúcar']},
+  {id:'T7', items:['Leite','Manteiga']},
+  {id:'T8', items:['Pão','Leite','Ovos']},
+];
+const MIN_SUP = 3;
+const CHIP = {Pão:'chip-bread',Leite:'chip-milk',Ovos:'chip-eggs',Manteiga:'chip-butter',Café:'chip-coffee',Açúcar:'chip-sugar'};
+const COLORS = {Pão:'#185FA5',Leite:'#3B6D11',Ovos:'#854F0B',Manteiga:'#993556',Café:'#534AB7'};
 
-                    <div class="step-title">2️⃣ Aplicar min_support = 3 na base</div>
-                    <div class="decision-box yes">
-                        <strong>✅ Pão: 3</strong><br>Atinge o suporte. <strong>MANTÉM!</strong>
-                    </div>
-                    <div class="decision-box yes">
-                        <strong>✅ Leite: 5</strong><br>Atinge o suporte. <strong>MANTÉM!</strong>
-                    </div>
-                    <div class="decision-box yes">
-                        <strong>✅ Manteiga: 3</strong><br>Atinge o suporte. <strong>MANTÉM!</strong>
-                    </div>
+function chip(item){return `<span class="item-chip ${CHIP[item]||''}">${item}</span>`;}
+function chips(arr){return arr.map(chip).join('');}
+function displayPrefix(items){
+  return items.length ? chips(items) : `<span style="color:var(--color-text-tertiary)">∅</span>`;
+}
 
-                    <div class="step-title">3️⃣ Mini-Árvore Condicional para Queijo</div>
-                    <div class="info-box success">
-                        <strong>Mini-Árvore (resumo):</strong><br>
-                        Raiz<br>
-                        ├─ Leite: 5<br>
-                        │  ├─ Pão: 3 → Manteiga: 1<br>
-                        │  └─ Manteiga: 1<br>
-                        └─ Manteiga: 1<br><br>
-                        <strong>Padrões gerados (principais):</strong> {Leite, Queijo}, {Pão, Queijo}, {Manteiga, Queijo}, {Pão, Leite, Queijo}
-                    </div>
-                </div>
-            </div>
+const freqMap={Pão:6,Leite:6,Ovos:4,Manteiga:4,Café:2,Açúcar:1};
+const ORDER=['Pão','Leite','Ovos','Manteiga','Café','Açúcar'];
+const FREQUENT=['Pão','Leite','Ovos','Manteiga'];
+const ORDERED_TXS=DB.map(t=>({...t, ordered:t.items.filter(i=>FREQUENT.includes(i)).sort((a,b)=>ORDER.indexOf(a)-ORDER.indexOf(b))}));
 
-            <div class="panel full-width">
-                <h2>🔄 Construção Interativa da Mini-Árvore (Queijo)</h2>
-                <div class="info-box">
-                    Usamos as <strong>bases condicionais do Passo 3</strong> e inserimos uma a uma,
-                    exatamente como no Passo 2. Aqui, a ordem segue as frequências <strong>dentro da base do Queijo</strong>.
-                </div>
-                <div style="padding: 15px; text-align: center;">
-                    <button class="btn-secondary" onclick="prevConditional()" style="margin: 10px 5px;">◀ Caminho Anterior</button>
-                    <button class="btn-primary" onclick="nextConditional()" style="margin: 10px 5px;">Próximo Caminho ▶</button>
-                    <button class="btn-secondary" onclick="resetConditional()" style="margin: 10px 5px;">🔄 Recomeçar</button>
-                </div>
+const COND_MANTEIGA_PREFIXES=[
+  {items:['Pão','Leite','Ovos'], weight:1},
+  {items:['Pão','Ovos'], weight:1},
+  {items:['Leite','Ovos'], weight:1},
+  {items:['Leite'], weight:1},
+];
+const COND_MANTEIGA_SUPPORT={Leite:3,Ovos:3,Pão:2};
+const COND_MANTEIGA_FREQUENT=['Leite','Ovos'];
+const COND_MANTEIGA_ORDER=['Leite','Ovos'];
+const COND_MANTEIGA_ORDERED=COND_MANTEIGA_PREFIXES.map(p=>({
+  ...p,
+  ordered:p.items.filter(i=>COND_MANTEIGA_FREQUENT.includes(i))
+    .sort((a,b)=>COND_MANTEIGA_ORDER.indexOf(a)-COND_MANTEIGA_ORDER.indexOf(b))
+}));
 
-                <div id="conditional-step-info" style="background: #f8f9fa; padding: 15px; border-radius: 6px; margin: 15px 0;">
-                    <div id="conditional-current" style="font-size: 14px; font-weight: bold; color: #667eea; margin-bottom: 15px;">
-                        <!-- Preenchido com JavaScript -->
-                    </div>
+const COND_MANTEIGA_OVOS_PREFIXES=[
+  {items:['Leite'], weight:3},
+  {items:[], weight:1},
+];
+const COND_MANTEIGA_OVOS_SUPPORT={Leite:3};
+const COND_MANTEIGA_OVOS_FREQUENT=['Leite'];
+const COND_MANTEIGA_OVOS_ORDER=['Leite'];
+const COND_MANTEIGA_OVOS_ORDERED=COND_MANTEIGA_OVOS_PREFIXES.map(p=>({
+  ...p,
+  ordered:p.items.filter(i=>COND_MANTEIGA_OVOS_FREQUENT.includes(i))
+    .sort((a,b)=>COND_MANTEIGA_OVOS_ORDER.indexOf(a)-COND_MANTEIGA_OVOS_ORDER.indexOf(b))
+})).filter(p=>p.ordered.length>0);
 
-                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
-                        <div>
-                            <strong style="color: #333;">Caminho da base (Passo 3):</strong>
-                            <div id="conditional-original" style="background: white; padding: 10px; border-radius: 4px; border-left: 3px solid #ff6b6b; margin-top: 5px; font-size: 12px;">
-                                <!-- Preenchido com JavaScript -->
-                            </div>
-                        </div>
-                        <div>
-                            <strong style="color: #333;">Após ordenar por frequência na base:</strong>
-                            <div id="conditional-ordered" style="background: white; padding: 10px; border-radius: 4px; border-left: 3px solid #51cf66; margin-top: 5px; font-size: 12px;">
-                                <!-- Preenchido com JavaScript -->
-                            </div>
-                        </div>
-                    </div>
+const COND_MANTEIGA_LEITE_PREFIXES=[
+  {items:[], weight:3},
+];
 
-                    <div id="conditional-steps" style="margin-top: 15px; font-size: 12px;">
-                        <!-- Preenchido com JavaScript -->
-                    </div>
-                </div>
-            </div>
+let stepIdx=0;
 
-            <div class="panel full-width">
-                <h2>🌿 Mini-Árvore em Construção (Queijo)</h2>
-                <div style="text-align: center; margin-bottom: 10px;">
-                    <span id="conditional-counter" style="font-size: 12px; color: #666;">Caminho 0/0</span>
-                </div>
-                <svg id="tree-passo4-step" width="100%" height="400"></svg>
-                <div class="legend">
-                    <div class="legend-item">
-                        <div class="legend-color" style="background: #667eea;"></div>
-                        <span>Nó existente</span>
-                    </div>
-                    <div class="legend-item">
-                        <div class="legend-color" style="background: #51cf66;"></div>
-                        <span>Nó adicionado neste caminho</span>
-                    </div>
-                    <div class="legend-item">
-                        <div class="legend-color" style="background: #764ba2;"></div>
-                        <span>Raiz (ponto de partida)</span>
-                    </div>
-                </div>
-            </div>
-
-            <div class="panel full-width">
-                <h2>🧩 Como essa mini-árvore foi construída</h2>
-                <div class="info-box">
-                    <strong>Base condicional do Queijo (após remover "Queijo"):</strong><br>
-                    • Pão, Leite (x2)<br>
-                    • Pão, Leite, Manteiga (x1)<br>
-                    • Leite (x1)<br>
-                    • Leite, Manteiga (x1)<br>
-                    • Manteiga (x1)
-                </div>
-                <div class="info-box success">
-                    <strong>Frequências na base:</strong> Leite: 5, Pão: 3, Manteiga: 3<br>
-                    <strong>Ordem usada:</strong> Leite → Pão → Manteiga
-                </div>
-                <div class="info-box">
-                    <strong>Inserindo os caminhos (com contagem):</strong><br>
-                    1) Leite → Pão (x2) cria Leite:2 e Pão:2<br>
-                    2) Leite → Pão → Manteiga (x1) vira Leite:3, Pão:3, Manteiga:1<br>
-                    3) Leite (x1) vira Leite:4<br>
-                    4) Leite → Manteiga (x1) cria Manteiga:1 sob Leite<br>
-                    5) Manteiga (x1) cria Manteiga:1 direto na raiz
-                </div>
-            </div>
-
-            <div class="panel full-width">
-                <h2>🌿 Árvore Condicional do Queijo (visualização)</h2>
-                <div class="info-box">
-                    Esta é a FP-Tree construída <strong>apenas</strong> com a base condicional do Queijo.
-                    As contagens nos nós representam o <strong>prefixo daquele caminho</strong>.
-                </div>
-                <svg id="tree-passo4" width="100%" height="400"></svg>
-            </div>
-
-            <div class="panel full-width">
-                <h2>🎯 Comparação: Árvore Original vs Mini-Árvores</h2>
-                <div class="mini-tree-comparison">
-                    <div class="tree-comparison-item">
-                        <h4>🌳 Árvore Original (após Passo 2)</h4>
-                        <ul style="font-size: 12px; line-height: 1.6; margin-left: 15px;">
-                            <li>Raiz
-                                <ul>
-                                    <li>Pão: 7
-                                        <ul>
-                                            <li>Leite: 5
-                                                <ul>
-                                                    <li>Manteiga: 3
-                                                        <ul>
-                                                            <li>Queijo: 1</li>
-                                                        </ul>
-                                                    </li>
-                                                    <li>Queijo: 2</li>
-                                                </ul>
-                                            </li>
-                                            <li>Manteiga: 1</li>
-                                        </ul>
-                                    </li>
-                                    <li>Leite: 2
-                                        <ul>
-                                            <li>Manteiga: 1
-                                                <ul>
-                                                    <li>Queijo: 1</li>
-                                                </ul>
-                                            </li>
-                                            <li>Queijo: 1</li>
-                                        </ul>
-                                    </li>
-                                    <li>Manteiga: 1
-                                        <ul>
-                                            <li>Queijo: 1</li>
-                                        </ul>
-                                    </li>
-                                </ul>
-                            </li>
-                        </ul>
-                    </div>
-                    <div class="tree-comparison-item">
-                        <h4>🌿 Mini-Árvore para Queijo (após Passo 3)</h4>
-                        <ul style="font-size: 12px; line-height: 1.6; margin-left: 15px;">
-                            <li>Raiz
-                                <ul>
-                                    <li><span style="color: #51cf66; font-weight: bold;">Leite: 5</span>
-                                        <ul>
-                                            <li>Pão: 3
-                                                <ul>
-                                                    <li>Manteiga: 1</li>
-                                                </ul>
-                                            </li>
-                                            <li>Manteiga: 1</li>
-                                        </ul>
-                                    </li>
-                                    <li>Manteiga: 1</li>
-                                </ul>
-                            </li>
-                        </ul>
-                    </div>
-                </div>
-            </div>
-
-            <div class="panel full-width">
-                <h2>📋 Resultado do Passo 4</h2>
-                <div class="info-box success">
-                    <strong>Itemset Frequente Descoberto:</strong><br>
-                    {Leite, Queijo} com suporte 5/10 = 50%<br>
-                    {Pão, Queijo} com suporte 3/10 = 30%<br>
-                    {Manteiga, Queijo} com suporte 3/10 = 30%<br>
-                    {Pão, Leite, Queijo} com suporte 3/10 = 30%<br><br>
-                    <strong>Próximo:</strong> Recursão! Vamos minerar a mini-árvore recursivamente no Passo 5.
-                </div>
-            </div>
-        </div>
-
-        <!-- ============ PASSO 5 ============ -->
-        <!-- ============ PASSO 5 ============ -->
-        <div id="passo5" class="tabpanel">
-            <div class="content full-width">
-                <div class="panel active">
-                    <div class="step-indicator">5</div>
-                    <h2>Mineração Recursiva (Dentro da Árvore do Queijo)</h2>
-                    <div class="info-box">
-                        <strong>O Segredo do FP-Growth:</strong> A mini-árvore do Queijo gerada no Passo 4 agora é tratada como se fosse a árvore original. 
-                        Vamos aplicar a <strong>mesma regra</strong>: olhar os itens de baixo para cima (menos frequentes primeiro) para descobrir o que vem antes deles.
-                    </div>
-                    <div class="info-box success">
-                        <strong>Contexto Atual (Sufixo):</strong> Tudo o que encontrarmos agora será combinado com <strong>{Queijo}</strong>.
-                    </div>
-                </div>
-            </div>
-
-            <div class="panel full-width">
-                <h2>🔍 Minerando a Mini-Árvore do Queijo (Ordem: Manteiga → Pão → Leite)</h2>
-                
-                <div style="padding: 15px;">
-                    <div class="step-title" style="color: #e83e8c;">Alvo 1: Manteiga (Sufixo = {Manteiga, Queijo})</div>
-                    <div class="info-box">
-                        Ao olhar para a mini-árvore do Queijo, o que está acima da Manteiga?<br>
-                        • Caminho 1: <code>Leite → Pão</code> (contagem: 1)<br>
-                        • Caminho 2: <code>Leite</code> (contagem: 1)<br>
-                        • Caminho 3: Raiz direta (contagem: 1)
-                    </div>
-                    <div class="decision-box">
-                        <strong>Soma das frequências acima da Manteiga:</strong> Leite (2) e Pão (1).<br>
-                        ❌ Nenhum atinge o <code>min_support = 3</code>. A recursão para a Manteiga morre aqui. Não geramos trios com ela.
-                    </div>
-
-                    <div class="step-title" style="color: #e83e8c; margin-top: 30px;">Alvo 2: Pão (Sufixo = {Pão, Queijo})</div>
-                    <div class="info-box">
-                        Ao olhar para a mini-árvore do Queijo, o que está acima do Pão?<br>
-                        • Único caminho: <code>Leite</code> (contagem do nó Pão: 3)
-                    </div>
-                    <div class="decision-box yes">
-                        <strong>Soma das frequências acima do Pão:</strong> Leite (3).<br>
-                        ✅ O Leite atinge o <code>min_support = 3</code>! Ele sobreviveu.
-                    </div>
-                    
-                    <div class="recursion-level level-2">
-                        <h4>Nasce a Mini-Mini-Árvore de {Pão, Queijo}</h4>
-                        <p style="font-size: 13px; margin: 10px 0;">O sobrevivente "Leite" forma uma nova árvore minúscula: <code>Raiz → Leite:3</code></p>
-                        <div class="info-box success" style="background: #e3fafc; border-left-color: #15aabf;">
-                            <strong>🎉 NOVO ITEMSET GERADO (Tamanho 3):</strong><br>
-                            Juntamos o sobrevivente (Leite) + o Sufixo atual ({Pão, Queijo}):<br>
-                            <strong style="font-size: 16px; color: #0b7285;">{Leite, Pão, Queijo} (Suporte: 3)</strong>
-                        </div>
-                        <p style="font-size: 12px; color: #666;">*Se tentarmos minerar o Leite nesta nova arvorezinha, não há nada acima dele. A recursão fecha com sucesso.</p>
-                    </div>
-
-                    <div class="step-title" style="color: #e83e8c; margin-top: 30px;">Alvo 3: Leite (Sufixo = {Leite, Queijo})</div>
-                    <div class="info-box">
-                        Ao olhar para a mini-árvore do Queijo, o que está acima do Leite?<br>
-                        • <code>Nada</code> (O Leite está conectado direto na Raiz).<br>
-                        A recursão para o Leite acaba imediatamente.
-                    </div>
-                </div>
-            </div>
-
-            <div class="panel full-width">
-                <h2>✅ Fim da Linha: Resumo dos Padrões Extraídos</h2>
-                <div class="conclusion-box">
-                    <strong>🎯 O que o FP-Growth descobriu apenas explorando ramos (sem gerar candidatos falsos):</strong><br><br>
-                    <div style="text-align: left; display: inline-block; background: rgba(255,255,255,0.1); padding: 15px; border-radius: 8px;">
-                        <span style="color: #ffd43b;">Tamanho 1 (Passo 1):</span><br>
-                        {Pão: 7}, {Leite: 7}, {Manteiga: 6}, {Queijo: 6}<br><br>
-                        
-                        <span style="color: #ffd43b;">Tamanho 2 (Minerando as Mini-Árvores base):</span><br>
-                        {Pão, Leite: 5}, {Pão, Manteiga: 4}, {Leite, Manteiga: 4},<br>
-                        {Pão, Queijo: 3}, {Leite, Queijo: 5}, {Manteiga, Queijo: 3}<br><br>
-                        
-                        <span style="color: #ffd43b;">Tamanho 3 (Pela Recursão Profunda mostrada acima):</span><br>
-                        {Pão, Leite, Manteiga: 3}, <strong>{Pão, Leite, Queijo: 3}</strong>
-                    </div>
-                </div>
-
-                <div class="info-box success" style="margin-top: 20px;">
-                    <strong>⚡ Por que isso esmaga o Apriori em performance?</strong><br><br>
-                    Para achar o trio <strong>{Pão, Leite, Queijo}</strong>, o Apriori teria gerado dezenas de combinações inúteis no Nível 2 e Nível 3, indo ao banco de dados repetidas vezes.<br>
-                    O FP-Growth achou o mesmo trio apenas "andando para cima" na memória RAM, dividindo o problema em árvores cada vez menores.
-                </div>
-            </div>
-        </div>
-
-        <div class="step-nav">
-            <button class="btn-secondary" onclick="previousStep()">◀ Anterior</button>
-            <button class="btn-primary" onclick="nextStep()">Próximo ▶</button>
-        </div>
+const STEPS=[
+  // Step 0: Intro
+  {phase:'Visão geral', title:'O problema: encontrar padrões frequentes', subtitle:'Por que o FP-Growth é melhor que o Apriori?',
+  render:()=>`
+    <div class="card">
+      <div class="card-label">Banco de dados — ${DB.length} transações, min_support = ${MIN_SUP}</div>
+      <table class="db-table">
+        <tr><th>Transação</th><th>Itens</th></tr>
+        ${DB.map(t=>`<tr><td style="color:var(--color-text-secondary);font-size:12px">${t.id}</td><td>${chips(t.items)}</td></tr>`).join('')}
+      </table>
     </div>
+    <div class="two-col">
+      <div class="card">
+        <div class="card-label">Apriori (legado)</div>
+        <div style="font-size:13px;color:var(--color-text-secondary);line-height:1.7">
+          <div>❌ Lê o banco <strong style="color:var(--color-text-primary)">muitas vezes</strong></div>
+          <div>❌ Gera <strong style="color:var(--color-text-primary)">milhões de candidatos</strong></div>
+          <div>❌ Estouros de memória</div>
+        </div>
+      </div>
+      <div class="card" style="border-color:var(--color-border-success)">
+        <div class="card-label">FP-Growth (moderno)</div>
+        <div style="font-size:13px;color:var(--color-text-secondary);line-height:1.7">
+          <div>✅ Lê o banco só <strong style="color:var(--color-text-primary)">2 vezes</strong></div>
+          <div>✅ <strong style="color:var(--color-text-primary)">Nenhum candidato</strong> gerado</div>
+          <div>✅ Comprime dados em árvore</div>
+        </div>
+      </div>
+    </div>
+    <div class="callout">Objetivo: encontrar todos os conjuntos de itens que aparecem juntos em pelo menos ${MIN_SUP} transações.</div>
+  `},
 
-    <script>
-        let currentStep = 0;
-        const steps = ['passo1', 'passo2', 'passo3', 'passo4', 'passo5'];
-        let currentTransactionStep = 0;
-        let currentConditionalStep = 0;
+  // Step 1: Scan 1 — count
+  {phase:'Scan 1', title:'Varredura 1 — contar suporte individual', subtitle:'Descobrir quais itens passam do min_support',
+  render:()=>`
+    <div class="callout">Percorremos o banco UMA vez e contamos quantas vezes cada item aparece.</div>
+    <div class="card">
+      <div class="card-label">Contagem de suporte (min_support = ${MIN_SUP})</div>
+      ${ORDER.map(item=>{
+        const sup=freqMap[item];
+        const ok=sup>=MIN_SUP;
+        const pct=Math.round(sup/DB.length*100);
+        return `<div class="support-bar-wrap ${ok?'':'eliminated'}">
+          <span class="support-bar-label">${chip(item)}</span>
+          <div class="support-bar" style="width:${pct*3}px;background:${ok?'#B5D4F4':'#D3D1C7'};color:${ok?'#0C447C':'#5F5E5A'}">${sup}/${DB.length}</div>
+          <span class="support-count">${ok?'✅ frequente':'❌ raro, eliminado'}</span>
+        </div>`;
+      }).join('')}
+    </div>
+    <div class="callout warn">Café (2) e Açúcar (1) estão abaixo do mínimo ${MIN_SUP} → eliminados de todas as transações.</div>
+  `},
 
-        // Dataset de exemplo
-        const dataset = [
-            ['Pão', 'Leite', 'Manteiga', 'Ovos'],
-            ['Pão', 'Leite', 'Queijo'],
-            ['Pão', 'Manteiga'],
-            ['Leite', 'Manteiga', 'Queijo'],
-            ['Pão', 'Leite', 'Manteiga'],
-            ['Pão', 'Ovos'],
-            ['Leite', 'Queijo'],
-            ['Pão', 'Leite', 'Queijo'],
-            ['Manteiga', 'Queijo'],
-            ['Pão', 'Leite', 'Manteiga', 'Queijo']
-        ];
+  // Step 2: Sort table T
+  {phase:'Scan 1', title:'Tabela T — itens ordenados por suporte', subtitle:'Maior suporte primeiro — a chave da eficiência',
+  render:()=>`
+    <div class="callout">Os sobreviventes são ordenados do maior suporte para o menor. Esta ordem garante que a árvore seja comprimida ao máximo.</div>
+    <div class="card" style="max-width:340px">
+      <div class="card-label">Tabela T (itens frequentes, ordenados)</div>
+      <div class="t-header"><span>Rank</span><span>Item</span><span>Suporte</span></div>
+      ${FREQUENT.map((item,i)=>`<div class="ordered-item">
+        <div class="rank">${i+1}</div>
+        ${chip(item)}
+        <span style="margin-left:auto;font-size:12px;font-weight:500;color:var(--color-text-primary)">${freqMap[item]}</span>
+        <div style="height:8px;width:${freqMap[item]*16}px;background:#B5D4F4;border-radius:4px"></div>
+      </div>`).join('')}
+    </div>
+    <div class="callout success">Esta tabela será usada para ordenar os itens de CADA transação antes de inserir na árvore.</div>
+  `},
 
-        let frequencies = {
-            'Pão': 7,
-            'Leite': 7,
-            'Manteiga': 6,
-            'Queijo': 6,
-            'Ovos': 2
-        };
+  // Step 3: Scan 2 intro
+  {phase:'Scan 2', title:'Varredura 2 — reordenar transações', subtitle:'Cada transação tem seus itens filtrados e ordenados pela Tabela T',
+  render:()=>`
+    <div class="callout">Segunda e ÚLTIMA leitura do banco. Para cada transação: (1) remove itens raros, (2) ordena pelo rank da Tabela T.</div>
+    <div class="card">
+      <div class="card-label">Transações reordenadas</div>
+      <table class="db-table">
+        <tr><th>Trans.</th><th>Original</th><th style="width:16px"></th><th>Filtrado + ordenado</th></tr>
+        ${ORDERED_TXS.map(t=>`<tr>
+          <td style="color:var(--color-text-secondary);font-size:12px">${t.id}</td>
+          <td>${chips(t.items)}</td>
+          <td style="color:var(--color-text-tertiary)">→</td>
+          <td>${chips(t.ordered)}</td>
+        </tr>`).join('')}
+      </table>
+    </div>
+  `},
 
-        const itemOrder = ['Pão', 'Leite', 'Manteiga', 'Queijo', 'Ovos'];
+  // Steps 4-11: Build FP-Tree transaction by transaction
+  ...ORDERED_TXS.map((tx,ti)=>({
+    phase:'FP-Tree',
+    title:`Inserindo ${tx.id} na FP-Tree`,
+    subtitle:`Transação filtrada: ${tx.ordered.join(' → ')}`,
+    txIdx: ti,
+    render: function(){return renderTree(ti);}
+  })),
 
-        // Dados da FP-Tree e progressao sao calculados a partir do dataset
-        let treeData = { name: "", value: 0, children: [] };
-        let treeProgression = [];
+  // Step 12: Full tree
+  {phase:'FP-Tree', title:'FP-Tree completa!', subtitle:'O banco inteiro comprimido em uma única estrutura',
+  render:()=>`
+    <div class="callout success">A FP-Tree está completa. O banco não será mais lido. Toda a informação necessária está nessa árvore!</div>
+    ${renderTree(7, true)}
+    <div class="callout">Próximo passo: minerar a árvore de baixo para cima, começando pelos itens com MENOR suporte.</div>
+  `},
 
-        const minSupportCount = 3;
-        const totalTransactions = dataset.length;
+  // Step 13: Conditional patterns for Manteiga
+  {phase:'Mineração', title:'Conjuntos condicionais — Manteiga', subtitle:'Quais caminhos levam até Manteiga na árvore?',
+  render:()=>`
+    <div class="callout">Olhamos para todos os nós "Manteiga" na árvore e coletamos o caminho da raiz até cada um deles.</div>
+    <div class="two-col">
+      <div class="card">
+        <div class="card-label">Caminhos condicionais (prefixos)</div>
+        <div style="font-size:13px;line-height:2">
+          <div>${chip('Pão')} ${chip('Leite')} ${chip('Ovos')} → peso <strong>1</strong></div>
+          <div>${chip('Pão')} ${chip('Ovos')} → peso <strong>1</strong></div>
+          <div>${chip('Leite')} ${chip('Ovos')} → peso <strong>1</strong></div>
+          <div>${chip('Leite')} → peso <strong>1</strong></div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-label">Suporte de cada item nesses caminhos</div>
+        <div style="font-size:13px;line-height:2">
+          <div>${chip('Pão')} aparece 2× <span style="color:var(--color-text-secondary)">&lt; min ${MIN_SUP} ❌</span></div>
+          <div>${chip('Leite')} aparece 3× <span style="color:var(--color-text-success)">≥ min ${MIN_SUP} ✅</span></div>
+          <div>${chip('Ovos')} aparece 3× <span style="color:var(--color-text-success)">≥ min ${MIN_SUP} ✅</span></div>
+        </div>
+      </div>
+    </div>
+    <div class="callout">Suporte de {Leite, Manteiga} = 3 ✅ &nbsp;|&nbsp; Suporte de {Ovos, Manteiga} = 3 ✅ &nbsp;|&nbsp; Suporte de {Pão, Manteiga} = 2 ❌</div>
+    <div class="callout success">Itemsets descobertos aqui: {Leite, Manteiga} e {Ovos, Manteiga}.</div>
+    <div class="callout">{Ovos, Manteiga} vem diretamente dos caminhos condicionais: Ovos aparece 3 vezes nos prefixos → suporte 3.</div>
+  `},
 
-        frequencies = dataset.reduce((acc, transaction) => {
-            transaction.forEach((item) => {
-                acc[item] = (acc[item] || 0) + 1;
-            });
-            return acc;
-        }, {});
+  // Step 14: Conditional ordering for Manteiga
+  {phase:'Mineração', title:'Ordenação condicional — Manteiga', subtitle:'Tabela T condicional e prefixos ordenados',
+  render:()=>`
+    <div class="callout">Na base condicional de Manteiga, removemos Pão (suporte 2) e reordenamos por suporte.</div>
+    <div class="two-col">
+      <div class="card">
+        <div class="card-label">Tabela T condicional</div>
+        <div class="t-header"><span>Rank</span><span>Item</span><span>Suporte</span></div>
+        ${COND_MANTEIGA_FREQUENT.map((item,i)=>`<div class="ordered-item">
+          <div class="rank">${i+1}</div>
+          ${chip(item)}
+          <span style="margin-left:auto;font-size:12px;font-weight:500;color:var(--color-text-primary)">${COND_MANTEIGA_SUPPORT[item]}</span>
+          <div style="height:8px;width:${COND_MANTEIGA_SUPPORT[item]*18}px;background:#B5D4F4;border-radius:4px"></div>
+        </div>`).join('')}
+      </div>
+      <div class="card">
+        <div class="card-label">Prefixos filtrados + ordenados</div>
+        <table class="db-table">
+          <tr><th>Prefixo</th><th>Peso</th><th>Ordenado</th></tr>
+          ${COND_MANTEIGA_ORDERED.map(p=>`<tr>
+            <td>${chips(p.items)}</td>
+            <td style="color:var(--color-text-secondary)">${p.weight}</td>
+            <td>${chips(p.ordered)}</td>
+          </tr>`).join('')}
+        </table>
+      </div>
+    </div>
+    <div class="callout">Agora inserimos cada prefixo ordenado na árvore condicional, com o peso do caminho.</div>
+  `},
 
-        const sortByMap = (items, freqMap) => {
-            return items.slice().sort((a, b) => {
-                const diff = (freqMap[b] || 0) - (freqMap[a] || 0);
-                if (diff !== 0) return diff;
-                return itemOrder.indexOf(a) - itemOrder.indexOf(b);
-            });
-        };
+  // Steps 15-18: Conditional tree insertion
+  ...COND_MANTEIGA_ORDERED.map((tx,ti)=>({
+    phase:'Mineração',
+    title:`Inserindo prefixo ${ti+1} na árvore condicional`,
+    subtitle:`Prefixo ordenado: ${tx.ordered.join(' → ') || '∅'} (peso ${tx.weight})`,
+    txIdx: ti,
+    render: function(){return renderConditionalInsertStep(ti);}
+  })),
 
-        const sortByFrequency = (items) => sortByMap(items, frequencies);
+  // Step 19: Conditional tree final
+  {phase:'Mineração', title:'Árvore condicional — Manteiga', subtitle:'Árvore final após todas as inserções',
+  render:()=>`
+    <div class="callout">Após todas as inserções, a árvore condicional resume a base em poucos nós.</div>
+    <div class="card">
+      <div class="card-label">FP-Tree condicional a {Manteiga}</div>
+      ${renderConditionalInsertStep(COND_MANTEIGA_ORDERED.length-1, true)}
+    </div>
+    <div class="callout warn">A árvore tem ramificações (Leite e Ovos). Isso exige mais uma etapa recursiva.</div>
+  `},
 
-        const cloneTree = (node) => ({
-            name: node.name,
-            value: node.value,
-            children: node.children.map(cloneTree)
-        });
+  // Step 20: Recursion item Ovos
+  {phase:'Mineração', title:'Recursão 1 — item Ovos', subtitle:'Base condicional de {Manteiga, Ovos}',
+  render:()=>`
+    <div class="callout">Pegamos todos os caminhos que levam a Ovos na árvore condicional de Manteiga.</div>
+    <div class="two-col">
+      <div class="card">
+        <div class="card-label">Caminhos condicionais</div>
+        <div style="font-size:13px;line-height:2">
+          ${COND_MANTEIGA_OVOS_PREFIXES.map(p=>`<div>${displayPrefix(p.items)} → peso <strong>${p.weight}</strong></div>`).join('')}
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-label">Suporte na base condicional</div>
+        <div style="font-size:13px;line-height:2">
+          <div>${chip('Leite')} aparece ${COND_MANTEIGA_OVOS_SUPPORT.Leite}× <span style="color:var(--color-text-success)">≥ min ${MIN_SUP} ✅</span></div>
+          <div style="color:var(--color-text-secondary)">Prefixo vazio não gera itens</div>
+        </div>
+      </div>
+    </div>
+    <div class="callout">Seguimos com Leite como único item frequente nessa base.</div>
+  `},
 
-        function buildTreeProgression(transactions) {
-            const root = { name: "", value: 0, children: [] };
-            const progression = [];
+  // Step 21: Conditional ordering for {Ovos, Manteiga}
+  {phase:'Mineração', title:'Ordenação condicional — {Ovos, Manteiga}', subtitle:'Tabela T e prefixos ordenados',
+  render:()=>`
+    <div class="callout">Com a base condicional de Ovos, montamos a Tabela T e ordenamos os prefixos.</div>
+    <div class="two-col">
+      <div class="card">
+        <div class="card-label">Tabela T condicional</div>
+        <div class="t-header"><span>Rank</span><span>Item</span><span>Suporte</span></div>
+        ${COND_MANTEIGA_OVOS_FREQUENT.map((item,i)=>`<div class="ordered-item">
+          <div class="rank">${i+1}</div>
+          ${chip(item)}
+          <span style="margin-left:auto;font-size:12px;font-weight:500;color:var(--color-text-primary)">${COND_MANTEIGA_OVOS_SUPPORT[item]}</span>
+          <div style="height:8px;width:${COND_MANTEIGA_OVOS_SUPPORT[item]*18}px;background:#B5D4F4;border-radius:4px"></div>
+        </div>`).join('')}
+      </div>
+      <div class="card">
+        <div class="card-label">Prefixos filtrados + ordenados</div>
+        <table class="db-table">
+          <tr><th>Prefixo</th><th>Peso</th><th>Ordenado</th></tr>
+          ${COND_MANTEIGA_OVOS_PREFIXES.map(p=>`<tr>
+            <td>${displayPrefix(p.items)}</td>
+            <td style="color:var(--color-text-secondary)">${p.weight}</td>
+            <td>${displayPrefix(p.items.filter(i=>COND_MANTEIGA_OVOS_FREQUENT.includes(i)))}</td>
+          </tr>`).join('')}
+        </table>
+      </div>
+    </div>
+  `},
 
-            transactions.forEach((transaction) => {
-                const ordered = sortByFrequency(
-                    transaction.filter((item) => frequencies[item] >= minSupportCount)
-                );
-                const newNodes = [];
-                let current = root;
+  // Step 22: Insert into conditional tree for {Ovos, Manteiga}
+  ...COND_MANTEIGA_OVOS_ORDERED.map((tx,ti)=>({
+    phase:'Mineração',
+    title:`Inserindo prefixo ${ti+1} na árvore condicional de {Ovos, Manteiga}`,
+    subtitle:`Prefixo ordenado: ${tx.ordered.join(' → ')} (peso ${tx.weight})`,
+    txIdx: ti,
+    render: function(){return renderConditionalInsertStepGeneric(COND_MANTEIGA_OVOS_ORDERED, COND_MANTEIGA_OVOS_TREE_STATES, ti, false, '{Ovos, Manteiga}');}
+  })),
 
-                ordered.forEach((item) => {
-                    let child = current.children.find((c) => c.name === item);
-                    if (!child) {
-                        child = { name: item, value: 1, children: [] };
-                        current.children.push(child);
-                        newNodes.push(item);
-                    } else {
-                        child.value += 1;
-                    }
-                    current = child;
-                });
+  // Step 23: Result for Ovos branch
+  {phase:'Mineração', title:'Resultado do ramo Ovos', subtitle:'Ramo único na árvore condicional',
+  render:()=>`
+    <div class="callout success">A árvore condicional de {Ovos, Manteiga} vira um único caminho.</div>
+    <div class="card">
+      <div class="card-label">FP-Tree condicional a {Ovos, Manteiga}</div>
+      ${renderConditionalInsertStepGeneric(COND_MANTEIGA_OVOS_ORDERED, COND_MANTEIGA_OVOS_TREE_STATES, COND_MANTEIGA_OVOS_ORDERED.length-1, true, '{Ovos, Manteiga}')}
+    </div>
+    <div class="callout success">Itemset descoberto aqui: {Leite, Ovos, Manteiga} com suporte 3.</div>
+  `},
 
-                const snapshot = cloneTree(root);
-                snapshot.newNodes = newNodes;
-                progression.push(snapshot);
-            });
+  // Step 24: Recursion item Leite
+  {phase:'Mineração', title:'Recursão 2 — item Leite', subtitle:'Base condicional de {Manteiga, Leite}',
+  render:()=>`
+    <div class="callout">Pegamos os caminhos que levam a Leite na árvore condicional de Manteiga.</div>
+    <div class="card">
+      <div class="card-label">Caminhos condicionais</div>
+      <div style="font-size:13px;line-height:2">
+        ${COND_MANTEIGA_LEITE_PREFIXES.map(p=>`<div>${displayPrefix(p.items)} → peso <strong>${p.weight}</strong></div>`).join('')}
+      </div>
+    </div>
+    <div class="callout success">Itemset descoberto aqui: {Leite, Manteiga} com suporte 3 (base vazia).</div>
+  `},
 
-            return { treeData: cloneTree(root), treeProgression: progression };
-        }
+  // Step 25: Extract itemsets from conditional trees
+  {phase:'Mineração', title:'Extraindo itemsets da árvore condicional', subtitle:'Consolidando os padrões de Manteiga',
+  render:()=>`
+    <div class="callout">Agora juntamos o item base (Manteiga) com os padrões encontrados em cada subárvore.</div>
+    <div class="card">
+      <div class="card-label">Itemsets frequentes (contendo Manteiga)</div>
+      <div style="font-size:13px;line-height:2">
+        <div>${chip('Manteiga')} <span style="color:var(--color-text-secondary)">sup 4 — scan 1</span></div>
+        <div>${chip('Leite')}${chip('Manteiga')} <span style="color:var(--color-text-secondary)">sup 3 — recursão Leite</span></div>
+        <div>${chip('Ovos')}${chip('Manteiga')} <span style="color:var(--color-text-secondary)">sup 3 — caminhos condicionais</span></div>
+        <div>${chip('Leite')}${chip('Ovos')}${chip('Manteiga')} <span style="color:var(--color-text-secondary)">sup 3 — recursão Ovos</span></div>
+      </div>
+    </div>
+    <div class="callout success">Esses padrões vêm diretamente das árvores condicionais e da recursão.</div>
+  `},
 
-        function buildTreeProgressionWithFrequencies(transactions, freqMap) {
-            const root = { name: "", value: 0, children: [] };
-            const progression = [];
+  // Step 26: Results so far
+  {phase:'Resultados', title:'Itemsets encontrados até agora', subtitle:'Consolidação parcial e próximos passos',
+  render:()=>`
+    <div class="callout success">Itemsets frequentes descobertos até esta etapa.</div>
+    <div class="card">
+      <div class="card-label">Itemsets encontrados (até aqui)</div>
+      <div style="margin-bottom:.75rem">
+        <div style="font-size:11px;color:var(--color-text-tertiary);margin-bottom:4px">Tamanho 1</div>
+        ${FREQUENT.map(i=>`<span class="result-chip">${chip(i)}<span class="sup">sup:${freqMap[i]}</span></span>`).join('')}
+      </div>
+      <div style="margin-bottom:.75rem">
+        <div style="font-size:11px;color:var(--color-text-tertiary);margin-bottom:4px">Tamanho 2</div>
+        ${[['Leite','Manteiga',3],['Ovos','Manteiga',3],['Pão','Leite',4],['Pão','Ovos',3],['Leite','Ovos',3]].map(([a,b,s])=>`<span class="result-chip">${chip(a)}${chip(b)}<span class="sup">sup:${s}</span></span>`).join('')}
+      </div>
+      <div>
+        <div style="font-size:11px;color:var(--color-text-tertiary);margin-bottom:4px">Tamanho 3</div>
+        ${[['Leite','Ovos','Manteiga',3],['Pão','Leite','Ovos',3]].map(([a,b,c,s])=>`<span class="result-chip">${chip(a)}${chip(b)}${chip(c)}<span class="sup">sup:${s}</span></span>`).join('')}
+      </div>
+    </div>
+    <div class="callout">Próximas etapas do algoritmo: repetir a mineração para os demais itens da tabela T (ex.: Ovos, Leite, Pão), construir suas árvores condicionais, extrair padrões e encerrar quando todas as árvores forem vazias ou de ramo único.</div>
+  `},
+];
 
-            transactions.forEach((transaction) => {
-                const ordered = sortByMap(
-                    transaction.filter((item) => (freqMap[item] || 0) >= minSupportCount),
-                    freqMap
-                );
-                const newNodes = [];
-                let current = root;
+// ---- FP-Tree rendering ----
+// Pre-computed tree state after each transaction
+const TREE_STATES = computeTreeStates();
 
-                ordered.forEach((item) => {
-                    let child = current.children.find((c) => c.name === item);
-                    if (!child) {
-                        child = { name: item, value: 1, children: [] };
-                        current.children.push(child);
-                        newNodes.push(item);
-                    } else {
-                        child.value += 1;
-                    }
-                    current = child;
-                });
+function computeTreeStates(){
+  const states=[];
+  let tree={children:{}};
+  for(let ti=0;ti<ORDERED_TXS.length;ti++){
+    const tx=ORDERED_TXS[ti];
+    insertIntoTree(tree, tx.ordered);
+    states.push(JSON.parse(JSON.stringify(tree)));
+  }
+  return states;
+}
+function insertIntoTree(node,items){
+  if(!items.length)return;
+  const [head,...rest]=items;
+  if(!node.children[head])node.children[head]={count:0,children:{}};
+  node.children[head].count++;
+  insertIntoTree(node.children[head],rest);
+}
 
-                const snapshot = cloneTree(root);
-                snapshot.newNodes = newNodes;
-                progression.push(snapshot);
-            });
+function insertWeightedIntoTree(node,items,weight){
+  if(!items.length)return;
+  const [head,...rest]=items;
+  if(!node.children[head])node.children[head]={count:0,children:{}};
+  node.children[head].count+=weight;
+  insertWeightedIntoTree(node.children[head],rest,weight);
+}
 
-            return { treeData: cloneTree(root), treeProgression: progression };
-        }
+function treeNode(x,y,label,count,color){
+  const r=20;
+  const fill=color||'var(--color-background-secondary)';
+  const stroke=color||'var(--color-border-secondary)';
+  const tc=color?'#fff':'var(--color-text-primary)';
+  const sc=color?'rgba(255,255,255,.8)':'var(--color-text-secondary)';
+  return `
+    <circle cx="${x}" cy="${y}" r="${r}" fill="${fill}" stroke="${stroke}" stroke-width="1.5"/>
+    <text x="${x}" y="${y}" text-anchor="middle" dominant-baseline="central" style="font-size:11px;font-weight:500;fill:${tc}">${label}</text>
+    ${count?`<text x="${x+r-2}" y="${y-r+2}" text-anchor="middle" dominant-baseline="central" style="font-size:9px;font-weight:500;fill:${color?color:'var(--color-text-info)'}">${count}</text>`:''}
+  `;
+}
 
-        const computedTree = buildTreeProgression(dataset);
-        treeData = computedTree.treeData;
-        treeProgression = computedTree.treeProgression;
+function renderTreeSVG(treeState, highlightPath){
+  // Layout: root at top, children spread below
+  const nodes=[];
+  const edges=[];
+  function layout(node, x, y, spread, parentX, parentY, path){
+    const keys=Object.keys(node.children);
+    const color=COLORS[path[path.length-1]]||null;
+    nodes.push({x,y,label:path.length?path[path.length-1]:'raiz',count:node.count||'',color});
+    if(parentX!==null) edges.push({x1:parentX,y1:parentY,x2:x,y2:y});
+    const n=keys.length;
+    keys.forEach((key,i)=>{
+      const cx=x+(i-(n-1)/2)*spread;
+      layout(node.children[key],cx,y+70,Math.max(spread/2,55),x,y,[...path,key]);
+    });
+  }
+  layout(treeState,240,28,220,null,null,[]);
+  const maxY=nodes.reduce((m,n)=>Math.max(m,n.y),0)+50;
+  return `<svg width="100%" viewBox="0 0 480 ${maxY}" style="overflow:visible">
+    <defs><marker id="atree" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M2 1L8 5L2 9" fill="none" stroke="context-stroke" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></marker></defs>
+    ${edges.map(e=>`<line x1="${e.x1}" y1="${e.y1+20}" x2="${e.x2}" y2="${e.y2-20}" stroke="var(--color-border-secondary)" stroke-width="1" marker-end="url(#atree)" fill="none"/>`).join('')}
+    ${nodes.map(n=>treeNode(n.x,n.y,n.label,n.count,n.color)).join('')}
+  </svg>`;
+}
 
-        const conditionalBaseQueijo = [
-            { path: ['Pão', 'Leite'], count: 2 },
-            { path: ['Pão', 'Leite', 'Manteiga'], count: 1 },
-            { path: ['Leite'], count: 1 },
-            { path: ['Leite', 'Manteiga'], count: 1 },
-            { path: ['Manteiga'], count: 1 }
-        ];
+function computeWeightedTreeStatesFrom(orderedList){
+  const states=[];
+  let tree={children:{}};
+  for(let ti=0;ti<orderedList.length;ti++){
+    const tx=orderedList[ti];
+    insertWeightedIntoTree(tree, tx.ordered, tx.weight);
+    states.push(JSON.parse(JSON.stringify(tree)));
+  }
+  return states;
+}
 
-        const expandConditionalBase = (base) => {
-            const expanded = [];
-            base.forEach((entry) => {
-                for (let i = 0; i < entry.count; i += 1) {
-                    expanded.push(entry.path);
-                }
-            });
-            return expanded;
-        };
+const COND_MANTEIGA_TREE_STATES=computeWeightedTreeStatesFrom(COND_MANTEIGA_ORDERED);
+const COND_MANTEIGA_OVOS_TREE_STATES=computeWeightedTreeStatesFrom(COND_MANTEIGA_OVOS_ORDERED);
 
-        const conditionalTransactions = expandConditionalBase(conditionalBaseQueijo);
-        const conditionalFrequencies = conditionalTransactions.reduce((acc, transaction) => {
-            transaction.forEach((item) => {
-                acc[item] = (acc[item] || 0) + 1;
-            });
-            return acc;
-        }, {});
+function renderConditionalInsertStep(txIdx, full=false){
+  const state=COND_MANTEIGA_TREE_STATES[txIdx];
+  const tx=COND_MANTEIGA_ORDERED[txIdx];
+  return `
+    <div class="two-col">
+      <div class="card">
+        <div class="card-label">Árvore condicional ${full?'completa':'após o prefixo '+(txIdx+1)}</div>
+        ${renderTreeSVG(state)}
+      </div>
+      <div class="card">
+        <div class="card-label">Prefixos inseridos</div>
+        <table class="db-table">
+          ${COND_MANTEIGA_ORDERED.slice(0,full?undefined:txIdx+1).map((t,i)=>`
+            <tr class="${!full&&i===txIdx?'highlight':''}">
+              <td style="font-size:11px;color:var(--color-text-secondary)">P${i+1}</td>
+              <td>${chips(t.ordered)}</td>
+              <td style="font-size:11px;color:var(--color-text-secondary)">peso ${t.weight}</td>
+            </tr>`).join('')}
+        </table>
+        ${!full?`<div style="margin-top:8px;font-size:12px;color:var(--color-text-secondary)">Inserindo: <strong style="color:var(--color-text-primary)">${tx.ordered.join(' → ') || '∅'}</strong></div>`:''}
+      </div>
+    </div>
+  `;
+}
 
-        const conditionalComputed = buildTreeProgressionWithFrequencies(
-            conditionalTransactions,
-            conditionalFrequencies
-        );
-        const conditionalTreeQueijo = conditionalComputed.treeData;
-        const conditionalTreeProgression = conditionalComputed.treeProgression;
+function renderConditionalInsertStepGeneric(orderedList, treeStates, txIdx, full, label){
+  const state=treeStates[txIdx];
+  const tx=orderedList[txIdx];
+  return `
+    <div class="two-col">
+      <div class="card">
+        <div class="card-label">Árvore condicional ${label} ${full?'completa':'após o prefixo '+(txIdx+1)}</div>
+        ${renderTreeSVG(state)}
+      </div>
+      <div class="card">
+        <div class="card-label">Prefixos inseridos</div>
+        <table class="db-table">
+          ${orderedList.slice(0,full?undefined:txIdx+1).map((t,i)=>`
+            <tr class="${!full&&i===txIdx?'highlight':''}">
+              <td style="font-size:11px;color:var(--color-text-secondary)">P${i+1}</td>
+              <td>${chips(t.ordered)}</td>
+              <td style="font-size:11px;color:var(--color-text-secondary)">peso ${t.weight}</td>
+            </tr>`).join('')}
+        </table>
+        ${!full?`<div style="margin-top:8px;font-size:12px;color:var(--color-text-secondary)">Inserindo: <strong style="color:var(--color-text-primary)">${tx.ordered.join(' → ')}</strong></div>`:''}
+      </div>
+    </div>
+  `;
+}
 
-        function drawTree(svgId, data, width = 500, height = 400, highlightedNodes = []) {
-            d3.select(`#${svgId}`).selectAll("*").remove();
+function renderConditionalTreeOvos(){
+  return `
+    <svg width="100%" viewBox="0 0 440 230" style="overflow:visible">
+      <defs><marker id="a3" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M2 1L8 5L2 9" fill="none" stroke="context-stroke" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></marker></defs>
+      ${treeNode(220,26,'raiz','','')}
+      ${treeNode(150,96,'Pão','3','#185FA5')}
+      ${treeNode(150,170,'Leite','2','#3B6D11')}
+      ${treeNode(300,96,'Leite','1','#3B6D11')}
+      <line x1="220" y1="46" x2="165" y2="82" stroke="var(--color-border-secondary)" stroke-width="1" marker-end="url(#a3)" fill="none"/>
+      <line x1="220" y1="46" x2="287" y2="82" stroke="var(--color-border-secondary)" stroke-width="1" marker-end="url(#a3)" fill="none"/>
+      <line x1="150" y1="116" x2="150" y2="152" stroke="var(--color-border-secondary)" stroke-width="1" marker-end="url(#a3)" fill="none"/>
+    </svg>`;
+}
 
-            const svg = d3.select(`#${svgId}`)
-                .attr('width', width)
-                .attr('height', height);
+function renderTree(txIdx, full=false){
+  const state=TREE_STATES[txIdx];
+  const tx=ORDERED_TXS[txIdx];
+  return `
+    <div class="two-col">
+      <div class="card">
+        <div class="card-label">FP-Tree após ${full?'todas as transações':tx.id}</div>
+        ${renderTreeSVG(state)}
+      </div>
+      <div class="card">
+        <div class="card-label">${full?'Transações inseridas':'Inserindo agora'}</div>
+        <table class="db-table">
+          ${ORDERED_TXS.slice(0,full?undefined:txIdx+1).map((t,i)=>`
+            <tr class="${!full&&i===txIdx?'highlight':''}">
+              <td style="font-size:11px;color:var(--color-text-secondary)">${t.id}</td>
+              <td>${chips(t.ordered)}</td>
+            </tr>`).join('')}
+        </table>
+        ${!full?`<div style="margin-top:8px;font-size:12px;color:var(--color-text-secondary)">Caminho: <strong style="color:var(--color-text-primary)">${tx.ordered.join(' → ')}</strong></div>`:''}
+      </div>
+    </div>
+    ${!full&&tx.ordered.length>1?`<div class="callout">Prefixo compartilhado: transações com mesmo início <strong>compartilham nós</strong>, economizando memória.</div>`:''}
+  `;
+}
 
-            const g = svg.append('g')
-                .attr('transform', 'translate(50, 30)');
+// ---- Phase pills ----
+const phases=[...new Set(STEPS.map(s=>s.phase))];
+function renderPhaseBar(){
+  const cur=STEPS[stepIdx].phase;
+  document.getElementById('phase-bar').innerHTML=phases.map(p=>`<div class="phase-pill ${p===cur?'active':''}" onclick="jumpToPhase('${p}')">${p}</div>`).join('');
+}
 
-            const tree = d3.tree().size([width - 100, height - 60]);
-            const root = d3.hierarchy(data);
-            const nodes = tree(root);
+function jumpToPhase(ph){
+  const idx=STEPS.findIndex(s=>s.phase===ph);
+  if(idx>=0){stepIdx=idx;render();}
+}
 
-            // Links
-            g.selectAll('.tree-link')
-                .data(nodes.links())
-                .enter()
-                .append('line')
-                .attr('class', 'tree-link')
-                .attr('x1', d => d.source.x)
-                .attr('y1', d => d.source.y)
-                .attr('x2', d => d.target.x)
-                .attr('y2', d => d.target.y)
-                .attr('stroke', '#999')
-                .attr('stroke-width', 2);
+function render(){
+  const s=STEPS[stepIdx];
+  document.getElementById('step-content').innerHTML=`
+    <div class="step-header">
+      <div class="step-badge">${stepIdx+1}</div>
+      <div><div class="step-title">${s.title}</div><div class="step-subtitle">${s.subtitle}</div></div>
+    </div>
+    ${s.render()}
+  `;
+  document.getElementById('btn-prev').disabled=stepIdx===0;
+  document.getElementById('btn-next').disabled=stepIdx===STEPS.length-1;
+  document.getElementById('btn-next').textContent=stepIdx===STEPS.length-1?'Concluído ✓':'Próximo →';
+  document.getElementById('step-counter').textContent=`${stepIdx+1} / ${STEPS.length}`;
+  renderPhaseBar();
+}
 
-            // Nodes
-            const nodeGroups = g.selectAll('.tree-node')
-                .data(nodes.descendants())
-                .enter()
-                .append('g')
-                .attr('class', 'tree-node')
-                .attr('transform', d => `translate(${d.x}, ${d.y})`);
+function navigate(dir){
+  stepIdx=Math.max(0,Math.min(STEPS.length-1,stepIdx+dir));
+  render();
+}
 
-            nodeGroups.append('circle')
-                .attr('r', 22)
-                .attr('fill', d => {
-                    if (!d.parent) return '#764ba2'; // raiz
-                    if (highlightedNodes.includes(d.data.name)) return '#51cf66'; // novo nó
-                    return '#667eea'; // nó existente
-                })
-                .attr('stroke', '#333')
-                .attr('stroke-width', 2)
-                .on('click', function(event, d) {
-                    if (currentStep === 2) showConditionalPattern(d.data.name);
-                });
-
-            nodeGroups.append('text')
-                .text(d => d.data.name ? `${d.data.name}:${d.data.value}` : 'R')
-                .attr('dy', '0.3em')
-                .attr('font-size', '11px')
-                .attr('text-anchor', 'middle')
-                .attr('fill', 'white')
-                .attr('font-weight', 'bold');
-        }
-
-        function updatePasso2Display() {
-            if (currentTransactionStep === 0) {
-                document.getElementById('current-transaction').textContent = 'Árvore Vazia — Começamos...';
-                document.getElementById('original-trans').innerHTML = 'Vazio';
-                document.getElementById('ordered-trans').innerHTML = 'Vazio';
-                document.getElementById('insertion-steps').innerHTML = '<div class="info-box success"><strong>ℹ️ Frequência:</strong> Número de vezes que um item aparece no banco de dados inteiro (não apenas nesta transação).<br><br>Raiz criada. Pronto para inserir transações!</div>';
-                document.getElementById('transaction-counter').textContent = 'Estado Inicial: 0/10 transações processadas';
-            } else {
-                const transIdx = currentTransactionStep - 1;
-                const original = dataset[transIdx];
-                const ordered = sortByFrequency(
-                    original.filter(item => frequencies[item] >= minSupportCount)
-                );
-                
-                document.getElementById('current-transaction').textContent = `Transação ${transIdx + 1}: [${original.join(', ')}]`;
-                
-                document.getElementById('original-trans').innerHTML = `<strong>Itens nesta transação:</strong><br>${original.map(item => 
-                    `<span class="item-badge" title="Frequência global: ${frequencies[item]}/${totalTransactions}">${item}</span>`
-                ).join('')}`;
-                
-                document.getElementById('ordered-trans').innerHTML = `<strong>Após ordenar por frequência GLOBAL:</strong><br>${ordered.map(item => 
-                    `<span class="item-badge" style="background: linear-gradient(90deg, #51cf66 0%, #667eea 100%); position: relative;" title="Aparece ${frequencies[item]} vezes no total">${item} <span style="font-weight: bold; color: #ffd43b;">(${frequencies[item]}/${totalTransactions})</span></span>`
-                ).join('')}`;
-
-                let stepsHTML = '<div class="info-box success"><strong>📊 Processo de inserção:</strong><br>';
-                stepsHTML += `<br>🔢 <strong>Frequência Global (de todo o banco):</strong><br>`;
-                stepsHTML += Object.entries(frequencies).map(([item, freq]) => 
-                    `&nbsp;&nbsp;• ${item}: ${freq}/${totalTransactions} transações`
-                ).join('<br>');
-                stepsHTML += `<br><br>📝 <strong>Passo a passo:</strong><br>`;
-                stepsHTML += `1️⃣ Pegar itens desta transação: [${original.join(', ')}]<br>`;
-                stepsHTML += `2️⃣ Ordenar por frequência GLOBAL: [${ordered.join(', ')}]<br>`;
-                stepsHTML += `3️⃣ Inserir na árvore compartilhando prefixos<br>`;
-                if (transIdx > 0) {
-                    stepsHTML += `4️⃣ Incrementar frequências de nós existentes`;
-                }
-                stepsHTML += '</div>';
-                document.getElementById('insertion-steps').innerHTML = stepsHTML;
-
-                document.getElementById('transaction-counter').textContent = `Transação ${transIdx + 1}/${totalTransactions} processada • Frequências mostram quanto cada item foi visto NO TOTAL`;
-            }
-
-            // Desenhar árvore
-            const currentTree = currentTransactionStep === 0 ? { name: "", value: 0, children: [] } : treeProgression[currentTransactionStep - 1];
-            const highlighted = currentTransactionStep === 0 ? [] : treeProgression[currentTransactionStep - 1].newNodes || [];
-            drawTree('tree-passo2', currentTree, 450, 400, highlighted);
-        }
-
-        function nextTransaction() {
-            if (currentTransactionStep < dataset.length) {
-                currentTransactionStep++;
-                updatePasso2Display();
-            }
-        }
-
-        function prevTransaction() {
-            if (currentTransactionStep > 0) {
-                currentTransactionStep--;
-                updatePasso2Display();
-            }
-        }
-
-        function resetTree() {
-            currentTransactionStep = 0;
-            updatePasso2Display();
-        }
-
-        function updatePasso4Display() {
-            const total = conditionalTransactions.length;
-
-            if (currentConditionalStep === 0) {
-                document.getElementById('conditional-current').textContent = 'Mini-árvore vazia — pronto para inserir caminhos...';
-                document.getElementById('conditional-original').innerHTML = 'Vazio';
-                document.getElementById('conditional-ordered').innerHTML = 'Vazio';
-                document.getElementById('conditional-steps').innerHTML =
-                    '<div class="info-box success"><strong>ℹ️ Base condicional:</strong> Cada caminho veio do Passo 3 (Queijo) e sera inserido na mini-arvore.</div>';
-                document.getElementById('conditional-counter').textContent = `Caminho 0/${total}`;
-                drawTree('tree-passo4-step', { name: "", value: 0, children: [] }, 450, 400, []);
-                return;
-            }
-
-            const idx = currentConditionalStep - 1;
-            const original = conditionalTransactions[idx];
-            const ordered = sortByMap(
-                original.filter((item) => (conditionalFrequencies[item] || 0) >= minSupportCount),
-                conditionalFrequencies
-            );
-
-            document.getElementById('conditional-current').textContent =
-                `Caminho ${idx + 1}: Inserindo [${original.join(', ')}]`;
-
-            document.getElementById('conditional-original').innerHTML =
-                original.map((item) =>
-                    `<span class="item-badge" title="Frequência na base: ${conditionalFrequencies[item] || 0}/${total}">${item}</span>`
-                ).join('');
-
-            document.getElementById('conditional-ordered').innerHTML =
-                ordered.map((item) =>
-                    `<span class="item-badge" style="background: linear-gradient(90deg, #51cf66 0%, #667eea 100%); position: relative;" title="Frequência na base: ${conditionalFrequencies[item] || 0}/${total}">${item} <span style="font-weight: bold; color: #ffd43b;">(${conditionalFrequencies[item] || 0})</span></span>`
-                ).join('');
-
-            let stepsHTML = '<div class="info-box success"><strong>📊 Inserção na mini-árvore:</strong><br>';
-            stepsHTML += `<br>🔢 <strong>Frequências na base (Queijo):</strong><br>`;
-            stepsHTML += Object.entries(conditionalFrequencies).map(([item, freq]) =>
-                `&nbsp;&nbsp;• ${item}: ${freq}/${total} caminhos`
-            ).join('<br>');
-            stepsHTML += `<br><br>📝 <strong>Passo a passo:</strong><br>`;
-            stepsHTML += `1️⃣ Pegar caminho da base: [${original.join(', ')}]<br>`;
-            stepsHTML += `2️⃣ Ordenar por frequência na base: [${ordered.join(', ')}]<br>`;
-            stepsHTML += `3️⃣ Inserir na mini-árvore compartilhando prefixos`;
-            stepsHTML += '</div>';
-            document.getElementById('conditional-steps').innerHTML = stepsHTML;
-
-            document.getElementById('conditional-counter').textContent = `Caminho ${idx + 1}/${total} inserido`;
-
-            const currentTree = conditionalTreeProgression[idx];
-            const highlighted = conditionalTreeProgression[idx].newNodes || [];
-            drawTree('tree-passo4-step', currentTree, 450, 400, highlighted);
-        }
-
-        function nextConditional() {
-            if (currentConditionalStep < conditionalTransactions.length) {
-                currentConditionalStep += 1;
-                updatePasso4Display();
-            }
-        }
-
-        function prevConditional() {
-            if (currentConditionalStep > 0) {
-                currentConditionalStep -= 1;
-                updatePasso4Display();
-            }
-        }
-
-        function resetConditional() {
-            currentConditionalStep = 0;
-            updatePasso4Display();
-        }
-
-        function showConditionalPattern(itemName) {
-            const patterns = {
-                "Pão": `<strong>Base de Padrões Condicionais para Pão:</strong><br><br>
-                    Pão é raiz frequente. Base = vazio (não há prefixo).<br>
-                    <span class="highlight-yellow">Padrão gerado: {Pão}</span>`,
-                
-                "Leite": `<strong>Base de Padrões Condicionais para Leite:</strong><br><br>
-                    Caminhos até raiz:<br>
-                    • Pão:5 (Leite aparece após Pão em 5 transações)<br>
-                    • ∅ (Leite isolado em 2 transações)<br><br>
-                    Agregado: Pão: 5<br>
-                    <span class="highlight-yellow">Padrão gerado: {Pão, Leite}</span>`,
-                
-                "Manteiga": `<strong>Base de Padrões Condicionais para Manteiga:</strong><br><br>
-                    Caminhos até raiz:<br>
-                    • Pão:3, Leite:3 (prefixo após Pão→Leite)<br>
-                    • Pão:1 (Manteiga após Pão apenas)<br>
-                    • Leite:1 (Manteiga após Leite apenas)<br><br>
-                    Agregado: Pão: 4, Leite: 4<br>
-                    <span class="highlight-yellow">Padrões gerados: {Pão, Manteiga}, {Leite, Manteiga}, {Pão, Leite, Manteiga}</span>`,
-                
-                "Queijo": `<strong>Base de Padrões Condicionais para Queijo:</strong><br><br>
-                    Caminhos até raiz:<br>
-                    • Pão:7, Leite:5 (em Pão→Leite→Queijo, freq 2)<br>
-                    • Pão:7, Leite:5, Manteiga:3 (em Pão→Leite→Manteiga→Queijo)<br>
-                    • Leite:2 (em Leite→Queijo)<br>
-                    • Leite:2, Manteiga:1 (em Leite→Manteiga→Queijo)<br>
-                    • Manteiga:1 (em Manteiga→Queijo)<br><br>
-                    Agregado: Pão: 3, Leite: 5, Manteiga: 3<br>
-                    <span class="highlight-yellow">Padrões gerados: {Leite, Queijo}, {Pão, Queijo}, {Manteiga, Queijo}, {Pão, Leite, Queijo}</span>`,
-                
-                "Ovos": `<strong>Base de Padrões Condicionais para Ovos:</strong><br><br>
-                    Ovos apareceu em apenas 2/10 transações e foi <strong>descartado no Passo 1</strong>.<br>
-                    Por isso, <strong>não entra na FP-Tree</strong> e não possui base condicional.`
-            };
-            document.getElementById('passo3-result').innerHTML = 
-                `<div class="info-box">${patterns[itemName] || 'Selecione um item válido'}</div>`;
-        }
-
-        function switchTab(tabName) {
-            // Hide all panels
-            document.querySelectorAll('.tabpanel').forEach(p => p.classList.remove('active'));
-            document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-            
-            // Show selected
-            document.getElementById(tabName).classList.add('active');
-            event.target.classList.add('active');
-            
-            // Update currentStep
-            currentStep = steps.indexOf(tabName);
-            
-            // Draw appropriate visualizations
-            if (tabName === 'passo2') {
-                setTimeout(() => {
-                    updatePasso2Display();
-                }, 100);
-            } else if (tabName === 'passo3') {
-                setTimeout(() => drawTree('tree-passo3', treeData, 500, 400), 100);
-            } else if (tabName === 'passo4') {
-                setTimeout(() => {
-                    updatePasso4Display();
-                    drawTree('tree-passo4', conditionalTreeQueijo, 500, 400);
-                }, 100);
-            } else if (tabName === 'passo5') {
-                setTimeout(() => drawTree('tree-passo5', conditionalTreeQueijo, 500, 400), 100);
-            }
-        }
-
-        function nextStep() {
-            currentStep = (currentStep + 1) % steps.length;
-            switchTab(steps[currentStep]);
-        }
-
-        function previousStep() {
-            currentStep = (currentStep - 1 + steps.length) % steps.length;
-            switchTab(steps[currentStep]);
-        }
-
-        function resetVisualization() {
-            currentStep = 0;
-            currentTransactionStep = 0;
-            currentConditionalStep = 0;
-            switchTab('passo1');
-        }
-
-        // Initialize
-        window.addEventListener('load', () => {
-            // Passo 2 já será desenhado quando acessado
-        });
-    </script>
-</body>
-</html>
+render();
+</script>
