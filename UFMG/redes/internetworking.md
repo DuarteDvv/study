@@ -21,7 +21,7 @@ Switches podem comunicar não apenas com sua propria LAN mas também com outros 
 
 - **Datagrama (Sem conexão e o mais usado):** 
 
-    1. Enviamos cada pacote de forma independente com o endereço completo do destino (MAC, IP...)... fica no header ocupando grande espaço
+    1. Enviamos cada pacote de forma independente com o endereço completo do destino (MAC)... fica no header ocupando grande espaço
     2. Cada switch tem uma tabela que mapeia endereço -> porta para chegar nele... usamos bastante espaço no switch então se feito de maneira burra
     3. Seguimos as saidas respectivas do endereço ate chegar ao final
 
@@ -137,25 +137,108 @@ Quando um pacote chega ao roteador precisamos saber se o destino desse pacote é
 
 ![alt text](encapsulamento.png)
 
-Se o endereço IP for o da rede local atual podemos encapsular (Camadas mais acima estão sempre mais internamente no pacote Sinais(Ethernet(IP(TCP(Dados))))) em um protocolo do enlace por exemplo e enviar, porém, não temos o endereço MAC do destino, apenas o endereço IP... precisamos do endereço MAC para os protocolos de enlace e para se locomover nos switchs. Ai entra o ARP, sua responsabilidade é encontrar o MAC do destino dado que já estamos na rede local certa e ele funciona da seguinte forma: Faz broadcast "perguntando" quem tem o IP do destino, se a maquina não tiver ela ignora e se tiver ela responde para a maquina que perguntou com o seu MAC... uma vez que temos o MAC podemos criar um quadro/frame ethernet e enviar para um switch por exemplo.
+Se o endereço IP for o da rede local atual podemos encapsular (Camadas mais acima estão sempre mais internamente no pacote **Sinais(Ethernet(IP(TCP(Dados)))))** em um protocolo do enlace por exemplo e enviar, porém, não temos o endereço MAC do destino, apenas o endereço IP... precisamos do endereço MAC para os protocolos de enlace e para se locomover nos switchs. Ai entra o ARP, sua responsabilidade é encontrar o MAC do destino dado que já estamos na rede local certa e ele funciona da seguinte forma: Faz broadcast "perguntando" quem tem o IP do destino, se a maquina não tiver ela ignora e se tiver ela responde para a maquina que perguntou com o seu MAC... uma vez que temos o MAC podemos criar um quadro/frame ethernet e enviar para um switch por exemplo.
 
 
 ### **Fragmentação**
 
 Como lidar com redes com tamanhos máximos de pacotes diferentes ? Se o pacote é maior que o suportado pela tecnologia de rede ele precisa ser fragmentado em pedaços (pacotes menores)... mas cada protocolo pode fazer isso de maneira diferente.
 
-- IPv4: cada fragmento tem o mesmo id do pacote original, flags e offset de ordem para reconstrução. A remontagem acontece no computador destino que mantem um temporizador para cada pacote, se esse pacote não chegar completamente ate o tempo acabar todos que chegaram serão descartados. Pode ser feita tanto pelo computador de origem quanto por qualquer roteador no meio do caminho.
+- **IPv4:** cada fragmento tem o mesmo id do pacote original, flags e offset de ordem para reconstrução. A remontagem acontece no computador destino que mantem um temporizador para cada pacote, se esse pacote não chegar completamente ate o tempo acabar todos que chegaram serão descartados. Pode ser feita tanto pelo computador de origem quanto por qualquer roteador no meio do caminho.
 
-- IPv6: Hoteadores IPv6 que não são a origem não fragmentam pacotes sob nenhuma hipótese. Usa um header especial.
+- **IPv6:** Hoteadores IPv6 que não são a origem não fragmentam pacotes sob nenhuma hipótese. Usa um header especial.
 
 ### **Protocolos Auxiliares**
 
 - **DHCP:** Serve para alocar IPs livres para alguma maquina da rede. Maquina entra na rede -> faz broadcast e busca servidor DHCP -> DHCP pega na pool um ip livre e entrega para maquina (ip, mascara e default gateway (roteador para buscar, quando ninguém sabe onde esta (provedoras de rede)), DNA).
 
-- **IMCP:** Um protocolo mais leve e rapido que atua para troca de mensagens pequenas como de erros e mudar rotas.
+- **ICMP:** Um protocolo mais leve e rapido que atua para troca de mensagens pequenas como de erros e mudar rotas.
 
 - **VPN:** Funciona fazendo algo chamado tunelamento (tunel) em que mantemos um pacote IP dentro de outro pacote IP... temos um servidor VPN, o pacote mais interno é criptografado de uma forma que só a VPN sabe, esse pacote então é colocado dentro de outro pacote IP externo que será enviado pela Internet para o servidor VPN, descriptografado e enviado apartir do servidor VPN para o destino do pacote IP interno. Para o retorno, fazemos o mesmo processo.
 
 - **NAT:** Utiliza portas de protocolos de transporte (como TCP e UDP) para um unico IP publico (internet) conseguir ter internamente um grande numero de ips privados mapeados pelas portas... por exemplo se temos um ip privado x.x.x.x e internamente ips privados, se o ip y.y.y.y privado fizer uma requisição para fora da rede privada, nos pegamos o ip privado e a porta p1 utilizada por ele que é um inteiro de 16 bits e mapeamos para uma porta p2 no ip publico x.x.x.x, agora tudo que chegar na porta p2 do ip x.x.x.x vai ser redirecionado para o ip privado y.y.y.y:p1 ... isso permite que varios ( $* 2^{16}$) ips sejam reutilizados (iguais) em redes privadas diferentes.
+
+
+### **Roteamento** 
+
+Enquanto encaminhamento (fowarding) cuida de transferir o pacote recebido pelo roteador para a respectiva interface correta usando a tabela de roteamento e o IP de destino. O processo de roteamento em si representa a construção da tabela de roteamento dentro dos roteadores... para construir essa tabela precisamos enxergar a rede como um grafo ponderado em que os nós são os roteadores e as arestas as conexões entre eles.
+
+Entidades/organizações grandes na rede global ? são chamadas de **Autonomous system (AS)** e representam grandes redes espalhadas globalmente (como a da UFMG)... por existir essa hierarquia, existem roteamento em 2 niveis:
+
+- **Internal Gateway Protocol:** protocolo de roteamento (algoritmo) interno de cada AS.
+
+- **External Gateway Protocol:** protocolo de roteamento global
+
+Globalmente falando a rede é um grafo que os AS (representados pelos seus roteadores de borda) são os nós... dentro de um AS existe um grafo dos roteadores internos dele... e dentro da rede local de cada roteador temos o grafo de switches que conectam as maquinas.
+
+### **Protocolos de roteamento interior**
+
+#### **Vetor de distancias(RIP)**
+
+
+Roteadores aqui tem tabela do tipo (destino, dist, next_jump) em que destino é o IP/mask de outros roteadores, dist é a distancia do roteador atual ate o destino e next_jump é o proximo roteador que devemos enviar o pacote para chegar mais proximo do destino.
+
+Cada roteador envia para seus vizinhos (conexões da interface) a cada intervalo de tempo (uns 10s) ou quando alguma coisa na tabela atual mudou (trigger) uma minitabela contendo quem ele conhece (destinos da tabela dele) e a respectiva distancia dele para o destino.
+
+
+Roteador A recebe anuncio de B:
+
+- Para cada linha (destino, dist_B_dest) do anuncio de B:
+
+    soma_dist = dist_B_dest + dist_A_B # soma da distancia entre A e B com a distancia de B para o destino
+    - Se o destino não esta na tabela de A:
+        - Criamos uma entrada na tabela para o destino (destino, soma_dist, B)
+    - Senão, o destino já esta na tabela e precisamos verificar se o novo caminho é melhor:
+        - Se soma_dist < curr_dist_A_dest:
+            - Trocamos a entrada atual de A para (destino, soma_dist, B)
+        - Senão:
+            - se next_jump == B, então mesmo que a distancia seja maior precisamos atualizar para manter a tabela atualizada: # importante caso a rota mais curta aumente de tamanho
+                - Trocamos a curr_dist_A_dest para soma_dist
+
+Se uma entrada da tabela fica muito tempo sem ser atualizada ela é removida por timeout... se uma conexão cair isso fara tabelas que seguiam o caminho por ela serem atualizadas com distancias infinitas. Loops são combatidos com o TTL (time-to-live) que diz o maximo de jumps que o pacote pode dar em roteadores antes de ser ignorado.
+
+#### **Link State (OSPF)**
+
+Todos os roteadores (nós) da rede irão fazer as seguintes etapas:
+
+1. Descobrir quem são seus vizinhos imediatos e respectivo custo através de broadcast
+2. Com essa informação, cada nó gera seu pacote de estado (LSP - Link state packet) que contem:
+    - nó que criou o pacote
+    - vizinhos imediatos e seus custos
+    - TTL (time-to-live)
+    - NSEQ contador que começa em zero assim que o roteador é ligado e incrementa a cada LSP (serve para dizer qual LSP é mais atualizado).
+
+3. Etapa de imundação (flooding) em que todos os roteadores enviam seu LSP para seus vizinhos... Se B recebe pacote de A e B, então B salva uma copia do pacote e retransmite A para todos os seus vizinhos. Ao final todos os roteadores vão ter informação estrutural da rede suficiente gerar o grafo inteiro da rede. Se receber o mesmo pacote mais de uma vez ignora as seguintes. 
+
+4. Dado que todos os nós tem informação suficiente da rede inteira, cada nó usa ela para construir a arvore de caminhos minimos dele para todos os outros nós... para calcular ela dividimos os N nós em 2 conjuntos, um conjunto de tamanho M que colocamos nós que o caminho minimo para a raiz já é conhecido e um conjunto de tamanho N-M para o restante dos nós. A cada passo indentifique os vizinhos dos nós em M que não estão em M, adicione em M o vizinho com menor distancia da raiz... continue ate todos os nós estarem em M.
+
+
+### **Protocolos de roteamento exterior (roteamento de sistemas autonomos)**
+
+O problema de roteamento de sistemas autonomos é existir um acordo/padrão global entre instituições separadas... o protocolos comum que eles seguem é o BGP-4 que compartilha apenas os caminhos externos (fora do sistema autonomo).
+
+Existem 3 tipos de sistemas autonomos:
+
+- **Stub:** Tem apenas uma conexão com algum provedor externo. (Empresas pequenas)
+
+- **Multi-homed:** Possui conexão com dois ou mais provedores diferentes com objetivo de ter redundancia caso um cabo de uma provedora caia. Entretanto mesmo existindo um caminho passando por ele que conecta provedor A e B, ele não transmite pacotes entre eles.
+
+- **Transit:** Possui varias conexões como o anterior porém conduz trafego de provedores diferentes.
+
+#### **BGP-4**
+
+O objetivo aqui não é mais achar a rota otima mas sim achar pelo menso uma rota que funcione e respeite acordos. Aqui cada AS tem um ou mais roteadores de borda que vão converser com outras AS e dizer quais redes tem dentro da AS... são chamados de speakers.Esses roteadores de borda também trocam tabelas como os vetores de distancia mas ao invés de distancia trocam caminhos inteiros para maior liberdade de acordos. As 3 ações do speaker: trocar informações com vizinhos e alcance de vizinhos
+
+Os ASes tem relações verticais (dinheiro) e horizontais (politica):
+
+- **Verticais:** Envolve provedores e clientes em que o cliente paga o provedor para ter acesso a internet global.
+
+- **Horizontal:** Clientes podem trabalhar com acordos de transmissão gratuita entre eles com intuito de ambos economizarem pois não precisam passar pelo provedor.
+
+O BGP vai sempre escolher o caminho que minimize o custo financeiro, evitando passar por provedores e preferindo rotas peering onde não se paga nada. Levando em consideração também o custo do roteamento externo e roteamento interno.
+
+Como rede interna e externa se comunicam ? Em stubs é simples pois existe apenas um provedor, então se o IP não é da rede uma rota padrão para o provedor é usada. Em transits medios os roteadores de borda compartilham com todos os outros roteadores (borda ou não) o prefixo da AS que eles conectam... agora em grandes transits isso não escala então os roteadores de borda usam um protocolo especifico chamado **IBGP** em que apenas os roteadores de borda conversam entre si.
+
+
 
 
