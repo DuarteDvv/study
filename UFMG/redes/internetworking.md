@@ -146,7 +146,7 @@ Como lidar com redes com tamanhos máximos de pacotes diferentes ? Se o pacote �
 
 - **IPv4:** cada fragmento tem o mesmo id do pacote original, flags e offset de ordem para reconstrução. A remontagem acontece no computador destino que mantem um temporizador para cada pacote, se esse pacote não chegar completamente ate o tempo acabar todos que chegaram serão descartados. Pode ser feita tanto pelo computador de origem quanto por qualquer roteador no meio do caminho.
 
-- **IPv6:** Hoteadores IPv6 que não são a origem não fragmentam pacotes sob nenhuma hipótese. Usa um header especial.
+- **IPv6:** Roteadores IPv6 que não são a origem não fragmentam pacotes sob nenhuma hipótese. Usa um header especial.
 
 ### **Protocolos Auxiliares**
 
@@ -227,7 +227,13 @@ Existem 3 tipos de sistemas autonomos:
 
 #### **BGP-4**
 
-O objetivo aqui não é mais achar a rota otima mas sim achar pelo menso uma rota que funcione e respeite acordos. Aqui cada AS tem um ou mais roteadores de borda que vão converser com outras AS e dizer quais redes tem dentro da AS... são chamados de speakers.Esses roteadores de borda também trocam tabelas como os vetores de distancia mas ao invés de distancia trocam caminhos inteiros para maior liberdade de acordos. As 3 ações do speaker: trocar informações com vizinhos e alcance de vizinhos
+O objetivo aqui não é mais achar a rota otima mas sim achar pelo menso uma rota que funcione e respeite acordos. Aqui cada AS tem um ou mais roteadores de borda que vão converser com outras AS e dizer quais redes tem dentro da AS... são chamados de speakers.Esses roteadores de borda também trocam tabelas como os vetores de distancia mas ao invés de distancia trocam caminhos inteiros para maior liberdade de acordos e evitar loops. As 3 ações do speaker: trocar informações com vizinhos e alcance de vizinhos
+
+- Vetor de caminhos: Em vez de enviar apenas a distância, o BGP envia a lista completa de todos os Sistemas Autônomos (ASes) pelos quais a rota passa. Esse atributo é conhecido como AS_PATH.
+
+    - A Mensagem: "Eu sei chegar na Rede X. O caminho é: [AS 100 -> AS 300 -> AS 500]."
+
+    - Como funciona a **Prevenção de Loop:** É instantânea e infalível. Se você é o AS 200 e recebe de um vizinho uma rota contendo o caminho [AS 100 -> AS 200 -> AS 500], você a descarta imediatamente. Como o seu próprio AS já está na lista, você sabe que aceitar essa rota criaria um loop.
 
 Os ASes tem relações verticais (dinheiro) e horizontais (politica):
 
