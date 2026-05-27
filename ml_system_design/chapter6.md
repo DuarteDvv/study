@@ -32,7 +32,7 @@ Ensemble de modelos consiste no uso de mais de varios modelos diferentes (ou o m
 
 È comum fazer experimentos com novas arquiteturas, hyperparametros e dados para testar teorias e encontrar novos resultados que podem ser melhores... cada experimento tem sua curva de loss, curva de learning, logs, arquivos de saida (como modelos torch .pt) e diversos outros artefatos. È importante manter todas as definições e parametros de um experimento para ser possivel recria-los e além disso salvar os outputs/resultados para comparar com outros experimentos. O processo de monitorar o progresso e resultados de um experimento é chamado de **experiment tracking** e o processo de criar logs de todos os detalhes do experimento com objetivo de recriar (Reprodutibilidade) o experimento ou compara-lo é chamado de **versionamento**. Existem diversas ferramentas como MLflow e Weights and bias que originalmente serviam apenas para monitoramento mas depois incluiram versionamento.
 
-#### Experiment Tracking
+#### **Experiment Tracking**
 
 Monitorar o modelo durante o treinamento pode ser uma grande parte do processo de treino e é extremamente importanto já que várias coisas podem dar errado durante o treinamento... alguns itens importantes a se monitorar:
 
@@ -50,9 +50,53 @@ Monitorar o modelo durante o treinamento pode ser uma grande parte do processo d
 
 Esses itens (estado atual do treino e modelo) nos permite comparar experimentos, entender melhor nosso modelo e encontrar problemas de forma mais facil (debug)... pode ajudar a entender o efeito de pequenas alterações na performace do modelo. Idealmente deveriamos monitorar tudo porém é um esforço cognitivo muito grande que pode nos distrair do que for importante e além disso pode ser pesado para as ferramentas disponiveis atualmente.
 
-#### Versionamento
+#### **Versionamento**
 
-Fizemos um experimento mas e agora para reproduzir ?
+Imagine que nosso resultado atual conseguiu um desempenho mas você viu em algum lugar uma configuração especifica que parece promissora... voce muda o codigo do experimento e acabou que os resultados não foram tão bons quanto o esperado. Porém voce não lembra exatamente como o codigo antigo era e pode ter perdido para sempre seus resultados ou gastar tempo para recuperar... por isso versionamento de codigo é importante. Já é comum versionar codigo através de ferramentas git/github mas e os dados ?
+
+Existem alguns motivos para o versionamento de dados não ser exatamente igual ao de codigo:
+
+- **Tamanho:** dados podem ter diversos tamanhos em memória como 10GiB que é bem diferente de um arquivo de codigo de alguns kib... codigo é versionado mantendo todas as versões antigas dos dados mas não podemos fazer isso com dados pois ocuparia muita memória com duplicatas. A mesma lógica se aplica ao clone que fazemos de codigo em que trazemos todo codigo para maquina local porém ao fazer isso com dados não temos garantia que caiba.
+
+- **Operações indefinidas:** O que são operações de diff entre dois dadasets ? como resolver conflitos de dados com merge ? 
+
+Versionamento e monitoriamento ajudam muito com a reprodutibilidade mas não garantem graças ao não determinismo que alguns métodos possuem e também o hardware... uma mesma semente em computadores diferentes não necessáriamente tera resultados iguais tornando a reprodutibilidade 100% igual impossivel sem saber todos os detalhes do ambiente. Além disso, ao invés de executar infinitos experimentos é importante entender a teorica e premissas de cada cenário para reduzir ao maximo o numero de experimentos com conhecimento previo.
+
+#### **Debugging ML Models**
+
+Debugar um modelo de ML é desafiador principalmente por 3 motivos: 
+
+- **Bug/Falha silenciosa:** o pipeline inteiro de inferencia pode estar funcionando mas o valor da inferencia estar errado... isso é silencioso tanto para os desenvolvedores como para os clientes que assumem que o resultado esta correto.
+- **Validação lenta:** mesmo descobrindo o problema, para resolver é possivel que o modelo terá que ser treinado do zero novamente e talvez também feito deploy... teriamos que esperar todo esse tempo para saber se o bug foi corrigido.
+- **Muitos componentes:** o pipeline inteiro é formado por diversos componentes como arquitetura, dados e software... nem sempre a mesma equipe é responsavel por todo e portanto é necessário algum tipo de comunicação entre equipes.
+
+Um modelo pode falhar principalmente por:
+
+- **Premissas erradas:** Cada modelo segue algumas premissas sobre os dados e problema... se elas não são respeitadas é improvavel que o resultado seja bom. Um exemplo disso é usar regressão linear em dados não lineares.
+
+- **Implementação errada:** Erros de implementação em redes neurais em que mexemos manualmente na arquitetura da rede
+
+- **Hyperparametros ou features ruins:** A escolha errada de hyperparametros pode levar o modelo a divergir e de features a ter um overfitting/underfitting
+
+- **Problema nos dados:** Varios problemas podem ser causados pelos dados como data shift, ruido nos dados ou rotulos incorretos.
+
+Não existe formula mágica de como de como se debugar mas algumas recomendações de pessoas experientes... eis 3 delas especiais para redes neurais: 
+
+- **Começar simples e aumentar os componentes:** Começar com redes/modelos pequenos e ir aumentando gradativamente e verificando como isso afeta a performace.
+
+- **Ajustar (fit) em um batch:** Antes de treinar com todos os dados -> pegar um batch pequeno e ajustar o modelo nele e avaliar em cima do mesmo batch, o esperado é que a métrica de qualidade seja total ou muito alta pois o treino e validação são nos mesmos dados. Isso é um teste de sanidade.
+
+- **setar random seed:** Existe muitas partes que possuem aleatoriedade nesses modelos... setar uma seed evita que a diferença de um experimento tenha sido causada exclusivamente pela aleatoriedade.
+
+### Treino distribuido
+
+
+
+
+https://karpathy.github.io/2019/04/25/recipe/
+
+
+
 
 
 
