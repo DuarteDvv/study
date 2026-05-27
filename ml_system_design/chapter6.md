@@ -34,8 +34,25 @@ Ensemble de modelos consiste no uso de mais de varios modelos diferentes (ou o m
 
 #### Experiment Tracking
 
+Monitorar o modelo durante o treinamento pode ser uma grande parte do processo de treino e é extremamente importanto já que várias coisas podem dar errado durante o treinamento... alguns itens importantes a se monitorar:
+
+- **loss curve da validação e treino:** pode dar indicios de overfitting com treino descendo e validação subindo, underfitting com treino e validação descendo ou ate mesmo alguma estagnação na loss.
+
+- **métricas de performace:** plotar métricas como F1, recall, precision, perplexity pode mostrar caracteristicas como por exemplo um recall baixo significa que a quantidade de falsos negativos esta muito alta.
+
+- **inferencias de teste:** durante o treinamento a cada epoca ou um numero de epocas salvar log do input, predição e rotulo para analisar no futuro se a loss esta coerente com as predições... o modelo pode encontrar atalhos para roubar na loss e a saida não faz sentido algum.
+
+- **velocidade do modelo:** quão rapido o modelo processa as epocas (epocas/segundo), ou seja, quão rapido vai ser o treinamento... isso é importante pois temos uma estimativa de gasto e tempo de treinamento.
+
+- **métricas de hardware:** uso de memória, CPU/GPU ... pode mostrar subutilização (gargalos) do hardware, estouro de memória ou uso exessivo do hardware.
+
+- **parametros e hyperparametros:** monitorar learning rate (quando não é fixo) e norma do vetor gradiente (tamanho do vetor)... pode ser util para verificar se o gradiente não esta crescendo muito (infinito) ou reduzindo muito.
+
+Esses itens (estado atual do treino e modelo) nos permite comparar experimentos, entender melhor nosso modelo e encontrar problemas de forma mais facil (debug)... pode ajudar a entender o efeito de pequenas alterações na performace do modelo. Idealmente deveriamos monitorar tudo porém é um esforço cognitivo muito grande que pode nos distrair do que for importante e além disso pode ser pesado para as ferramentas disponiveis atualmente.
 
 #### Versionamento
+
+Fizemos um experimento mas e agora para reproduzir ?
 
 
 

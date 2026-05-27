@@ -30,11 +30,14 @@ Switches podem comunicar não apenas com sua propria LAN mas também com outros 
 
 - **Circuito Virtual (Orientado a Conexão):** 
 
-    1. Setup que definimos uma rota fixa para o destino e prenchemos o vetor dos switches com ID_rota_x -> (Porta de saida, New_id_rota_x)... overhead de envio mais alto. Trocar o id se chama Label Swapping e evita que 2 usuários usem o mesmo id.
+    1. Setup que definimos uma rota fixa para o destino e prenchemos o vetor dos switches com ID_rota_x -> (Porta de saida, New_id_rota_x)... overhead de envio mais alto. Trocar o id se chama Label Swapping e evita que 2 usuários usem o mesmo id. Os ids são chamados de VCI
     2. Seguimos os IDs da nossa rota fixa e suas respectivas portas de saida ate chegar ao destino... precisamos carregar no header o ID atual da rota (int, então é pequeno) 
 
     - Todos os pacotes para o mesmo destino seguem a mesma rota e se um link cai perdemos os pacotes
     - Mais rapido que datagrama pois usamos indice inteiro ao invés de hash 
+    - Um VCI não é um endereço IP global que vai até o final. Ele é só uma "etiqueta" colada no cabo físico entre dois equipamentos. Quando o pacote entra em um switch, a etiqueta é trocada para o próximo cabo.
+    - A rede sempre tenta atribuir o VCI 0. Se o 0 estiver ocupado naquele cabo, ela pega o 1, depois o 2, etc.
+    - Se no passo (a) você usou o VCI 0 em um cabo, essa conexão continua ativa. No passo (b), se o pacote precisar passar por esse mesmo cabo (em qualquer direção), o VCI 0 estará bloqueado e a rede terá que usar o VCI 1.
 
 - **Source Routing:** 
 
