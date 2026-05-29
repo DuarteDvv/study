@@ -88,12 +88,16 @@ Não existe formula mágica de como de como se debugar mas algumas recomendaçõ
 
 - **setar random seed:** Existe muitas partes que possuem aleatoriedade nesses modelos... setar uma seed evita que a diferença de um experimento tenha sido causada exclusivamente pela aleatoriedade.
 
+- **Mais aqui:** https://karpathy.github.io/2019/04/25/recipe/
+
 ### Treino distribuido
 
 
 
 
-https://karpathy.github.io/2019/04/25/recipe/
+
+
+
 
 
 
