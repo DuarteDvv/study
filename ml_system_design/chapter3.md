@@ -82,7 +82,7 @@ Sistemas e usuários geram dados a todo momento, mas nem todos esses dados possu
     - **Contexto de ML:** Esses lotes são processados em janelas de tempo maiores e geram features estáticas, que são atributos que mudam pouco ou lentamente com o tempo (muito comum no treinamento de modelos em Offline Learning).
 
 
-- **Stream Processing (Processamento em Fluxo):** Consiste em processar o dado no exato momento em que ele é gerado (ou em intervalos de milissegundos/segundos). A prioridade aqui é a baixa latência e a extração de valor imediato.
+- **Stream Processing (Processamento em Fluxo):** Consiste em processar o dado no exato momento em que ele é gerado usando ferramentas Event-driven (ou em intervalos de milissegundos/segundos). A prioridade aqui é a baixa latência e a extração de valor imediato.
 
     - **Stateful Processing:** Além de processar em paralelo, motores de stream (como Flink ou Kafka Streams) são stateful (mantêm estado). Eles lembram de informações recentes. Se quisermos a média móvel dos últimos 30 dias, o stream não recalcula tudo do zero; ele usa uma estrutura de "janela deslizante" (sliding window), adicionando o dado novo que acabou de chegar e descartando o dado mais antigo da janela, economizando muito processamento.
 
