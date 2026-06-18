@@ -20,7 +20,7 @@ Uma mudanca gera uma versao nova do sistema, esse conjunto de versoes do sistema
 
 - **Construção de sistema:** Processo de criar um sistema completo e executavel através de algum script ou programa. Basicamente subir todos os seus serviços e dependencias de forma automatica.
 
-    - **CI (Continuos Integration):** Pratica em que a cada alteração feita por um desenvolvedor e enviada (push) é automaticamente construida (build) e validada com testes para verificar se tudo esta funcionando (geralmente vai para o servidor CI após um pull request). Isso permite **desenvolvimento mais rapido**, **indentificação rapida de problemas** pois sabemos exatamente em qual commit o problema surgiu e **reduz a complexidade** de deploy. Problemas podem surgir se o sistema é muito grande e portanto build é lento e nem todo teste pode ser executado localmente.
+    - **CI (Continuos Integration):** Pratica em que a cada alteração feita por um desenvolvedor e enviada (push) é automaticamente construida (build) e validada com testes para verificar se tudo esta funcionando, porém nem todos os testes são executados, os mais pesados só são executados durante o PR. Isso permite **desenvolvimento mais rapido**, **indentificação rapida de problemas** pois sabemos exatamente em qual commit o problema surgiu e **reduz a complexidade** de deploy. Problemas podem surgir se o sistema é muito grande e portanto build é lento e nem todo teste pode ser executado localmente.
 
     - **Exercicios:** 
 
