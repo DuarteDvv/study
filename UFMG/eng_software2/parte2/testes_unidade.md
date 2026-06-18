@@ -43,4 +43,6 @@ Podemos implementar os testes antes da funcionalidade em si **(TDD)**, também p
     - Uma **feature** é um conjunto de comportamentos (Calcular)
     - Metodos e comportamentos tem uma **relação NxN** pois um **metodo pode ter varios comportamentos** diferentes que viram testes diferentes e um **comportamento sozinho (teste) pode se basear em mais de um metodo**.
 
-![alt text](imagens/testes_ruins.png)
+![alt text](imagens/testes_comportamento.png)
+
+esse é um exemplo em que um metodo tem varios comportamentos diferentes e precisa de varios testes.
