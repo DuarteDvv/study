@@ -22,7 +22,12 @@ O UDP não garante entrega mas tenta garantir que se o pacote chegou ele **não 
 
 ## **TCP (Transmission Control Protocol)**
 
-aaaaaaaaaaaaaaaaaaaaaaaaaaa
+Diferente do UDP que simplesmente joga o pacote na rede e espera pelo melhor o TCP é um protocolo orientado a conexao que garante que um fluxo de bytes seja entregue de forma confiavel e em ordem tirando essa responsabilidade das aplicacoes. O TCP é bidirecional entao significa que dados podem percorrer em ambas as direcoes e implementa 2 mecanismos de controle importantes:
+
+- **Controle de fluxo:** Evita que o remetente envie pacotes mais rapido que o destino consegue consumir para evitar estourar o buffer
+- **Controle de congestionamento:** Evita enviar muitos pacotes na rede para nao sobrecarregar os roteadores no caminho
+
+### a
 
 ## **Implementacao do UDP e TCP no SO**
 
