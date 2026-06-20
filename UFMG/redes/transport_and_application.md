@@ -27,7 +27,96 @@ Diferente do UDP que simplesmente joga o pacote na rede e espera pelo melhor o T
 - **Controle de fluxo:** Evita que o remetente envie pacotes mais rapido que o destino consegue consumir para evitar estourar o buffer
 - **Controle de congestionamento:** Evita enviar muitos pacotes na rede para nao sobrecarregar os roteadores no caminho
 
-### a
+### **Garantia End-to-end**
+
+Diferente do ethernet que é um cabo (geralmente curto) e torna o algortimo mais simples na internet temos mais problemas:
+
+- **Conexao:** Como nao existe um cabo entre eles é necessário uma fase de conexao entre as maquinas
+- **RTT variavel:** Tempo de ida e volta pode varias muito dependendo de quais maquinas estao trocando mensagens
+- **Recursos variaveis:** Links de rede com capacidades diferentes e computadores com quantidades de memoria diferentes
+- **Pacotes fantasma:** Pacotes pode atrasar muito na rede passando muito do timeout entao precisamos filtrar
+
+O princípio fim-a-fim defende que a confiabilidade só pode ser verdadeiramente garantida pelas pontas finais da comunicação (os computadores do cliente e do servidor). Garantias parciais no meio da rede podem falhar devido a erros de hardware em roteadores ou caminhos heterogêneos.
+
+### **Formato do segmento**
+
+Diferente do UDP que envia um bloco de dados (datagrama) o TCP envia um fluxo de segmentos. Segmentos sao pacotes de bytes de tamanho variavel e cada segmento tem um header com as seguintes informacoes: \
+
+- **Porta (Origem e Destino):** A chave de demultiplexacao que identifica a conexao é a tupla com portas e IPs de origem e destino. Os IPs ficam no protocolo IP e nao no header do TCP.
+- **SequenceNum e ACK:** Pense que todo conteudo enviado é um vetor de bytes, SequenceNum é o indice do primeiro byte do segmento nesse vetor (ajuda o servidor a montar e permite que os dados cheguem fora de ordem e nao necessáriamente comeca em 0 sempre pois isso evita que outra conexao com mesmo SequenceNum interfira). ACK é a mensagem de confirmacao que o servidor envia ao receber e ele é o indice do proximo byte a ser recebido.
+- **PiggyBack:** Se a conexao for bidirecional, a confirmacao de chegada (ACK) vem junto com a proxima mensagem (dados) que o destino enviar para voce.
+- **AdvertisedWindow:** Avisa quanto espaco no buffer do destinatario ainda esta livre atuando como um controle de fluxo. Se o espaco esta pouco enviamos janelas menores.
+- **Checksum:** Cada segmento tem seu proprio checksum
+
+### **Estabelecimento e termino de conexao**
+
+Para comecar a conexao é usado ao Three-way Handshake que funciona assim:
+
+1. Host A manda flag de sincronizacao -> **SYN** (SequenceNum)
+2. Host B recebe e retorna a confirmacao ACK e manda junto também seu SYN (SequenceNum) pois é bidirecional -> **SYN + ACK**
+3. Host A recebe o ACK e SYN depois retorna a confirmacao do SYN (Se quiser pode ja comecar a enviar dados tbm) -> **ACK** 
+
+**!** SequenceNum inicial deles é diferente (e aleatório) pois sao fluxos e direcoes diferentes **!**
+
+Uma vez que a conexao esta feita eles trocam segmentos no fluxo de bytes e para finalizar a conexao algum dos Hosts tem que terminar primeiro:
+
+1. Host A envia flag FIN (terminou) e espera -> **FIN** 
+2. Host B recebe flag FIN e retorna ACK -> **ACK**
+3. Host A recebe o ACK e espera o FIN do Host B (B terminar)
+3. Host B termina seus envios e retorna FIN -> **FIN**
+4. Host A recebe o FIN, retorna ACK e espera um pouquinho para evirar pacotes fantasma -> **ACK**
+
+### **Principais pontos sobre a nova janela deslizante**
+
+- **Ethernet (Enlace):** A janela deslizante tem um tamanho fixo. Ela serve basicamente para garantir a entrega confiável e ordenada naquele cabo/link físico específico.
+
+- **TCP (Transporte):** A janela deslizante é variável e dinâmica. Além de garantir a entrega de ponta a ponta, ela embute o Controle de Fluxo. O receptor usa o campo AdvertisedWindow para avisar ao remetente exatamente quanto espaço livre ainda tem no seu buffer de memória. Isso impede que um computador muito rápido afogue um computador lento.
+
+- **Silly Window Syndrome (Síndrome da Janela Boba):** Um problema clássico onde o receptor lê os dados muito devagar, a janela fica minúscula, e o TCP começa a enviar pacotes ridículos (ex: enviando 1 byte de dado útil acompanhado de 40 bytes de cabeçalho TCP/IP), destruindo a eficiência da rede.
+
+- **Algoritmo de Nagle:** É a solução do remetente para a Síndrome da Janela Boba. Em vez de enviar pacotinhos minúsculos imediatamente, ele os segura no buffer até acumular um pacote cheio (MSS) ou até que o pacote anterior seja confirmado (ACK).
+
+### **Retransmissao Adaptativa**
+
+O TCP precisa saber quanto tempo deve esperar o ACK antes de assumir que o pacote foi perdido e retransmiti-lo. O problema é que o tempo de ida e volta na internet é influenciado por muitas coisas... distancia, trafego e recursos da rede. Dito isso, o TCP tem 3 maneiras de lidar com isso:
+
+- **Algoritmo original:** Usa media movel em que o valor estimado do RTT atual é atualizado como o **valor anterior vezes um alpha somado a um novo valor observado vezes (1 - alpha)**. Alpha serve para definirmos o quanto do passado queremos manter. Definimos entao o **timeout como 2x RTT estimado**.
+
+- **Karn/Partridge:** No algoritmo original se restransmitirmos um pacote e em seguida recebermos um ACK, esse **ACK é da mensagem anterior atrasada ou da retrasmitida ?** Dependendo de qual considerarmos vamos atualizar a media movel com valores errados. A solucao foi **nao atualizar o RTT com segmentos retransmitidos** e sempre que retransmitimos **esperamos 2x mais que no envio anterior**.
+
+- **Jacobson/Karels:** Se o RTT variar muito a media movel nao vai conseguir capturar essa ocilacao. Para isso calculamos o desvio (diferencia do RTT observado com a media) e a cada nova observacao atualizamos o desvio e a media com RTT_estimado = RTT_estimado + delta* desvio  e Desvio = Desvio + delta* (novo desvio - desvio). timeout vai ser definido como a* RTT_estimado + b* Desvio.
+
+### **Extensoes modernas do TCP**
+
+Como o header do TCP tem tamanho variado varias opcoes extras: 
+
+- **Timestamps:** permite o remetende enviar o timestamp atual no segmento e o destinatario devolver no ACK permitindo uma computacao mais precisa do RTT
+
+- **Window Scaling:** O campo de Janela (para controle de fluxo) era pequeno demais para as redes modernas com alto produto banda-atraso. Essa extensão adiciona um multiplicador que permite aos computadores avisarem que possuem buffers gigantescos.
+
+- **SACK (Selective Acknowledgment):** Originalmente, os ACKs do TCP eram cumulativos (ex: "Recebi tudo até o pacote 10"). Se o pacote 11 fosse perdido, mas o 12, 13 e 14 chegassem perfeitamente, o destinatário não tinha como avisar sobre os que chegaram. O SACK permite que o destinatário diga: "Recebi tudo até o 10. O 11 sumiu, mas também já recebi o 12, 13 e 14". Isso evita retransmissões redundantes e otimiza a recuperação.
+
+### **Controle de congestionamento TCP**
+
+Em redes IP baseadas no modelo best-effort (melhor esforço), **não há garantias prévias de banda**; qualquer transmissão que ocorra acima da capacidade suportada pelos roteadores é simplesmente **descartada**. O controle de congestionamente **impede que um conjunto de transmissores injete dados demais na rede a ponto de esgotar os recursos** (como largura de banda e espaço nos buffers dos roteadores). Como erros de transmissão física são raros, a **perda** de um pacote é considerada pelo protocolo como um sinal claro de congestionamento.
+
+O TCP lida com esse problema alterando dinamicamento o tamanho da sua janela de transmissao (quantidade de dados enviados simultaneamente) seguindo a seguinte logica: a **janela de transmissa**o vai ser sempre o **minimo entre o anuncio de janela (buffer livre) que veio do receptor no ACK e um valor de janela de congestionamento (cwnd) que é o limite da rede**. Essa janela de congestionamento é reduzida sempre que perdas de pacote forem identificadas e aumentada constantemente para testar os limites da rede.
+
+Para gerenciar essa dinamica existem alguns algoritmos:
+
+- **AIMD (Aumento aditivo e reducao multiplicativa):** A cada RTT concluido sem retransmissao a janela de cogestionamento é adicionada em 1. A cada perda detectada a janela é dividida pela metade para aliviar a rede rapidamente.
+
+- **Slow Start (Partida Lenta):** O objetivo aqui é determinar a capacidade da rede logo no inicio sem ter que crescer de 1 em 1. A ideia é a janela comeca de tamanho 1 e duplica a cada entrega com sucesso. 
+
+(Existe um threshold de tamanho de janela de congestionamento em que trocamos do slow start para o AIMD)
+
+O mecanismo básico do TCP dependia do estouro de temporizadores (timeouts) para perceber que um pacote foi perdido, o que levava a longos períodos de inatividade na rede. Para resolver isso, foram introduzidos dois refinamentos:
+
+- **Fast Retransmit:** Quando por exemplo um segmento 3 se perde mas o seguimentos seguintes 4,5 e 6 chegam o ACK retornado na chegada deles é o ACK do segmento 3... isso gera **repeticao de ACKs pois o ACK do 3 chegará 2x**. O emissor identifica isso e retransmite imediatamente mesmo que o timeout nao aconteceu. Podemos tentar apartir do numero de ACKs repetidos descobrir quem falta ou usar o SACK para ver quem falta.
+
+- **Fast Recovery (Recuperação Rápida):** O retorno ao slow start sempre que o fast retransmit acontecer é muito agressivo (volta a janela de tamanho 1). Ao invés de voltar para janela de tamanho 1, pegamos a janela atual e dividimos pela metade e usamos o numero de ACKs repetidos para mandar segmentos ineditos aumentando a janela de acordo com essas repeticoes.
+
+A internet evoluiu, e redes com alta capacidade e alta latência exigiram atualizações no protocolo. Hoje, o padrão adotado pelo Linux é o TCP CUBIC:  Diferente do TCP tradicional que baseia seu crescimento nos ACKs recebidos (RTT), o CUBIC altera a janela em função do tempo decorrido desde o último evento de congestionamento. O aumento da janela é mais rápido logo no início e acelera novamente se houver muito tempo sem novos congestionamentos.
 
 ## **Implementacao do UDP e TCP no SO**
 
@@ -84,3 +173,8 @@ Protocolos podem ser classificados em 3 tipos:
         - Bidirecional: Cliente e servidor ficam trocando dados ao mesmo tempo, de forma independente (ex: chat em tempo real).
     - **Protocol Buffers:** Ao invés JSON que é texto e pesado, usa um formato binário muito mais rapido.
 
+### **Representação de Dados para RPC**
+
+
+
+## **Aplicacoes**
