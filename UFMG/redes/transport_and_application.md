@@ -120,8 +120,11 @@ A internet evoluiu, e redes com alta capacidade e alta latência exigiram atuali
 
 ## **Implementacao do UDP e TCP no SO**
 
+Para que os processos utilizem o TCP ou o UDP, o Sistema Operacional fornece uma abstração chamada de **Sockets** (a API de Sockets POSIX). O SO gerencia essa comunicação através de buffers de memória e tabelas de estado.
 
-aaaaaaaaaaaaaaaaaaaaaaa
+- **Socket UDP:** Não tem estado de conexão. O SO precisa apenas de uma fila de entrada e uma de saída associadas à porta local. Cada chamada de envio (sendto) precisa especificar o IP e a porta de destino explicitamente.
+
+- **Socket TCP:** Mantém estado (uma máquina de estados complexa: LISTEN, SYN_SENT, ESTABLISHED, TIME_WAIT, etc.). O SO cria estruturas de controle chamadas TCBs (Transmission Control Blocks) para armazenar o RTT estimado, ponteiros de buffers, e os números de sequência.
 
 ## **RPC (Remote Procedure Call)**
 
@@ -175,6 +178,61 @@ Protocolos podem ser classificados em 3 tipos:
 
 ### **Representação de Dados para RPC**
 
+Computadores diferentes representam dados de formas diferentes. É aqui que entra o Marshalling (ou serialização), que é o processo de empacotar os argumentos de uma chamada (como em RPC) em uma mensagem de rede padronizada e, no destino, desempacotar (unmarshalling/decoding) para o formato local.
 
+Nas implementações existem diferentes formas de resolver o problema: 
+
+- **Conversão:**
+    - **Tipo intermediario:** Definimos um formato padrão intermediário em que as maquinas cuidam da conversão para o tipo intermediario e o conversão de volta para seu tipo. Evita que toda maquina precisa saber converter todos os tipos.
+
+    - **Destino converte:** Deixamos como responsabilidade do destino converter. Exige que o destino saiba converter tudo.
+
+- **Tags:**
+    - **Com tags:** Colocamos tags de tipagem antes dos bytes. Consome banda.
+    - **Sem tags:** Definimos estritamente uma conexão que em alguns tipos fixos. Muito limitado.
+
+- **Stubs:** 
+    - **Compilados:** Um stub compiler lê a definição da interface do RPC e gera um código de stub super otimizado e customizado especificamente para aquela função.
+
+    - **Interpretados:** O sistema fornece stubs "genéricos" que leem a descrição da interface em tempo de execução para descobrir como processar os dados. Ganha em flexibilidade pois nao precisa recompilar mas perde em eficiencia.
 
 ## **Aplicacoes**
+
+A camada de aplicação é onde residem os **protocolos que os programas utilizam diretamente** para interagir com a rede. Ela utiliza os serviços da camada de transporte (TCP ou UDP) para enviar mensagens fim-a-fim e tornar possivel a comunicação entre 2 processos em maquinas diferentes.
+
+### **DNS (Domain Name System)**
+
+Maquinas e roteatores conversam usando IPs mas para humanos é muito mais facil e intuitivo conversar utilizando nomes. IPs carregam informação de onde o computador esta na rede e seres humanos na maioria das vezes não precisam dessa informação... **DNS age como um middleware que dado um nome busca o IP**.
+
+### **Hierarquia de dominios**
+
+Antigamente era mantido arquivos HOSTS.txt em que lá era feito o mapeamento de nomes para IPs mas isso obviamente não escala conforme a internet cresceu. Portanto uma solução hierarquica e distribuida foi proposta.
+
+- **Espaço de Nomes (Name Space):** Define o conjunto de nomes possíveis. No DNS, é uma estrutura em árvore.
+
+- **Mapeamentos (Bindings):** A associação entre o nome e o seu valor (geralmente o IP).
+
+- **Mecanismo de Resolução:** O processo de perguntar a um servidor qual é o IP de um nome específico.
+
+O DNS é lido da direita para a esquerda em sua estrutura lógica. A hierarquia funciona como uma árvore invertida:
+
+1. **Raiz (Root):** O topo absoluto.
+
+2. **TLDs (Top-Level Domains):** O primeiro nível visível, como .com, .edu, .org, ou domínios de países.
+
+3. **Domínios de Segundo Nível:** Como princeton.edu ou google.com.
+
+4. **Subdomínios/Hosts:** Como cs.princeton.edu ou o servidor específico cicada.cs.princeton.edu.
+
+O DNS é um sistema distribuído estruturado como uma árvore de autoridades (Zonas). Em vez de um único computador centralizado, a **responsabilidade é dividida**: os Servidores Raiz controlam o topo, apontando para os servidores de extensões como .com ou .edu (TLDs), que por sua vez direcionam para os servidores oficiais de cada organização, os Name Servers Autoritativos. Cada um desses servidores físicos funciona como um cartório local, armazenando exclusivamente as tabelas de mapeamento **(Nomes → IPs)** e subdomínios sob sua jurisdição direta ou delegando o controle para os níveis abaixo.
+
+![alt text](hierarquia_DNS.png)
+
+### Registros 
+
+
+### Consulta
+
+
+
+
