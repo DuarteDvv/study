@@ -1,4 +1,4 @@
-# **Transporte e Aplicação**
+# **Transporte**
 
 ## **Motivação Transporte**
 
@@ -196,11 +196,11 @@ Nas implementações existem diferentes formas de resolver o problema:
 
     - **Interpretados:** O sistema fornece stubs "genéricos" que leem a descrição da interface em tempo de execução para descobrir como processar os dados. Ganha em flexibilidade pois nao precisa recompilar mas perde em eficiencia.
 
-## **Aplicacoes**
+# **Aplicacoes**
 
 A camada de aplicação é onde residem os **protocolos que os programas utilizam diretamente** para interagir com a rede. Ela utiliza os serviços da camada de transporte (TCP ou UDP) para enviar mensagens fim-a-fim e tornar possivel a comunicação entre 2 processos em maquinas diferentes.
 
-### **DNS (Domain Name System)**
+## **DNS (Domain Name System)**
 
 Maquinas e roteatores conversam usando IPs mas para humanos é muito mais facil e intuitivo conversar utilizando nomes. IPs carregam informação de onde o computador esta na rede e seres humanos na maioria das vezes não precisam dessa informação... **DNS age como um middleware que dado um nome busca o IP**.
 
@@ -224,14 +224,139 @@ O DNS é lido da direita para a esquerda em sua estrutura lógica. A hierarquia 
 
 4. **Subdomínios/Hosts:** Como cs.princeton.edu ou o servidor específico cicada.cs.princeton.edu.
 
-O DNS é um sistema distribuído estruturado como uma árvore de autoridades (Zonas). Em vez de um único computador centralizado, a **responsabilidade é dividida**: os Servidores Raiz controlam o topo, apontando para os servidores de extensões como .com ou .edu (TLDs), que por sua vez direcionam para os servidores oficiais de cada organização, os Name Servers Autoritativos. Cada um desses servidores físicos funciona como um cartório local, armazenando exclusivamente as tabelas de mapeamento **(Nomes → IPs)** e subdomínios sob sua jurisdição direta ou delegando o controle para os níveis abaixo.
+Para que uma única entidade não precise gerenciar tudo, a árvore é dividida em Zonas. A ICANN cuida do topo, uma universidade cuida do seu domínio, e o departamento de computação pode gerenciar sua própria subzona. Cada zona é suportada por **Servidores de Nomes (Name Servers)**, sempre em **pares ou mais** para garantir redundância (se um cair, o outro responde). Todos esses name servers conhecem seus servidores superiores imediatos (pai), seus servidores inferiores imediatos (filhos) e a raiz da arvore.
 
 ![alt text](hierarquia_DNS.png)
 
-### Registros 
+### **Registros** 
+
+Cada servidor de nomes guarda as informações da sua zona em uma tabela com 5 informações: (name, TTL, Type, Class, Value). Os principais tipos de registros são:
+
+- **A** Mapeamento direto de nome para IP 
+- **NS:** Mapeamento de um nome para outro Name server (Eu não sei mas esse cara sabe)
+- **CNAME:** Apelidos que permitem que maquinas sejam identificadas por outros nomes além do seu
+- **MX:** Servidor de correio de um endereço
+
+TTL é o tempo ate aquela informação precisar ser atualizada
+
+### **Consulta (Resolução de nomes)**
+
+O seu computador (cliente) só tem acesso ao servidor DNS local que é configurado pelo computador ou fornecedora de internet.
+
+1. O computador pergunta o servidor DNS local: "Qual o IP de penguins.cs.princeton.edu?"
+2. O servidor retorna se souber (cache) e se não souber pergunta o servidor raiz.
+3. A Raiz responde: "Não sei o IP final, mas isso termina em .edu. Aqui está o IP do servidor TLD do .edu." (Registro NS).
+4. Perguntamos o servidor do ".edu" se ele sabe onde o nome esta se ele tiver o registro do tipo A ele responde, se não tiver retorna o servidor que pode ter.
+5. fazemos a etapa 4 recursivamente ate achar o registro em um servidor com autoridade e quando o servidor local encontrar ele salva no cache e retorna.
+
+UDP é usado como transporte pois é importante a resposta ser rapida e a ordem não importa.
+
+## **HTTP** 
+
+Web (World Wide Web) é diferente de Internet. A Internet é a infraestrutura de redes; a Web é um sistema criado em 1989 que funciona sobre a Internet. A ideia central da web é o hipertexto: a capacidade de um documento (arquivo estruturado com HTML) ter links/endereços (URLs) para outros documentos. Para isso funcionar os navegadores e os servidores com os arquivos precisam falar a mesma lingua que é o HTTP.
+
+### **URL** 
+
+È o endereço do documento que queremos, por exemplo: 
+
+http://www.cs.princeton.edu/index.html
+
+- http:// é o protocolo de comunicação
+- www.cs.princeton.edu é o nome do host que o DNS vai transformar em IP
+- /index.html arquivo fisico ou virtual que vamos acessar na maquina
+
+### **Requisição HTTP**
+
+A estrutura da requisição/resposta HTTP é:
+
+- **header:** 
+    - Metodo de requisição ou codigo de retorno
+    - Metadados do navegador
+    - Parametros
+- **Body:**
+    Dados em si como o arquivo HTML ou JSON enviado do cliente
+
+Metodos mais comuns:
+
+- **GET:** Não enviamos nada no body, apenas oq queremos e parametros
+- **POST:** Enviamos dados geralmente em formato JSON
+- **PUT:** Atualizamos um documento
+- **DELETE:** Apagamos um documento
+
+Principais coddigos de resposta:
+
+- **2xx:** Sucesso
+- **4xx:** Erro no cliente
+- **5xx**: Erro no servidor
 
 
-### Consulta
+### **Versões do HTTP**
+
+O protocolo HTTP foi originalmente construído em cima do protocolo TCP para garantir que nenhum dado fosse perdido. Porém, a forma como o HTTP usava o TCP mudou drasticamente para melhorar o desempenho:
+
+- **HTTP 1.0:** Ineficiente. Abria e fechava uma conexão TCP separada para cada item da página. Se uma página tivesse 1 HTML e 12 imagens, ele abria e fechava 13 conexões, causando muita lentidão.
+
+- **HTTP 1.1:** Introduziu as conexões persistentes. O cliente e o servidor mantêm a mesma conexão TCP aberta para transferir múltiplos arquivos, economizando tempo e processamento.
+
+- **HTTP/2 (2015):** Trouxe a multiplexação. Permite que várias requisições se sobreponham (ocorram em paralelo) na mesma conexão TCP. Também permitiu que o servidor "empurre" (push) recursos proativamente para o cliente antes mesmo dele pedir.
+
+- **HTTP/3 e QUIC:** O limite do HTTP/2 era o próprio TCP (se um pacote de dados é perdido, toda a fila de arquivos trava). O HTTP/3 resolve isso abandonando o TCP e adotando um novo protocolo de transporte chamado QUIC. O QUIC lida com múltiplas transmissões de forma independente e estabelece conexões seguras de maneira muito mais rápida.
+
+### **Caching** 
+
+O cache pode ocorrer em vários níveis: no seu próprio navegador, em servidores proxy da sua universidade ou nos roteadores do seu provedor de internet (ISP). O HTTP facilita isso usando cabeçalhos (como o Expires) que dizem ao cache até quando aquela cópia armazenada é válida antes de precisar consultar o servidor original novamente.
+
+## **Correio Eletrônico (SMTP, MIME, IMAP)**
+
+O primeiro protocolo para enviar emails foi o RFC 822 que era estruturado em 2 partes: 
+- **header** com metadados como assunto, remetente
+- **body** com texto da mensagem
+
+o problema era quando queriamos enviar fotos, PDFs ou qualquer coisa que não seja texto. 
+
+### **MIME**
+
+O MIME é uma extensão que permite que o email lide com diversos arquivos complexos por causa de 2 coisas:
+
+- Header com **content-type**
+- **Transforma os bytes do documento em char** (Por isso uma imagem por exemplo vai virar um conjunto de caracteres aleatorios, um para cada pixel por exemplo)
+
+### **SMTP (Simple Mail Transfer Protocol)**
+
+È quem faz o trabalho pesado de levar a mensagem ate o destino:
+
+- **MTA (Message Transfer Agent):** É o software que roda nos servidores de e-mail (como o Postfix ou Sendmail). O seu navegador/app entrega a mensagem para o seu MTA local, e esse MTA conversa com o MTA do destinatário.
+
+- **Gateways de E-mail:** Raramente um e-mail vai direto da sua máquina para a máquina do seu amigo. Ele passa por intermediários chamados Gateways. Eles armazenam a mensagem e a repassam adiante (Store and Forward). Isso é útil por motivos de escala e para garantir que, se o servidor do destinatário estiver fora do ar temporariamente, o gateway guarde a mensagem e tente de novo mais tarde.
+
+O SMTP, assim como o HTTP, é baseado em texto. O servidor do remetente e o do destinatário abrem uma conexão **TCP** e batem um papo literal:
+
+1. Cliente: HELO (Olá, eu sou o servidor X)
+
+2. Cliente: MAIL FROM: <voce@dominio.com> (Tenho uma mensagem deste remetente)
+
+3. Cliente: RCPT TO: <amigo@dominio.com> (É para este destinatário. Ele existe aí?)
+
+4. Servidor: 250 OK (Sim, pode mandar o texto)
+
+5. Cliente: DATA (Aqui vai a mensagem codificada com MIME) -> Encerra com um ponto final .
+
+### **Ler email** 
+
+O smtp envia o email mas como o usuário lê ? Para isso existem 2 protocolos principais: POP e IMAP
+
+- **POP:** Mensagens são entregues a um servidor compartilhado e o cliente acessa e baixa as mensagens
+
+- **IMAP:** Diferente do modelo antigo onde você baixava a mensagem e ela sumia do servidor, o IMAP mantém o seu cliente (seu celular ou navegador) sincronizado com o servidor.
+
+
+
+
+
+
+
+
+
 
 
 
