@@ -100,11 +100,11 @@ Existem varias maneiras de lidar com o desbalanceamento e algumas delas sao usar
 
 - **Alterando o algoritmo:**  Aqui mantemos a distribuicao dos dados intacta e alteramos o algoritmo em relacao a sua funcao de perda para dar pessos diferente para erros diferentes fazendo com que errar a classe minoritária seja muito mais custoso que a majoritaria... existem algumas técnicas:
 
-- **Cost-sensitive Learning:** Geralmente a Loss function que usamos (Usamos a derivada dela para calcular os gradientes) é a média do erro do bacth e nessa media nos damos o mesmo peso para todo tipo de erro... Aqui a proposta é manter uma matriz C_ij que representa o peso de classificar a classe i como classe j... a loss agora se torna a media ponderada por esses pesos. (No fim a derivada da Loss vai ser a mesma só que multiplicado pelos pesos)
+    - **Cost-sensitive Learning:** Geralmente a Loss function que usamos (Usamos a derivada dela para calcular os gradientes) é a média do erro do bacth e nessa media nos damos o mesmo peso para todo tipo de erro... Aqui a proposta é manter uma matriz C_ij que representa o peso de classificar a classe i como classe j... a loss agora se torna a media ponderada por esses pesos. (No fim a derivada da Loss vai ser a mesma só que multiplicado pelos pesos)
 
-- **Class-Balanced Loss:** Uma desvantagem da abordagem anterior é o fato de termos que definir na mao a matriz de pesos e ela nao poder ser reutilizada para qualquer problema... essa maneira propoe usarmos de peso para classe i, (N/total_exemplos_i) que cresce quando temos poucos exemplos dando maior peso e diminui quando temos muitos exemplos. 
+    - **Class-Balanced Loss:** Uma desvantagem da abordagem anterior é o fato de termos que definir na mao a matriz de pesos e ela nao poder ser reutilizada para qualquer problema... essa maneira propoe usarmos de peso para classe i, (N/total_exemplos_i) que cresce quando temos poucos exemplos dando maior peso e diminui quando temos muitos exemplos. 
 
-- **Focal Loss:**  Aqui abordamos o problema de forma diferente pois queremos dar maior peso nos exemplos que temos maior dificuldade (nao estamos muito bem ainda)... para isso damos um peso proporcional a confianca do modelo na predicao (probabilidade), ou seja, exemplos que a probabilidade é alta tem peso menor que exemplos que temos muita duvida.
+    - **Focal Loss:**  Aqui abordamos o problema de forma diferente pois queremos dar maior peso nos exemplos que temos maior dificuldade (nao estamos muito bem ainda)... para isso damos um peso proporcional a confianca do modelo na predicao (probabilidade), ou seja, exemplos que a probabilidade é alta tem peso menor que exemplos que temos muita duvida.
 
 ### Data Augmentation
 

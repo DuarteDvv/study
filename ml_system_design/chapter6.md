@@ -142,10 +142,33 @@ Paralelismo de dados funciona muito bem quando uma copia do seu modelo (parametr
 
 Outro detalhe importante é que paralelismo de modelo e de dados nao sao mutuamente exclusivos.
 
-
-
 ## **AutoML**
 
+Consiste na ideia de usar tempo de computacao para encontrar os melhores algoritmos/modelos para um problema real de ML. Ao invés de tert 100 engenheiros de ML gaste 100x mais para encontrar o melhor modelo sozinho.
+
+- **Soft AutoML (Hyperparametros):** A forma mais simples e mais popular de autoML é o **tunagem de hyperparametros** que sao configuracoes que modificam o espaco de busca do modelo durante o treino (diferente de parametros que sao o proprio espaco do modelo). Essa busca pode ser manual mas exitem formas aleatoras, de grid ou otimizacao bayesiana (HyperOPT) que sao bem mais eficientes (alguns hyperparametros sao mais sensiveis e necessitam mais cuidado). Além disso, a tunagem tem que ser feita no grupo de validacao pois se nao iremos overfittar o modelo ao teste.
+
+- **Hard AutoMl (Architeture e Otimizador Aprendido)**: E se ao invés de fazer uma busca apenas no universo dos hyperparamtros fizessemos uma busca na arquitetura de redes neurais ? Isso é chamado de NAS (Neural Architeture Search) em que varios componentes como quantidade de blocos convolucionais. Uma NAS é composta de 3 elementos: 
+- **Espaco de busca:** Blocos de arquitetura que serao combinados
+- **Heuristica de performace:** Nao queremos treinar todas as redes testadas do zero entao precisamos de uma forma rapida de avaliar qualidade.
+- **Estrategia de exploracao:** A forma que os componentes serao combinados, como grid, porém os de ML classico acabam sendo muito caros entao solucoes com aprendizado por reforco e algoritmos geneticos existes.
+
+No processo comum de treino em ML voce tem um modelo e um algoritmo de otimizacao (Adam, SGD) que te ajuda a encontrar os parametros que minimizam uma funcao de custo para um determinado dataset. Uma abordagem proposta foi ao invés de otimizar uma funcao fixa, **colocamos uma rede neural para aprender a ensinar seu modelo (quanto devemos ajustar os pesos)**. Learned Optimizer sao redes que tem o objetivo unico de ensinar outras redes. Existem duas abordagens principais:
+
+- **Otimizacao conjunta:** Treinamos a "Otimizador" e nosso modelo junto do zero. Isso é muito caro e demorado.
+- **Meta-learning:** Treinamos o otimizador para otimizar diversos problemas/tarefas diferentes, assim ensinando ele a aprender e consequentemente ter um bom desempenho em qualquer tarefa que de ele. 
+
+## **4 Fases do desenvolvimento de modelos ML**
+
+1. **Heuristicas Basicas:** Aqui testamos as solucoes (baseline fraco) mais simples (if/else e estatistica) e vemos quao bem elas se saem na realidade. Depois, se necessário abordar com ML.
+
+2. **Modelos Simples:** A ideia aqui é comecar com modelos simples e faceis de colocar em producao mesmo que o resultado deles nao seja o melhor eles servem para validar o pipeline e infraestrutura.
+
+3. **Otimizar os modelos simples:** Aqui tentamos chegar ao máximo que o simples consegue oferecer
+
+4. **Modelos mais complexos e lidar com mudancas:** chegamos ao limite dos modelos simples, mas o negócio ainda precisa de métricas melhores para se pagar ou evoluir. Só agora você tem permissão para usar "IAs pesadas". Também precisa monitorar o Data Drift ou decaimento do modelo (o quão rápido o seu modelo fica "burro" ou desatualizado em produção), para planejar a infraestrutura de retreinamento automático.
+
+## Offline Evaluation
 
 
 
