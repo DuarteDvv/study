@@ -2,21 +2,27 @@
 
 ## **Escolhendo um modelo de ML** 
 
-Ao inicio de um projeto precisamos escolher qual modelo utilizar para nosso problema... normalmente começamos por algo mais simples e evoluimos essa escolha mas nem sempre temos tempo para testar todas as possibilidades possiveis de modelos/arquiteturas disponiveis. Essas escolhas são guiadas por diversas caracteristicas dos nossos dados, do problema, da disponibilidade de recursos, das restrições da empresa e do tempo disponivel... por exemplo se temos pouco tempo não podemos testar tudo e portanto temos que fazer uma busca guiada. Se nosso problema precisa de um tempo de inferencia baixo não é interessante modelos de redes neurais gigantescos (A não ser que tenha dinheiro e hardware disponivel mas mesmo assim nem sempre é possivel), se nossos recursos são poucos talvez modelos mais simples sejam a melhor escolhe provisória... se temos poucos dados modelos que aprendem com poucos dados, se temos muitos dados modelos que conseguem extrair o melhor disso como redes neurais. Precisamos de online learning ? nem todo modelo é capaz de aprender incrementalmente. Se precisa de explicabilidade talves redes neurais não sejam a melhor opção. Se precisa processar texto provavelmente transformers são a melhor opção.
+A escolha do modelo ideal não viabiliza testar todas as arquiteturas possíveis. Ela é um equilíbrio guiado por restrições técnicas, de negócio e de dados.
+
+- **Dados:** Poucos dados exigem modelos estatísticos simples (ex: SVM); volumes massivos justificam Redes Neurais.
+
+- **Latência e Recursos:** Modelos gigantes exigem hardware caro. Se a inferência deve ser rápida e barata, evite-os.
+
+- **Requisitos de Negócio:** Se o problema exige explicabilidade, evite caixas-pretas. Se exige aprendizado incremental, use modelos compatíveis com Online Learning.
 
 Dicas para escolha de modelo:
 
-- Evitar ao máximo o estado da arte atual: A maioria das arquiteturas/modelos estado da arte foram desenvolvidos no ambiente academico em que pesquisadores superam benchmarks definidos e estáticos com o unico objetivo de superar métricas de qualidade... independente do tempo, custo ou premiças. Muito dificilmente irá funcionar para uma quantidade maior de usuários... ou nos dados de produção que mudam constantemente. Sempre escolha o mais simples que resolva seu problema... se existe um modelo mais simples e barato ele é a melhor opção.
+- **Comece pelo Simples (Baseline):** Modelos simples são rápidos de treinar, fáceis de interpretar e servem para validar o pipeline de dados de ponta a ponta antes de adicionar complexidade.
 
-- Comece sempre usando modelos mais simples: Modelos simples são geralmente mais faceis de se utilizar, mais rapidos e mais interpretaveis... começar com eles nos permite ter um baseline de melhoria para modelos mais complexos e nos permite validar o pipeline de inferencia para identificar erros de forma mais simples antes de adicionar componentes complexos. Nem sempre simples significa o mais fraco de todos... hoje em dia por exemplo é muito facil ter acesso a LLMs pretreinadas e portanto tornando elas faceis de usar...
+- **Cuidado com Estado da Arte (SOTA):** Modelos SOTA acadêmicos buscam bater benchmarks estáticos sem focar em custo, infraestrutura ou dados mutáveis de produção. Raras vezes são viáveis para o mundo real logo de início.
 
-- Evitar viés humano ao escolher os modelos: Se você ou alguém da equipe esta muito animado com um novo lançamento de um modelo estado da arte ou com um novo benchmark de metodo que demonstrou bons resultados... querer usar/testar esse métodos é natural porém novos metodos são propostos diariamente. È muito improvavel que a nova arquitetura seja melhor em todos os contextos existentes pois existem muitas variaveis possiveis então não é pq bateu em uma comparação em um contexto que no seu vai funcionar.
+- **Viés de Novidade:** Evite o impulso da equipe de usar a arquitetura "do momento". Um modelo ter batido um benchmark específico não garante que ele funcionará no cenário particular da sua empresa.
 
-- O melhor modelo agora pode não ser o melhor modelo no futuro: Se um modelo tem um desempenho pior agora isso não significa que esse modelo com novos dados não pode generalizar melhor no futuro... se plotarmos a learning curve, ou seja, a loss conforme aumentamos os dados de treinamento podemos ver como a generalização do modelo escala com a quantidade de dados. Se estivermos no começo de um sistema e não tivermos dados ainda é provavel que modelos mais simples como SVM vão se sair melhor... porém conforme vamos adquirindo mais dados é possivel que modelos como os de redes neurais generalizem melhor...
+- **O Modelo Ideal Muda com o Tempo:** Avalie a Learning Curve (Loss vs. Volume de Dados). Modelos simples ganham com poucos dados, mas Redes Neurais escalam melhor conforme o volume cresce.
 
-- Considerar trade-offs do contexto atual: Em muitos problemas resultados errados tem pesos diferentes... um falso negativo pode ser mais caro que um falso positivo então faz sentido escolher os modelos que sejam melhores nesses detalhes do problema. Outro ponto comum é o custo x performance, talvez trocar o modelo barato pelo caro não compense no final pois a diferença nos resultados não é tão relevante...
+- **Custos:** Escolha o modelo pensando no impacto do erro de negócio (ex: quando um Falso Negativo custa mais caro que um Falso Positivo) e no trade-off Custo x Performance.
 
-- Entender as suposições de cada modelo/arquitetura: Todo modelo é construido em cima de alguma suposições... seja sobre distribuição ou independencia... é importante considerar isso na hora de escolher algo para seu contexto.
+- **Suposições do Modelo:** Todo algoritmo assume premissas sobre os dados (linearidade, independência, distribuições). Garanta que seus dados não quebrem essas regras.
 
 ## **Ensemble**
 
@@ -54,19 +60,25 @@ Monitorar o modelo durante o treinamento pode ser uma grande parte do processo d
 
 - **parametros e hyperparametros:** monitorar learning rate (quando não é fixo) e norma do vetor gradiente (tamanho do vetor)... pode ser util para verificar se o gradiente não esta crescendo muito (infinito) ou reduzindo muito.
 
-Esses itens (estado atual do treino e modelo) nos permite comparar experimentos, entender melhor nosso modelo e encontrar problemas de forma mais facil (debug)... pode ajudar a entender o efeito de pequenas alterações na performace do modelo. Idealmente deveriamos monitorar tudo porém é um esforço cognitivo muito grande que pode nos distrair do que for importante e além disso pode ser pesado para as ferramentas disponiveis atualmente.
+Esses itens (estado atual do treino e modelo) nos **permite comparar experimentos**, entender melhor nosso modelo e encontrar problemas de forma mais facil (debug)... pode ajudar a entender o efeito de pequenas alterações na performace do modelo. Idealmente deveriamos monitorar tudo porém é um esforço cognitivo muito grande que pode nos distrair do que for importante e além disso pode ser pesado para as ferramentas disponiveis atualmente.
 
 ### **Versionamento**
 
-Imagine que nosso resultado atual conseguiu um desempenho mas você viu em algum lugar uma configuração especifica que parece promissora... voce muda o codigo do experimento e acabou que os resultados não foram tão bons quanto o esperado. Porém voce não lembra exatamente como o codigo antigo era e pode ter perdido para sempre seus resultados ou gastar tempo para recuperar... por isso versionamento de codigo é importante. Já é comum versionar codigo através de ferramentas git/github mas e os dados ?
+Modificar o código ou hiperparâmetros de um experimento promissor e piorar o resultado é comum. Sem versionamento, recuperar o estado anterior que funcionava gera desperdício de tempo. Contudo, enquanto o versionamento de **código** via Git já é padrão, o ecossistema de ML exige versionar também **dados e modelos**.
 
-Existem alguns motivos para o versionamento de dados não ser exatamente igual ao de codigo:
+Por que não usar Git para Dados e Modelos?
 
-- **Tamanho:** dados podem ter diversos tamanhos em memória como 10GiB que é bem diferente de um arquivo de codigo de alguns kib... codigo é versionado mantendo todas as versões antigas dos dados mas não podemos fazer isso com dados pois ocuparia muita memória com duplicatas. A mesma lógica se aplica ao clone que fazemos de codigo em que trazemos todo codigo para maquina local porém ao fazer isso com dados não temos garantia que caiba.
+- **Volume (Tamanho):** Arquivos de código ocupam kilobytes; datasets e pesos de redes neurais ocupam gigabytes ou terabytes. O Git guarda o histórico completo de modificações localmente, o que tornaria um git clone ou o armazenamento em nuvem inviáveis por falta de espaço em disco.
 
-- **Operações indefinidas:** O que são operações de diff entre dois dadasets ? como resolver conflitos de dados com merge ? 
+- **Operações Indefinidas:** No código, usamos git diff e git merge para comparar linhas de texto e resolver conflitos. Não existe um equivalente trivial de diff ou merge textual para tabelas de bilhões de linhas, imagens ou arquivos binários de pesos de modelos (.pth, .pkl).
 
-Versionamento e monitoriamento ajudam muito com a reprodutibilidade mas não garantem graças ao não determinismo que alguns métodos possuem e também o hardware... uma mesma semente em computadores diferentes não necessáriamente tera resultados iguais tornando a reprodutibilidade 100% igual impossivel sem saber todos os detalhes do ambiente. Além disso, ao invés de executar infinitos experimentos é importante entender a teorica e premissas de cada cenário para reduzir ao maximo o numero de experimentos com conhecimento previo.
+Para garantir que um experimento seja replicável, ferramentas modernas (Git, DVC e MLflow / Weights & Biases) trabalham juntos:
+
+- **Git:** Versiona Codigo
+- **DVC:** Versiona Dados
+- **MLflow/Wandb:** Versiona Modelos e faz tracking de experimentos
+
+Versionamento e monitoriamento ajudam muito com a reprodutibilidade mas **não garantem graças ao não determinismo** que alguns métodos possuem e também o hardware... uma mesma semente em computadores diferentes não necessáriamente tera resultados iguais tornando a reprodutibilidade 100% igual impossivel sem saber todos os detalhes do ambiente. Além disso, ao invés de executar infinitos experimentos é importante **entender a teorica e premissas de cada cenário** para reduzir ao maximo o numero de experimentos com conhecimento previo.
 
 ### **Debugging ML Models**
 
@@ -144,14 +156,14 @@ Outro detalhe importante é que paralelismo de modelo e de dados nao sao mutuame
 
 ## **AutoML**
 
-Consiste na ideia de usar tempo de computacao para encontrar os melhores algoritmos/modelos para um problema real de ML. Ao invés de tert 100 engenheiros de ML gaste 100x mais para encontrar o melhor modelo sozinho.
+Consiste na ideia de usar tempo de computacao para encontrar os melhores algoritmos/modelos para um problema real de ML. Ao invés de ter 100 engenheiros de ML gaste 100x mais para encontrar o melhor modelo sozinho.
 
 - **Soft AutoML (Hyperparametros):** A forma mais simples e mais popular de autoML é o **tunagem de hyperparametros** que sao configuracoes que modificam o espaco de busca do modelo durante o treino (diferente de parametros que sao o proprio espaco do modelo). Essa busca pode ser manual mas exitem formas aleatoras, de grid ou otimizacao bayesiana (HyperOPT) que sao bem mais eficientes (alguns hyperparametros sao mais sensiveis e necessitam mais cuidado). Além disso, a tunagem tem que ser feita no grupo de validacao pois se nao iremos overfittar o modelo ao teste.
 
 - **Hard AutoMl (Architeture e Otimizador Aprendido)**: E se ao invés de fazer uma busca apenas no universo dos hyperparamtros fizessemos uma busca na arquitetura de redes neurais ? Isso é chamado de NAS (Neural Architeture Search) em que varios componentes como quantidade de blocos convolucionais. Uma NAS é composta de 3 elementos: 
-- **Espaco de busca:** Blocos de arquitetura que serao combinados
-- **Heuristica de performace:** Nao queremos treinar todas as redes testadas do zero entao precisamos de uma forma rapida de avaliar qualidade.
-- **Estrategia de exploracao:** A forma que os componentes serao combinados, como grid, porém os de ML classico acabam sendo muito caros entao solucoes com aprendizado por reforco e algoritmos geneticos existes.
+    - **Espaco de busca:** Blocos de arquitetura que serao combinados
+    - **Heuristica de performace:** Nao queremos treinar todas as redes testadas do zero entao precisamos de uma forma rapida de avaliar qualidade.
+    - **Estrategia de exploracao:** A forma que os componentes serao combinados, como grid, porém os de ML classico acabam sendo muito caros entao solucoes com aprendizado por reforco e algoritmos geneticos existes.
 
 No processo comum de treino em ML voce tem um modelo e um algoritmo de otimizacao (Adam, SGD) que te ajuda a encontrar os parametros que minimizam uma funcao de custo para um determinado dataset. Uma abordagem proposta foi ao invés de otimizar uma funcao fixa, **colocamos uma rede neural para aprender a ensinar seu modelo (quanto devemos ajustar os pesos)**. Learned Optimizer sao redes que tem o objetivo unico de ensinar outras redes. Existem duas abordagens principais:
 
@@ -168,9 +180,49 @@ No processo comum de treino em ML voce tem um modelo e um algoritmo de otimizaca
 
 4. **Modelos mais complexos e lidar com mudancas:** chegamos ao limite dos modelos simples, mas o negócio ainda precisa de métricas melhores para se pagar ou evoluir. Só agora você tem permissão para usar "IAs pesadas". Também precisa monitorar o Data Drift ou decaimento do modelo (o quão rápido o seu modelo fica "burro" ou desatualizado em produção), para planejar a infraestrutura de retreinamento automático.
 
-## Offline Evaluation
+## **Offline Evaluation**
+
+Consiste essencialmente no processo de avaliar seu modelo antes de ir para produção (deploy).
+
+### **Baselines**
+
+Baselines são importantes para ter uma noção de **quão bem nosso modelo esta comparado a soluções** mais simples, humanos ou outras soluções robustas:
+
+- **Random Baseline:** Comparando com um modelo que a saida tem probabilidade definida como 50% para cada classe.
+- **Heuristica Simples:** Comparar com alguma heuristica simples sem usar ML (como prever sempre a classe mais comum) 
+- **Humano:** Saber quão bem um humano consegue fazer a tarefa
+- **Soluções existentes:** Comparar com soluções existentes como arquiteturas diferentes ou modelagens diferentes. Nem sempre um modelo tem que ser melhor que outro em 100% das coisas mas coisas como custo ou tempo de inferencia também importam.
+
+### **Metodos de avaliação**
+
+Na academia muitas vezes queremos focar apenas nas métricas de performace. Em produção outros problemas também são importantes de se avaliar como rubustes, justiça e calibração.
+
+- **Testes de perturbação:** O modelo se sair bem com dados de treino não significa que ele vai sair bem com dados reais. Dados de treino comportados podem não representar tão bem dados reais cheios de ruidos que podem confundir o modelo. Um exemplo disso seria treinar com audios limpos e de alta qualidade mas não levar em consideração que na vida real existem audios com baixa qualidade e cheios de ruidos como musica de fundo.
+
+- **Testes de invariância:** O output do modelo não pode mudar se uma caracteristica sensivel do input mudar. Por exemplo se o sexo de uma pessoa alterar a predição não pode ser diferente pois isso signfica um viés no modelo. Tirar features como essas é interessante quando possivel mas nem sempre é ... tirar pessoas negras de foto ?.
+
+- **Testes de direção:** Testes para verificar se a direção de uma predição esta coerente com a direção de uma feature. Por exemplo se uma feature m² aumentar a previsão de preço tem que aumentar também.
+
+- **Calibração de modelo:** Um modelo é calibrado quando o numero de vezes que ele retorna um score 0.7 é exatamente a proporção de vezes que ele acertou (70% das vezes que o score é 0,7 ele tem que acertar). Caso, contrário ele esta descalibrado. Isso pode ser visualizado com calibration plots (que score predito e quantas vezes com o score predito ele realmente acertou) em que a linha diagonal é o modelo perfeitamente calibrado. Para estar calibrado, se você pegar todas as vezes que ele previu 0.1, a classe positiva deve acontecer em exatamente 10% dos casos (e a classe negativa em 90%).
 
 
+![alt text](images/calibration_plots.png)
+
+- **Mensurar confiança:** Uma forma de avaliar cada unica predição do modelo em questão de que confiança é necessária para usar aquela predição ? se estamos em ambiente medico provavelmente só queremos usar predições com confiança maior que 99%, abaixo disso podemos descartar ou chamar um especialista (human-in-the-loop).
+
+- **Avaliação Slice-based:** Essa validação em suma significa **separar seus dados em subconjuntos (seguindo alguma logica) e avaliar seu modelo em cada subconjunto**. Mas afinal qual o ponto disso ? A ideia aqui é que um padrão observado em varios grupos separados pode mudar ou sumir quando esses grupos são combinados. Isso é chamado de **paradoxo de simpson** e um exemplo interessante foi na universidade de berkley em que olhando para todo o conjunto mulheres tinham aprovação de 33% enquanto homens 44% mas olhando de forma separada por departamento as mulheres eram mais aprovadas em 4/6 departamentos. Esse efeito pode levar a dois problemas opostos:
+
+    - **Modelo com performace diferente em cada grupo:** Isso pode significar que o modelo tem algum tipo de viés que privilegia algum grupo.
+
+    - **Modelo com performace igual em cada grupo:** Aqui o problema já é tratar grupos da mesma forma quando existem grupos que são mais criticos e deveriam ser privilegiados.
+
+    Ok, sabemos do problema mas como encontrar os grupos ?
+
+    - **Heuristicas:** usar conhecimento do dominio e do objetivo da empresa para divisão dos grupos
+    - **Analise de erro:** Encontrar padrões nos erros do modelo
+    - **Frameworks:** bibliotecas que disponibilizam metodos automaticos
+
+    (A qualidade dos dados nesses grupos criticos tem que ser garantida)
 
 
 
