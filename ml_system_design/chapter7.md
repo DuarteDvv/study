@@ -63,6 +63,31 @@ Para lidar com a latencia de predicoes online ou streaming 2 componentes sao nec
 
 ## **Unificando Batch Pipeline e Streaming Pipeline**
 
+É comum empresas terem pipelines em batch e streaming separados, sendo o de batch geralmente para treino em que conseguimos facilmente calcular as features de todos os dados de umas vez e o pipeline de inferencia sendo de streaming em que geralmente uma janela deslizante é mantida para features de streaming. O problema de ter dois pipelines é que é mais facil ter bugs e dificil de debugar além de ter duplicacao de codigo. A solucao é tentar unificar Batch e Streaming em um unico pipeline garantindo que o feature engineering seja identico para treino e inferencia, isso geralmente é feito usando ferramentas como **apache flink** que consegue tratar dados de **batch como se fossem streaming**... também existem **feature stores que armazenam tanto features de treino quanto de inferencia**.
+
+![alt text](images/streaming_pred_pipe.png)
+
+## **Reduzindo latencia de inferencia**
+
+Nao é suficiente um pipeline rapido e eficiente se o modelo ainda demora muito na inferencia. Existem 3 formas principais de lidar com isso:
+
+### **Model Compression**
+
+Consiste no processo de fazer o modelo ser menor perdendo o minimo de desempenho. Esse processo geralmente é feito para fazer o modelo caber em um hardwares mais fracos mas geralmente modelos menores também significa inferencia mais rapido.
+
+- **Low-Rank Factorization:** Troca uma matriz de tamanho NxM por sua fatoracao em duas matrizes de dimensao k tal que k << M,N . Uma das matrizes sendo Nxk e outra sendo kxM e a matriz original pode ser reconstruida pelo produto de ambas. Essa tecnica faz com que ao invés de NxM posos temos k*(N+M) pois N e M sao sempre maiores que k e dominam a complexidade. Unico problema é que nao é muito generico para qualquer arquitetura. Um uso comum é o LORA que faz isso com a matriz de adaptadores que é somada aos pesos treinados.
+
+- **Knowledge Distillation:** Consiste em treinar um modelo menor (student) para imitar (treinar usando a saida do modelo maior) um modelo maior (teacher) e conseguir repetir boa parte do conhecimento do professor usando menor parametros. A desvantagem é que é necessário ter um modelo grande ja treinado.
+
+- **Pruning:** Consiste na identificacao e remocao de pesos pouco importantes nas previsoes do modelo reduzindo drasticamente o numero de parametros diferentes de 0 e consequentemente a memoria.
+
+- **Quantization:** Consiste em representar os parametros floats do modelo usando menos bits e consequentemente menor precisao. Por exemplo trocar os parametros de 32bits para 16bits ou até mesmo utilizar inteiros que as operacoes aritmeticas sao mais simples e rapidas. Isso reduz o tamanho do modelo além de acelerar a inferencia e treino... pode ser usado tanto durante o treino quanto pos treino. 
 
 
-## **Model Compression**
+### **Hardware e Cloud**
+
+### **Model Optimization**
+
+
+
+
