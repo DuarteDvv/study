@@ -69,7 +69,7 @@ Para lidar com a latencia de predicoes online ou streaming 2 componentes sao nec
 
 ## **Reduzindo latencia de inferencia**
 
-Nao é suficiente um pipeline rapido e eficiente se o modelo ainda demora muito na inferencia. Existem 3 formas principais de lidar com isso:
+Nao é suficiente um pipeline rapido e eficiente se o modelo ainda demora muito na inferencia. Existem algumas principais formas de lidar com isso:
 
 ### **Model Compression**
 
@@ -84,7 +84,29 @@ Consiste no processo de fazer o modelo ser menor perdendo o minimo de desempenho
 - **Quantization:** Consiste em representar os parametros floats do modelo usando menos bits e consequentemente menor precisao. Por exemplo trocar os parametros de 32bits para 16bits ou até mesmo utilizar inteiros que as operacoes aritmeticas sao mais simples e rapidas. Isso reduz o tamanho do modelo além de acelerar a inferencia e treino... pode ser usado tanto durante o treino quanto pos treino. 
 
 
-### **Hardware e Cloud**
+### **Cloud and Edge Devices**
+
+Outro ponto a se decidir é onde a inferencia do modelo ira executar, nas suas maquinas hospedadas na nuvem (Cloud) ou nos dispositivos dos usuários (Edge):
+
+- **Cloud:** Cloud é a forma mais facil de colocar um modelo para funcionar, inclusive existem ferramentas como SageMaker para facilitar isso em ambientes da AWS. Aqui usamos o hardware da disponibilizados por eles para treinar e fazer inferencia dos modelos. O problema disso é a dependencia a servicos externos e os alto valores cobrados por essas empresas para computacao de modelos grandes.
+
+- **Edge:** Consiste em utilizar a maquina do usuário para treinar/executar os seus modelos localmente. Essa abordagem tem diversas vantagens como:
+    - reduzir muito a quantidade de computacao em nuvem (menos dinheiro gasto)
+    - Nao depende de internet e portanto é mais estavel, nao precisa se preocupar com latencia (a nao ser a de execucao do modelo) e permite usar em situacoes que nao é permitido acesso a internet
+    - Nao existe mais problemas relacionados a privacidade de dados pois os dados nao saem do ambiente local
+
+A unica limitacao da Edge Computing é que os dispositivos das pessoas tem que ser fortes os suficientes para executar/treinar o modelo e também com energia (bateria) suficiente para aguentar esse processamento. Devido a essa limitacao vem topicos como compilacao e otimizacoes dos modelos para rodar em hardware especificos.
+
+#### **Compilacao e Otimizacao de modelos para Edge Devices**
+
+
+
+
+
+
+
+
+
 
 ### **Model Optimization**
 
