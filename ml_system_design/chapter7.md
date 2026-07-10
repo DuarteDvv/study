@@ -99,17 +99,26 @@ A unica limitacao da Edge Computing é que os dispositivos das pessoas tem que s
 
 #### **Compilacao e Otimizacao de modelos para Edge Devices**
 
+O termo compilacao de modelo significa **pegar o codigo do seu modelo escrito em algum framework como pytorch/tensorflow e transformar esse codigo em um codigo otimizado para hardwares especificos** como CPUs, GPUs e TPUs. Porém, imagine que a cada hardware novo os desenvolvedores do framework teriam que otimizar para ele e os desenvolvedores do hardware dar suporte para esse framework... isso é o famoso **problema do NxM** (mesmo problema resolvido pelo MCP) em que a combinacao explode. A solucao para isso foram as **representacoes intermediarias** em que cada framework só precisa saber converter para essa representacao e os hardwares só precisam saber ler essa representacao tornando o **problema N+M**. Geralmente essas representacoes tem niveis diferentes em ir de um nivel mais alto (codigo) para um mais baixo (Grafo de computacao) é chamado de **lowering**.
 
+Diferencas principais entre hardwares:
 
+- **CPU:** escalar (processa números um de cada vez, embora CPUs modernas tenham instruções vetoriais também) - inferência de modelos pequenos e pré/pós-processamento
+- **GPU:** vetor 1D (milhares de núcleos simples trabalhando em paralelo) - treino e inferência de modelos grandes 
+- **TPU:** tensor 2D (arquitetura especializada feita especificamente pra álgebra linear de ML) - operações de matriz em lote
+- **NPU:** chip especializado (geralmente em celulares/edge devices) só pra rodar inferência de redes neurais - baixíssimo consumo de energia e roda modelos leves direto no dispositivo
 
+Mesmo depois de compilado o codigo gerado pode nao ser eficiente em termos de **aproveitar bem a estrutura de memoria, cache e paralelizacao do hardware**. Além disso, se varios frameworks diferentes sao usados qual deles devemos otimizar ? nao existe uma otimizacao entre eles. Isso levava a necessidade de pessoas especializadas em ML e Hardware para otimizar manualmente. A solucao foi **compiladores que otimizam automaticamente** as operacoes e grafo de computacao do modelo, ou em outras palavras, otimizacao local e global.
 
+- **Local:** Otimiza operacoes locais do grafo
+    - **Vectorization:** Em vez de processar um item do loop por vez, processa vários de uma vez (que estão contíguos na memória)
+    - **Parallelization:** Divide um array em pedaços independentes e processa cada pedaço em paralelo
+    - **Loop tilling:** Muda a ordem de acesso aos dados no loop pra aproveitar melhor o cache/memória do hardware específico.
+    - **Operator Fusion:**  Junta várias operações em uma só, pra evitar passar pela memória várias vezes 
+- **Global:** Fundir varios nós do grafo de computacao de acordo com vantagens especificas como operacoes parecidas. 
 
+O problema é que existem muitas combinacoes para executar o mesmo grafo tornando dificil fazer isso manualmente sempre para novos hardwares e etc. Uma solucao para isso é usam ML para otimizar grafos -> AutoTVM em que prevemos caminhos promissores sem testar todos. Ele faz isso usando tempos reais de execucao de subgrafos para treinar um modelo para prever tempo de caminhos futuros. 
 
+## **ML in Browsers**
 
-
-
-### **Model Optimization**
-
-
-
-
+A ideia aqui é ao invés de compilar o modelo para hardwares especificos, compilamos para navegadores e conseguentemente o problema que antes era N + M vira N + 1 pois só precisos dar suporte para o navegador. A primeira ideia que vem a cabeca é compilar para javascript pois é a linguagem nativa de navegadores porém JS é muito lendo e nao serve para logica complexa. A melhor solucao encontrada ate hoje foi o WebAssembly que é formato executavel em navegadores que é mais rapido que javascript... mas ainda é muito mais lento que qualquer codigo sendo executado diretamente no SO.
