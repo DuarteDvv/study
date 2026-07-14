@@ -62,3 +62,56 @@ Em aprendizado supervisionado podemos dizer que nossos dados de treino seguem um
 - **Concept Shift:** A distribuicao dos dados P(X) nao muda mas a probabilidade do rotulo dado esse X (P(Y|X)) muda drasticamente. Acontece quando efeitos externos efetam o rotulo sem afetar os dados, por exemplo a **valorizacao de um bairro afeta os precos (Y) das casas sem que a casa (X) mude**.
 
 ### **General Data Distribution Shifts**
+
+Existem mais tipos de data shift nao muito estudados mas que ainda podem afetar a performace do modelo:
+
+- **Feature change:** Que é quando as **features do modelo mudam** como uma nova feature adicionada, uma antiga removida ou o universo possivel daquela feature mudar. 
+- **Label Schema change:** Que é quando as **possibilidades ou universo do rotulo muda**. Em classificacao seria como novas classes aparecerem e em regressao o intervalo e previsao mudar drasticamente.
+
+Nao existe regra que defina que apenas um tipo acontece de cada vez, podem acontecer simultaneamente.
+
+### **Detectando Data Shift**
+
+Idealmente para detectar o data shift seria interessante **monitorar métricas de qualidade em producao (por exemplo F1, recall ou AUC-ROC)** porém nem sempre temos o rotulo real e se tivermos geralmente é demorado para ficarem prontos e confiaveis. Quando nao é possivel monitorar os rotulos, o ideal seria **monitorar outras distribuicoes de interesse** e essas distribuicoes sao: P(Y), P(X|Y), P(Y|X) e P(X). Nas 3 primeiras precisamos saber o rotulo... existem pesquisas sobre como detectar label shift sem ter acesso a P(Y) da distribuicao target porém **em geral na industria a maioria dos metodos é focado no shift do input P(X)**.
+
+#### **Metodos estatisticos**
+
+- **Comparando Estatisticas Simples:** A forma mais simples seria **comparar estatisticas** como media, mediana, variancia e quantis dos dados de treino com os dados de producao, se existir uma diferenca muito grande das duas amostras com certeza o shift aconteceu, mas **se nao existir uma diferenca muito grande (sao parecidos), nao podemos afirmar nada** pois amostras diferentes com mesmas estatisticas podem ter formatos totalmente diferentes como mostrado no exemplo do quarteto de anscombe.
+
+![alt text](images/anscombe_quartet.png)
+
+- **Testes Estatisticos:** Outra forma mais robusta é usar testes estatisticos para comparar as duas amostras (treino e producao). Alguns testes interessantes:
+    - **Kolmogorov (KS):** Nao paramétrico (nao assume nada da distribuicao) mas só funciona para dados unidimensionais (geralmente features sao multi)
+    - **Least-Squares Density Difference e MMD:** Funciona com dados multidimensionais mas é mais usado em pesquisa que industria
+
+    Em geral é interessante que exista uma **reducao de dimensionalidade antes dos testes** pois eles funcionam melhor com cardinalidade baixa. Além disso, significancia estatistica != importancia pratica... mas uma boa heuristica é: **Se é significante com amostras pequenas entao o efeito (drift) provavelmente é muito forte**.
+
+#### **Qual janela dos dados comparar?**
+
+Para executar esses testes e comparacoes e identificar o drift é necessário **definir a granularidade da nossa janela de comparacao**, afinal mudancas abruptas (muita mudanca de uma vez só) sao mais faceis de identificar que mudancas graduais. A ideia aqui é dicidir se comparamos os dados de atuais com o ultimo dia ? ultima semana ? ultimo mes ? tudo isso depende do ciclo dos dados. Se a **janela for menor que o ciclo dos dados ela vai identificar drift mesmo nao existindo nenhum e gerar um falso positivo**.
+
+![alt text](images/false_drift.png)
+
+Estatisticas em series temporais geralmente sao de 2 tipos:
+
+- **Estatisticas de janelas deslizantes:** Calculadas em janelas e zerada a cada janela nova
+- **Estatisticas cumulativas:** Acumulada com tempo (carrega informacao anterior)
+
+Um perigo de **estatisticas cumulativas é que elas podem camuflar quedas grandes de desempenho**. Isso acontece pois o histico já é tao grande que um ou dois tempos com desempenho ruim afetam pouco a estatistica.
+
+![alt text](images/window_cumulative.png)
+
+### **Lidando com data drift**
+
+Existem 3 abordagens principais:
+
+-  **Treinar com dados massivos:** Treinar com dados massivos para que o modelo consiga se adaptar a qualquer distribuicao no ambiente real. Faz mais sentido com redes neurais.
+- **Adaptar os modelos sem treinar com novos dados:** Metodos de correcao de distribuicao para corrigir o modelo.
+- **Retreinar com novos dados:** Consiste em treinar o modelo novamente com os dados da nova distribuicao target. Aqui tem duas decisoes importantes:
+    - **From Scratch ou Fine tuning:** Treinar do zero o modelo ou apenas ajustar ele apartir do checkpoint atual (Finetuning, Transfer Learning e Domain adaptation sao termos relacionados)
+    - **Quanto dos novos dados usar:** usar poucos dados atuais ? dias ? meses ?
+
+Além de retreinar podemos **deixar o modelo mais robusto a drift** através de estrategias como **remover features** que mudam muito (geram muito drift). Ou **bucketizar essas features** instaveis para que elas variem menos. Se temos dois dominios com taxas de drift diferentes podemos ter **dois modelos ao invés de um e cada em é atualizado como precisa**.
+
+
+## **Monitoring and Observability**
