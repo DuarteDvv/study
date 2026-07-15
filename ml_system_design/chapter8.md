@@ -105,7 +105,7 @@ Um perigo de **estatisticas cumulativas é que elas podem camuflar quedas grande
 
 Existem 3 abordagens principais:
 
--  **Treinar com dados massivos:** Treinar com dados massivos para que o modelo consiga se adaptar a qualquer distribuicao no ambiente real. Faz mais sentido com redes neurais.
+- **Treinar com dados massivos:** Treinar com dados massivos para que o modelo consiga se adaptar a qualquer distribuicao no ambiente real. Faz mais sentido com redes neurais.
 - **Adaptar os modelos sem treinar com novos dados:** Metodos de correcao de distribuicao para corrigir o modelo.
 - **Retreinar com novos dados:** Consiste em treinar o modelo novamente com os dados da nova distribuicao target. Aqui tem duas decisoes importantes:
     - **From Scratch ou Fine tuning:** Treinar do zero o modelo ou apenas ajustar ele apartir do checkpoint atual (Finetuning, Transfer Learning e Domain adaptation sao termos relacionados)
@@ -113,5 +113,60 @@ Existem 3 abordagens principais:
 
 Além de retreinar podemos **deixar o modelo mais robusto a drift** através de estrategias como **remover features** que mudam muito (geram muito drift). Ou **bucketizar essas features** instaveis para que elas variem menos. Se temos dois dominios com taxas de drift diferentes podemos ter **dois modelos ao invés de um e cada em é atualizado como precisa**.
 
-
 ## **Monitoring and Observability**
+
+Monitorar é o ato de restrear, medir e logar métricas do sistema para quando algo deu errado.Como sistemas de ML no fim das contas também é software precisamos monitorar metricas operacionais de:
+- **Rede:** Como latencia e througtput
+- **Maquina:** Como uso de CPU/GPU e memória
+- **Aplicacao:** Como numero de requisicoes respondidas com sucesso (codigo 200) ou predicoes por intervalo de tempo
+
+Essas métricas servem para monitorar a saude do sistema em geral, nao adianta nada o resto funcionar e o sistema estar fora do ar
+
+### **Métricas especificas de ML** 
+
+Nao adianta o sistema estar **100% funcinando se as transformacoes nos dados e predicoes enviadas estao incorretas**. É interessante monitorar o pipeline em 4 etapas diferentes: nas métricas de acuracia do modelo, predicoes do modelo, features e input bruto. **Inputs brutos sao mais dificeis de monitorar** e interpretar mas geralmente sao **mais uteis** para encontrar a causa real do problema já que um problmea identificado na acuracia do modelo **pode ser causado por qualquer etapa anterior**.
+
+![alt text](images/partes_pipeline_monitorar.png)
+
+- **Monitorar métricas de acuracia:** Se labels naturais estao disponiveis no problema entao podemos **monitorar métricas como F1** em producao mesmo. Mesmo sem labels **qualquer tipo de feedback implicito do usuário pode ser utilizado para monitoramento**, como cliques ou tempo de visualizacao, nao necessáriamente um rotulo especifico. Além disso, **permitir feedback explicito através da interface** para conseguir dados de otimizacao do modelo.
+
+- **Monitorar predicoes:** Monitorar a **distribuicao das predicoes do modelo através do tempo**. Util para identificar padroes estranhos na distribuicao e pode ser um bom **proxy para um data shift no input** do modelo afinal se o modelo (pesos) nao mudou entao uma mudanca no output provavelmente é causada por uma mudanca no input. Além disso, por ser de baixa dimensionalidade podemos tranquilamente usar metodos estatisticos para identificar data drift.
+
+- **Monitorar Features:** Monitorar features é o foco **principal na industria** pois diferente do raw elas sao estruturadas e mais faceis de monitorar. O primeiro ponto nesse monitoramento é a **validacao de features que verifica se as features estao seguindo o schema esperado** que foi definido nos dados de treino, um exemplo disso é checar se o min, max, testar regex para padroes definidos e Enums para conjunto definido. Essa etapa também é chamada de table testing (testes de unidade para dados) e tem algumas ferramentas populares como: Great Expectations e Deequ (da AWS). Outro monitoramente que além de validacao sao **testes estatisticos para detectar drift de algumas features** principais. Existem 4 problemas nesse monitoramento:
+    - **Custo:** Se uma empresa tem muitos modelos e cada modelo usa centenas de features entao calcular esse tanto de estatisticas pode ficar pesado em questao de memoria e latencia. Além de ser muito mais dificil monitorar tudo isso.
+    - **Debug x Degradacao de performace:** Drift em features nem sempre significa degradacao na performace... é importante conseguir distinguir drift importantes e nao importantes para reduzir o numero de falsos positivos.
+    - **Causa:** Mesmo um drift detectado na feature é dificil afirmar que isso nao foi causado talvez por um erro nos N pre processamentos anteriores
+    - **Schemas mudam muito:** Uma mudanca no schema do pipeline pode gerar um alerta que na verdade foi só falta de atualizar
+
+- **Monitorar inputs brutos:** Ja que mudancas nas features podem vir de bugs e erros no processamento pq nao monitorar antes do processamento ? Eles sao mais dificeis de monitorar pois vem despadronizados e de varias fontes diferentes. Isso é mais um trabalho de quem cuida da parte de engenharia de dados.
+
+### **Ferramentas para monitoramento**
+
+- **Logs:** Registrar qualquer evento que aconteca no sistema com granularidade mais baixa possivel. Alguns problemas aparecem:
+    - **volume gigantesco de logs** comeca a ser gerado pois armazenar e buscar dentro disso comeca a ficar caro
+    - sistemas ficam mais modularizados em diversos componentes e **fica mais dificil encontrar onde foi o problem**
+
+    **Mitigacoes:**
+    - Dar um ID ao processo/request para ser possivel **rastrear a sequencia completa** dele
+    - **Usar ML** nso logs para identificar problemas
+
+    **Quando:** Logs podem ser processados tanto em batch periodicamente usando SQL/Spark quanto em stream no momento que sao gerados usando transporte de tempo real como Kafka.
+
+- **DashBoards:** identificar padroes/erros é muito mais facil em um grafico que em uma lista cheia palavras/numeros e além disso também facilita para nao especialistas. Só é preciso ter cuidado pois o grafo sozinho nao é suficiente sem o conhecimento para interpretar e um grafico com 50 curvas diferentes retorna ao mesmo problema de complexidade de interpretacao.
+
+- **Alertas:** Um alerta é composto por 3 componentes: Politica de alerta, que define quando o alerta vai acontecer (acuracia < 80%) -> Canal de notificacao, que define quem é avisado e por onde 
+
+
+### **Observabilidade**
+
+Com apenas o monitoramento nos monitoramos numeros/logs e alertamos qualquer problema e atividade incomum. Só que **apenas sabemos que um problema aconteceu** mas nao onde aconteceu e pq aconteceu, para descobrir precisariamos testar componentes do codigo... ai entra observabilidade, em que criamos um sistema que se algo der errado, conseguimos **decobrir o motivo apenas olhando para os dados sem precisar tocar no codigo**.
+
+Exemplo: a acurácia do seu modelo caiu de 95% para 80% na última hora
+
+- **Monitoring te diz:** "acurácia caiu para 80% às 14h." Ponto. Você sabe que algo está errado.
+- **Observability te permite verificar:**
+    - "erros da última hora agrupados por região" -> você descobre que só usuários do Nordeste estão com erro alto
+    - "outputs intermediários dessas predições erradas" -> você vê que uma feature específica está vindo com valores nulos
+    - "Qual feature mais contribuiu pros erros?" -> você descobre que é a feature X
+
+Isso só foi possível porque o sistema foi instrumentado de antemão para logar tudo isso com granularidade suficiente (por região, por feature, por request individual), não só a métrica agregada de "acurácia geral". Em poucas palavras um **sistema observavel é um sistema com logs com granularidade baixa e logs de varias (partes) do sistema**.
