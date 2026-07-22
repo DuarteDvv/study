@@ -73,3 +73,115 @@ Quando lidamos com mais de uma container fica muito complexo lidar com isso manu
 
 ## **Gerenciamento de recursos**
 
+Fluxos de trabalho (Workflows) em ML geralmente nao sao tao simples e *tem diversas dependencias entre etapas*, por exemplo para treinar um modelo precisamos criar features e para isso precisamos buscar dados... cada uma dessas etapas tem seus possiveis problemas e formas de resolver. Esses workflows (nao apenas em ML) geralmente sao representados por **DAGs (Grafos direcionados aciclicos)** em que as arestas representam a ordem das tarefas e nao ter ciclo para nao existir um job que executa infinitamente.
+
+### **Schedulers**
+
+Esses workflows geralmente sao *executados repetivivamente em intervalos de tempos fixos e por isso usamos ferramentas que permitem automatizar isso* chamadas **schedulers**. Uma dessas ferramentas é o **Cron**, um *agendador de tarefas simples nativo do Linux/Unix* que executa comandos de linha de comandos em intervalos de tempo determinados. Ele tem sua propria sintaxe que determina quando executar as tarefas:
+
+- **Rodar todo dia às 3h da manhã:** ```0 3 * * * python meu_script.py```
+- **Rodar no dia 1 de cada mês:** ```0 0 1 * * python fechamento_mensal.py```
+
+O problema do Cron é que ele *nao lida com dependencias* de pipeline como por exemplo se a tarefa A é dependencia de B:
+- Se A falhar, A nao será tentada novamente (mesmo que seja erro de conexao).
+- Se A falha B ainda vai ser executada. 
+- Se A atrasar B pode ser executada antes.
+- OK mas entao podemos manter todos os Jobs em um mesmo script e agendar apenas ele. O problema aqui é se 90% do script executa com sucesso e falha no final temos que comecar tudo novamente.
+
+Ai entra schedulers mais complexos que nao apenas lidam com o tempo mas *também com as dependencias, prioridades, recursos e multiplas maquinas*. Um exemplo de schedulers complexos é o **slurm** que tem uma abstracao mais alta de Jobs e permite:
+- Dar prioridade diferente para alguns Jobs
+- Disponibilizar mais recursos como RAM para alguns jobs (ate mesmo de outros computadores)
+- Seguir etepas de DAGs e tentar novamente caso falhe
+
+### **Orquestradores**
+
+Quando os recursos ficam escarsos ou acabam o scheduler mantem esses jobs em filas para serem realizados depois mas em muitos casos esses jobs nao pode esperar como por exemplo em uma aplicacao rodando 24h e que chegou no limite das maquinas atuais. Um orquestrador é *quem lida com instanciacao/replicacao de maquinas de sobdemanda para que os jobs sejam direcionados para elas*, ou seja, ele disponibiliza mais recursos para o scheduler. Um exemplo disso é o Kubernetes que orquestra containers de forma automatica.
+
+Ambos schedulers e orquestradores trabalham juntos na maioria das vezes em que um scheduler é executado em cima de um orquestrador. Um otimo exemplo desse uso conjunto deles sao em ferramentas que combinam schedulers e orquestradores abstraindo em um workflow. As principais sao:
+
+- **Airflow:** Muito popular na industria e segue a ideia de configuracao com codigo usando python para organizar os workflows. A ideia é que criamos *tasks apartir de operadores que podem ser de varios tipos como BashOperator (executar na linha de comando) ou PythonOperator (executar um codigo python) e elas sao executadas por workers*.Ele tem algumas limitacoes:
+
+    - **Monolitico:** Por padrao todas as tasks executam na *mesma maquina/ambiente* (podendo gerar conflitos e uso exessivo do hardware) a nao ser que usamos DockerOperator que cria containers para executar a task, fazendo com que precisemos lidar com Dockerfiles. 
+    - **DAG estatica:** Uma vez que uma task esta em execucao nao podemos criar tasks (nós) 
+
+    ainda é o padrão de mercado para *orquestração de pipelines de dados (ETL)* em geral, não necessariamente ML. Grande ecossistema, muita documentação, muitas empresas já o usam.
+
+    ```python
+    t1 = BashOperator(task_id='print_date', bash_command='date', dag=dag)
+    t2 = BashOperator(task_id='sleep', bash_command='sleep 5', dag=dag)
+    t1 >> t2  # define a dependência: t1 roda antes de t2
+    ```
+
+-  **Prefect Workflows**: workflows são funções Python decoradas, não classes/objetos DAG como no Airflow. As vantagens sao:
+    - Parametrizacao facil igual funcoes em python
+    - DAGs dinamicas
+    - Ainda nao resolve o problema do Docker
+
+    ```python
+    from prefect import flow, task
+
+    @task
+    def extract():
+        return [1, 2, 3]
+
+    @task
+    def transform(data, factor):
+        return [x * factor for x in data]
+
+    @flow
+    def my_pipeline(factor: int):
+        data = extract()
+        result = transform(data, factor)
+        return result
+
+    my_pipeline(factor=10)  # parametrizado! Você passa argumentos normalmente
+    ```
+- **Argo Workflows:** nativo do Kubernetes. Cada etapa (step) do workflow roda no seu próprio container, isolado. Também é dinamico mas tem algumas desvantagens:
+    - YAML extenso de configuracoes (centenas de configuracoes)
+    - Acoplado ao Kubernetes entao só roda com ele
+
+    ```yml
+    - name: flip-coin
+        script:
+        image: python:alpine3.6
+        command: [python]
+        source: |
+            import random
+            result = "heads" if random.randint(0,1) == 0 else "tails"
+    ```
+
+- **Kubeflow:** é construído em cima do Argo, ou seja, por baixo dos panos, ainda gera Argo workflows (YAML) rodando em K8s.
+
+
+- **Metaflow:** especifica requisitos de cada step com decorators simples, e o Metaflow monta o container automaticamente, sem você escrever Dockerfile ou YAML.
+
+    ```python
+    class RecSysFlow(FlowSpec):
+
+        @step
+        def start(self):
+            self.data = load_data()
+            self.next(self.fitA, self.fitB)  # branch: roda fitA e fitB em paralelo
+
+        @conda(libraries={"scikit-learn": "0.21.1", "numpy": "1.13.0"})
+        @step
+        def fitA(self):
+            self.model = fit(self.data, model="A")
+            self.next(self.ensemble)
+
+        @conda(libraries={"numpy": "0.9.8"})
+        @batch(gpu=2, memory=16000)  # roda na AWS Batch, com 2 GPUs e 16GB
+        @step
+        def fitB(self):
+            self.model = fit(self.data, model="B")
+            self.next(self.ensemble)
+
+        @step
+        def ensemble(self, inputs):
+            # junta os resultados de fitA e fitB
+            ...
+    ```
+
+Todos sao open-source e podem ser mantidos pela empresa apenas com custos operacionais. Os que já usam kubernetes vale mais a pena usar Kubeflow e Argo. Alguns deles tem servicos pagos que facilitam a vida e deploy com um preco de assinatura.
+
+## **ML Plataform**
