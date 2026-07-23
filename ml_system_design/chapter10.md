@@ -9,7 +9,7 @@ Infraestrutura é o **conjunto de instalacoes fundamentais que apoiam no desenvo
 ## **Camadas de armazenamento e computacao**
 
 - **Armazenamento:** Sistemas de ML geralmente usam muitos dados e esses dados precisam ser armazenados em algum lugar. Eles podem ser armazenados localmente usando HDs e SSDs nos servidores da empresa ou armazenados em nuvém através de servicos como Amazon S3 ou Snowflake. 
-    - **Amazon S3 (Simple Storage Service):** serviço de armazenamento de objetos da AWS. Cada objeto tem uma chave única (path/nome), os dados em si, e metadados... nao é um banco de dados tipo SQL/NoSQL é tipo um HD infinito e distribuido na nuvem, onde você guarda qualquer tipo de arquivo.
+    - **Amazon S3 (Simple Storage Service):** serviço de armazenamento de objetos da AWS (Buckets). Cada objeto tem uma chave única (path/nome), os dados em si, e metadados... nao é um banco de dados tipo SQL/NoSQL é tipo um HD infinito e distribuido na nuvem, onde você guarda qualquer tipo de arquivo.
 
     - **Snowflake:** É um data warehouse (armazém de dados) na nuvem, focado em análise de dados estruturados.Você carrega dados estruturados (tabelas) para dentro do Snowflake. Ele separa armazenamento e processamento (compute) — isso permite escalar cada um independentemente (Pode ingerir diretamente de arquivos que estão no S3)
 
@@ -97,7 +97,7 @@ Ai entra schedulers mais complexos que nao apenas lidam com o tempo mas *também
 
 Quando os recursos ficam escarsos ou acabam o scheduler mantem esses jobs em filas para serem realizados depois mas em muitos casos esses jobs nao pode esperar como por exemplo em uma aplicacao rodando 24h e que chegou no limite das maquinas atuais. Um orquestrador é *quem lida com instanciacao/replicacao de maquinas de sobdemanda para que os jobs sejam direcionados para elas*, ou seja, ele disponibiliza mais recursos para o scheduler. Um exemplo disso é o Kubernetes que orquestra containers de forma automatica.
 
-Ambos schedulers e orquestradores trabalham juntos na maioria das vezes em que um scheduler é executado em cima de um orquestrador. Um otimo exemplo desse uso conjunto deles sao em ferramentas que combinam schedulers e orquestradores abstraindo em um workflow. As principais sao:
+Ambos schedulers e orquestradores trabalham juntos na maioria das vezes em que um scheduler é executado em cima de um orquestrador. Um otimo exemplo desse uso conjunto deles sao em *ferramentas que combinam schedulers e orquestradores abstraindo em um workflow*. As principais sao:
 
 - **Airflow:** Muito popular na industria e segue a ideia de configuracao com codigo usando python para organizar os workflows. A ideia é que criamos *tasks apartir de operadores que podem ser de varios tipos como BashOperator (executar na linha de comando) ou PythonOperator (executar um codigo python) e elas sao executadas por workers*.Ele tem algumas limitacoes:
 
@@ -185,3 +185,57 @@ Ambos schedulers e orquestradores trabalham juntos na maioria das vezes em que u
 Todos sao open-source e podem ser mantidos pela empresa apenas com custos operacionais. Os que já usam kubernetes vale mais a pena usar Kubeflow e Argo. Alguns deles tem servicos pagos que facilitam a vida e deploy com um preco de assinatura.
 
 ## **ML Plataform**
+
+ML plataform consiste em um *conjunto de ferramentas que facilitam o deployment de modelos. Essas ferramentas sao compartilhadas por diversos casos de uso de ML, ou seja, varios modelos de um mesmo sistema, uma base compartilhada para eles*... isso é particularmente util para empresas que comecam a ter varias aplicacoes de ML para nao precisar ter diversas ferramentas diferentes ou replicas. Em geral um ML plataform tem 3 componentes principais: model deployment, model store e feature store.Para escolher ferramentas dessas categorias 2 coisas importantes para qualquer caso:
+1. A ferramenta tem que ser *compativel com seu provedor de nuvem ou data center* proprio para funcionar na infra já existente
+2. Vamos *pagar por um servico gerenciado por outros ou pegar open-source*, hospedar e gastar com operacoes
+
+### **Model Deployment**
+
+Servicos de deployment ajudam a simplificar a ida de um novo modelo treinado e testado para producao e ser usado por usuários através dos endpoints com o minimo de dor de cabeca. Existem diversos servicoes de provedores de nuvem e aplicacoes:
+- **Sagemaker (AWS):** Serviço totalmente gerenciado de ML da AWS, cobrindo o ciclo completo (não só deployment): desenvolvimento, treino, tuning de hiperparâmetros e serving. Se sua empresa já vive dentro do ecossistema AWS, a integração é muito suave. 
+- **Vertex AI (GCP):** Plataforma unificada de ML do Google Cloud (Basicamente Kubeflow gerenciado pela google). Boa opção se você já usa BigQuery/GCS e quer uma plataforma mais integrada de ponta a ponta.
+- **Azure ML (Azure):** Plataforma de ML da Microsoft, com abordagem parecida com as duas anteriores (ciclo completo: dev, treino, deploy, monitoramento). Bom encaixe para empresas que já são "Microsoft shops".
+- **MLflow models (E outros Open source):** MLflow não é atrelado a nenhuma nuvem, é open source (mantido pela Databricks, mas usável de forma independente). por ser open source e agnóstico de nuvem, evita vendor lock-in — você pode treinar num lugar e fazer deploy em outro (inclusive nos próprios serviços acima, já que o MLflow tem integrações prontas com SageMaker, Azure ML, etc.). Ao contrário dos três anteriores, você geralmente ainda precisa cuidar de parte da infraestrutura de hosting (a menos que use o Databricks gerenciado, que também oferece MLflow como serviço).
+
+Outros 2 pontos importantes nesses servicos é a facilidade para se fazer batch prediction/online prediction e a facilidade para executar experimentos para avaliar modelos online. 
+
+**Diferenca entre ferramentas como Vertex AI e Airflow:** Vertex AI tem funcionalidades parecidas com o que o Airflow oferece, mas especializada e limitada ao contexto de ML, enquanto o Airflow é mais flexível e genérico, mas não tem nada de "ML nativo" embutido.
+
+### **Model Store**
+
+Ao salvar um modelo podemos simplesmente colocar seu binário em um bucket da S3 ? Sim, porém se um bug/problema aparece no modelo que esta em producao. Tentamos reproduzir o bug localmente para avaliar mas ele simplesmente nao acontece mais... oq pode ser ? features diferentes ? modelo errado ? codigo desatualizado ? podem ser muitas coisas. A conclusao aqui é que guardar o modelo apenas nao é suficiente, é necessário armazenar outros artefatos que ajudam a reproduzir o modelo.
+
+- **Definicao do modelo:** Como reconstruir o objeto daquele modelo sem saber quais camadas, quantas camadas e neuronios em cada uma ? é preciso salvar a definicao do modelo.
+- **Parametros:** pesos ou estado aprendido do modelo
+- **Featurize e predict functions:** Funcoes de predict e de criacao de features de uma requisicao (inferencia).
+- **Dependencias:** Versão do Python e pacotes necessários
+- **Dados:** Referência aos dados usados no treino através de versionamento de dados como DVC
+- **Model generation code:** Codigo que gerou o modelo
+- **Artefatos de experimentos:** Gráficos (curva de loss), métricas de performance no teste, o que ferramentas como W&B/MLflow tracking capturam
+- **Tags:** Identificacao do modelo e sua funcao como per exemplo ""churn prediction"
+
+Um problema é que muitas vezes esses artefatos ficam separados em lugares diferentes e desconectados.
+
+### **Feature Store**
+
+Feature store é um conceito novo mas em geral as ferramentas tentam resolver pelo menos um dos 3 problemas a seguir:
+
+- **Gerenciamento de features:** Varios modelos de times diferentes podem usar features iguais. Se eles nao tem um banco em comum de features podem acabar replicando codigo e armazenamento das mesmas coisas. A ideia aqui é criar um catálogo de features que permite descobrir, compartilhar, e controlar permissões (ex: restringir acesso a features financeiras sensíveis).
+
+- **Calculo das features:** Calcular features pode ficar caro em quantidades massivas de dados. Ao invés de sempre calcular sob demanda, calculamos uma vez e armazenamos para usos futuros.
+
+- **Consistencia:** Unifica as definicoes de features para desenvolvimento e producao evitando qualquer tipo de problema de features diferentes.
+
+
+### **Build Vs Buy**
+
+Construir sua própria infraestrutura ou comprar de um provedor? Existem alguns espectros dessas decisoes: 
+
+- **Extremo "Buy total":** terceirizar tudo para um provedor de ML end-to-end, a única infra que você mantém é para mover dados até o vendor e trazer as previsões de volta
+- **Extremo "Build total":** construir e manter tudo internamente (até data centers próprios), geralmente por questões de dados sensíveis/regulação
+- **Realidade da maioria:** um meio-termo, algumas peças compradas (ex: compute na AWS, data warehouse no Snowflake), outras construídas internamente (ex: feature store, dashboards de monitoramento próprios)
+
+Se queremos ser muito bons em algo, ou seja, esta relacionado ao produto final da nossa empresa devemos implementar internamente do zero ou usar de um provedor de forma bem modularizada. Se ML é o foco faz mais sentido usar ferramentas feitas por provedores.
+
+*"construir é mais barato que comprar"* ? nao necessáriamente pois construir exige gastar com engenheiros para construcao inicial e mais engenheiro para manter. Além disso, construir do zero pode dificultar no futuro adocao de novas tecnologias e ter um custo de oportunidade.
