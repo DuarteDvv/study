@@ -55,7 +55,7 @@ CL consegue fazer tudo que estrategias de treino anteriores conseguem pois o tem
 - **Avaliacao:** O maior problema de CL é ter certeza (de forma rapida) que esse modelo atualizado é realmente melhor que o modelo atual em producao.
     - Toda vez que o modelo é atualizado existe **chance de falhas catastroficas** como discriminacao em massa ou risco a vida humana. Entao, **quanto mais atualizamos maiores as chances** de acontecer isso se nao avaliarmos corretamente.
     - Outro ponto é que atualizar muito os parametros da mais espaco para ataques adversariais através do input do modelo.
-        - **Ataque adversarial:** técnica que **manipula intencionalmente os dados de entrada** de um modelo de ML, forçando-o a tomar decisões, predições ou classificações incorretas. Isso é feito através de alterações sutis ou imperceptíveis nos .
+        - **Ataque adversarial:** técnica que **manipula intencionalmente os dados de entrada** de um modelo de ML, forçando-o a tomar decisões, predições ou classificações incorretas. Isso é feito através de alterações sutis ou imperceptíveis nos dados de entrada, muitas vezes invisíveis a olho humano, mas suficientes para enganar o modelo. 
     - Portanto é **importante manter a avaliacao offline e online sempre atualizadas** e boas mesmo que tome algum tempo e atrase o deploy.
 
 - **Algoritmo:** Alguns algoritmos exigem o dataset inteiro para serem atualizados, ou seja, nao suportam online/incremental learning, apenas offline/batch learning.

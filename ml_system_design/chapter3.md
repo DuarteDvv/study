@@ -1,12 +1,32 @@
-## **Fundamentos de engenharia de dados**
+# **Fundamentos de engenharia de dados**
 
-### **Fontes de dados (Data source)**
+## **Fontes de dados (Data source)**
 
-Sistemas de ML podem lidar com dados de **diferentes fontes**... Se o **dado é gerado pelo usuário** é importante ter um processamente antes pois esse tipo de dado é rico em problemas, a regra é clara, se existe a possibilidade do usuário enviar de input algo errado ele irá enviar. Se é uma imagem ? ele vai enviar uma extensão diferente, se é um numero ele vai enviar uma string e assim por diante... por causa disso é de extrema importancia **preprocessar dados gerados pelos usuários**. Além disso (On top of that), usuários não apenas enviam dados mal formatados como também esperam que a resposta seja o mais rápido possivel, imediatamente se possivel e consequentemente os dados do usuário precisam receber um processamento rapido também... ou seja tem que ser **rigido e rapido**.
+Sistemas de ML podem lidar com dados de diferentes fontes, cada uma com *características e desafios próprios*: dados gerados pelo usuário, dados gerados pelo sistema, dados internos da empresa e dados de terceiros.
 
-Se o **dado é gerado pelo proprio sistema** como a propria **saida (output)** ou por mecanismos de **Logging** que registram métricas da infraestrutura, stack de erros e etc... ele é mais bem comportado uma vez que o mesmos geramos eles e por isso normalmente não precisa de preprocessamento brusco (ou talvez nenhum). Porém, **sistemas de ML tendem a ser extremamente dificeis de debuggar** e portanto é geralmente recomendado gerar o maximo de logs possiveis para cada operação realizada pois nesses casos **logs são muito valiosos para encontrar o problema**(pois eles nos dão **visibilidade do estado atual do sistema**, como jobs, treinos, memoria usada e podem ser usados também para melhorias)... resultado disso é um volume absurdo de logs que precisam ser analizados quando um problema acontecer e precisam ser armazenados... com grande quantidade fica dificil analisar e encontrar problemas sendo humano e para isso existem **ferramentas de análise automatica de log** como por exemplo Datalog e logStash que ate usam modelos de ML para monitorar os logs do seu sistema. Outro problema é armazenar esses logs que crescem de forma muito rápida mas isso não é tão problemático pois eles **podems ser apagados depois de um certo tempo e podem ser armazenados em memória secundária que é mais lenta e barata**. Outro tipo de dado gerado pelo sistema são métricas de comportamento do usuário (feedback explicito) como cliques, visualizações, compras e etc... que podem ser muito uteis para sistemas de recomendação e maquinas de busca.
+### **Gerados por usuários**
 
-Além disso, também existem os dados dos bancos internos da sua empresa, dados de empresas que voce pode comprar os dados dos clientes delas e dados de fontes publicas que alguém coletou para voce... todos esses dados comprados de outras empresas (second party ou third party) podem ser comportamentos em redes sociais, deslocamento, compras... e podem ser usadas por outras empresas no processo de recomendação e personalização para voce.
+- Esse tipo de dado é rico em problemas, pois **se existe a possibilidade do usuário enviar um input errado, ele vai enviar**, talvez propositalmente ou sem querer enviar formatos errados. Devido a isso:
+
+    - É essencial **pré-processar** dados gerados por usuários antes de qualquer uso validação de formato, tratamento de valores ausentes/inconsistentes, etc.
+
+    - Precisa ser **rígido e rápido** (validação robusta, mas com baixa latência), já que esse processamento acontece no caminho entre o input do usuário e a resposta do sistema. E sabemos que o usuário nao gosta de esperar.
+
+
+### **Gerados pelo sistema**
+
+Dados gerados pelo próprio sistema (outputs do modelo, logs de infraestrutura, stack traces de erro) são **mais bem comportados**, já que o formato de geração é controlado, por isso, geralmente exigem pouco ou nenhum pré-processamento brusco. Entretanto é importante processar logs pois:
+
+- Sistemas de ML são difíceis de debugar (comportamento probabilístico, múltiplas etapas, dados, features, modelo, que podem falhar silenciosamente). Por isso, é recomendado gerar o máximo de logs possível para cada operação, já que eles fornecem **visibilidade do estado atual do sistema**.Porém gerar muitos logs cria dois problemas:
+
+    - **Volume**: fica humanamente inviável analisar manualmente um volume tão grande de logs para achar um problema específico. Solução: ferramentas de análise automática de logs (ex: Datadog, Logstash), que inclusive usam ML para monitorar os próprios logs do sistema.
+    - **Armazenamento**: logs crescem rapidamente, mas esse problema é mais brando do que parece, eles podem ser descartados após um período e/ou armazenados em memória secundária (mais lenta, porém mais barata), já que raramente precisam de acesso instantâneo depois de um tempo.
+
+Além de logs, métricas de comportamento do usuário (feedback implícito/explícito), cliques, visualizações, compras, etc. Esses dados são especialmente úteis para sistemas de recomendação e motores de busca. Dados gerados pelos sistemas da empresa junto com usuários formam os dados de **First-party**.
+
+### **Dados de terceiros (Second-party e Third-party)**
+
+Além dos dados internos, é possível comprar dados de outras empresas, dados comportamentais (redes sociais, deslocamento, compras) que podem enriquecer processos de recomendação e personalização.
 
 
 | Tipo de Dado | Origem | Relacionamento | Exemplo Prático |
@@ -15,81 +35,203 @@ Além disso, também existem os dados dos bancos internos da sua empresa, dados 
 | **Second-party** | Outra empresa (parceira) | **Indireto**: São os dados "First-party" de um parceiro. | Uma cia aérea compartilha dados de viajantes com uma rede de hotéis. |
 | **Third-party** | Agregadores de dados | **Nenhum**: Coletados de fontes diversas (públicas/cookies). | Perfis de interesse e demografia comprados de grandes data brokers. |
 
-### **Formatos de dados**
+## **Formatos de dados**
 
-Dados complexos como objetos de classes, modelos, listas e dicionários para serem armazenados e transmitidos precisam passar por um processo chamado **serialização de dados**... seria algo como desmontar e compactar algo e depois desserializar, isso pode ser feito em diversas formas diferentes, cada uma tendo suas caracteristicas/vantagens principais... os formatos mais comuns são JSONs, CSVs, Parquets and Pickle. Esses formatos de dados podem ser classificados em text/binário... os formatos textuais são mais expressivos e humanamente legiveis, ou seja, se abrirmos o arquivo vamos conseguir ler e entender o que esta acontecendo ali. **JSON** e **CSV** são os principais formatos de texto que o JSON é formatado em chaves/valores e muito usado em todo lugar (LLMs, requisições...) devido a sua legibilidade... CSV também é muito usado na área de dados onde ele armazena cada instancia dos dados em linhas e as colunas são as features, isso é chamado de **"row-major"**. Existe outra variação chamada de **"column-major"**, em que as linhas armazenam as features e as colunas as instancias... a principal vantagem do "column-major" é em casos em que precisamos ler uma coluna inteira de um dataset grande inteiro e portanto precisamos processar apenas algumas linhas mas isso acaba tornando a escrita extremamente lenta uma vez que antes no CSV era apenas concatenar no final e agora temos que modificar todas as linhas, ou seja, um é bom para acessar linhas e outro para acessar colunas. No formato binário temos formatos como **parquet** e **pickle (usado no pytorch)**, o parquet além de ser binário tbm usa representação por coluna... a principal vantagem do format binário dos dados é a compressão dos dados em memória... dados binários são mais rapidos para a maquina e ocupam menos espaço de armazenamento, se abrir o arquivo no editor de texto teremos uma concatenção de bytes (8bits) que formam o binário... na S3 AWS por exemplos eles recomedam usar parquet pois são ate **2x mais rapidos** para descarregar e ocupam **6x menos espaço (Sem compactar)** de disco... Essa redução de espaço é causada pelo fato de que cada caracter do formato texto ocupa 1 byte então se temos no texto o numero '255' gastaremos 3 bytes para representar [00110010] [00110101] [00110101] mas se usarmos o formato binário usaremos apenas 1 byte [11111111] já a redução de tempo para leitura é devido ao overhead que ler cada byte do texto e consultar na tabela ASC e etc... toma muuito tempo.
+Dados complexos como objetos de classes e modelos para serem armazenados ou transmitidos pela rede, precisam passar por um processo chamado **serialização**: a conversão de uma estrutura de dados em memória para um formato que pode ser salvo ou enviado, e posteriormente reconstruído através da **desserialização**.Esses formatos podem ser classificados em duas categorias: **texto** e **binário**.
 
-### **Modelo de dados (Data Model)**
+### **Formatos de texto**
 
-Modelos de dados são formas de representar objetos reais através de features/atributos dentro dos nosso dados como por exemplo podemos representar um carro em um modelo de dados que usa cor, ano e tipo de direção mas também podemos representar ele usando um modelo que usa dono do carro, histórico de transito e localização... o primeiro é mais interessante para clientes encontrarem seu carro enquanto o segundo pode ser util para policia prender alguém. Dois modelos muito famosos são Modelo Relacional (SQL) e não Relacional (NoSQL):
+Formatos textuais são mais *expressivos e legíveis por humanos*, se você abrir o arquivo, consegue ler e entender o conteúdo diretamente.
 
-**Modelo Relacional:** Aqui nossos dados são modelados como relações (tabelas) que são conjuntos de tuplas de atributos... cada linha é uma tupla com por exemplo (id, nome, email). È geralmente preferivel que essas relações estejam normalizadas seguindos diversas regras (N1,N2,N3...) mas muitas vezes essa desnormalização é feita em prol da latencia. Um exemplo de normlização é imaginar primeiro um tabelão em que todas temos 4 linhas com nome de uma empresa e estado de onde ela fica... se um dia o nome dessa empresa mudar teriamos que fazer 4 alterações na relação... Se nos separarmos os dados da empresa em uma relação diferente e apenas usar o id na relação do cliente, se o nome ou endereço mudar teremos que alterar apenas uma linha da relação de empresas. O modelo relacional usa a linguagem declarativa SQL (e variações dela) como forma de criar Querys de consulta nesses bancos de dados... essas linguagens não especificam como fazer mas apenas o que queremos (o como é decidido e otimizado pelo proprio SGBD) isso é diferente de python em que nos decidimos o como e descrevemos isso em codigo.
-Existem soluções declarativas o problema de modelos de ML e isso é chamado de AutoML (H20 AutoML) em que usamos caracteristicas do formato dos dados para testar diversos modelos... Existem bancos relacionais que tem outros modelos de dados como de documentos, um exemplo disso é o postgres e isso pode ser util para não precisar de dois bancos.
+- **JSON**: formatado em pares chave/valor, muito usado por sua legibilidade e flexibilidade (APIs, requisições web, configuração de LLMs, etc.)
+- **CSV**: muito usado na área de dados. Armazena cada instância em uma linha e cada feature em uma coluna, esse arranjo lógico é chamado de **row-major**.
 
-**Modelos Não Relacional:** O modelo não relacional vem fundamentalmente da insatisfação dos schemas fixos presentes no relacional. Lá as relações tem formato rigido em que a quantidade de features (colunas) dessa relação e o tipo de dado é fixo... isso é um limitante em cenários que o dado não é estruturado ou em que ele muda muito pois se antes tinhamos uma relação com 5 features e agora temos 6 temos que atualizar todo o banco, coletar a nova feature para os dados que estavam no banco (se possivel, se não vira tudo nulo) e então o problema estará resolvido. Além disso, em grandes quantidades de dados (Big data) a velocidade de escrita/leitura é mais rapida se sacrificarmos algumas garantias de consistencia... também é mais facil escalar horizontalmente uma vez que uma instancia de dados geralmente é independentente e nao é necessário joins (sharding). As alternativas mais famosas NoSQL seguem 2 extremos diferentes:
+**Row-major vs. column-major**: a diferença está na **ordem física de armazenamento em disco**, ou seja, localidade espacial:
 
-- **Modelo de Documentos:** Nesse modelo os nossos dados são armazenados em coleções de documentos... o que antes era uma linha de tabela agora é um documento em uma coleção. Mas qual a vantagem disso ? As coleções não tem um schema rigido definido então todos os documentos ali dentro podem seguir a estrutura que quiser mas obviamente eles vão ter semelhanças além disso a localidade dos dados é melhor pois todos os dados relacionados a um documento esta nele então teriamos que ler de apenas uma fonte... Esses documentos são armazenados como BJSONs que são versões do JSON que trabalham com sequencias de Bytes para economizar espaço serem mais rapidas. Esse modelo é ideal para dados não estruturados,Dados com muitos Nulos, dados que a estrutura muda constantemente e dados com poucas relações entre si e entre outras coleções pois nesse modelo Joins entre documentos como por exemplo filtrar documentos por um valor x, teriamos que carregar todos os documentos, ler eles, coletar o valor e comparar com x e assim filtrar enquanto no SQL a só a coluna alvo nesse caso seria necessária. Agora se estamos buscando todos os dados de algo de uma vez só, com documentos não seria necessário joins... apenas um simples retrieve. (Esse modelo tem um "esquema" sim... a diferença é que esse esquema não é validado na leitura pelo banco mas é definido e usado pelo sistema que consome (le) o banco)
+- **Row-major** (ex: CSV): os dados são gravados fisicamente linha por linha. Isso torna a **escrita** rápida, adicionar uma nova instância na memória é só concatenar no final.
+- **Column-major** (ex: Parquet): os dados são gravados fisicamente coluna por coluna. Isso torna a **leitura de uma coluna inteira** muito mais rápida, como os valores de uma mesma feature já estão contíguos em disco, você lê um bloco só, sem precisar pular por dados de outras features no meio do caminho. Agora para escrita de uma linha precisariamos adicionar em todos os blocos contiguos um novo valor.
+
+**Em resumo:** Column-major é melhor para analises analiticas (calcular medias e etc) e o Row-major para leituras e gravacoes constantes.
+
+### **Formatos binários**
+
+No formato binário temos **Parquet** e **Pickle**.
+
+- **Parquet**: além de ser binário, também usa organização colunar (column-major)
+- **Pickle**: formato de serialização nativo do Python, usado para serializar praticamente qualquer objeto Python (listas, dicionários, DataFrames, modelos treinados, etc.), preservando sua estrutura original.
+
+Vantagens do binário:
+
+- **Compressao**: Ocupam menos espaço em disco. Por exemplo, o número `255` em formato texto precisa de **3 bytes**, um byte para cada caractere ASCII: `'2'` → `00110010`, `'5'` → `00110101`, `'5'` → `00110101`. Já em formato binário, `255` cabe inteiramente em **1 byte**: `11111111`.
+
+- **Leitura mais rápida**: ler um arquivo de texto exige interpretar byte a byte e consultar a tabela ASCII/Unicode para decodificar cada caractere.
+
+**Recomendação da AWS**: AWS recomenda o uso de Parquet no S, citando ganhos de performance de leitura e redução de espaço em disco 3em relação a formatos como CSV.
+
+## **Modelo de dados (Data Model)**
+
+Modelos de dados são formas de representar objetos do mundo real através de features/atributos. Por exemplo, podemos representar um carro com um modelo que usa cor, ano e tipo de direção. Dois modelos muito famosos são o **Modelo Relacional (SQL)** e o **Modelo Não Relacional (NoSQL)**.
+
+### **Modelo Relacional:**
+
+Aqui os dados são modelados como **relações** (tabelas): conjuntos de tuplas de atributos, onde cada linha é uma tupla (ex: `id, nome, email`). É geralmente preferível que essas relações estejam **normalizadas**, seguindo um conjunto de regras (1FN, 2FN, 3FN...), embora na prática a **desnormalização** seja frequentemente feita em prol de latência (menos joins = respostas mais rápidas).
+
+**Exemplo de normalização**:
+- **Antes (não normalizado)**: uma única tabela onde cada cliente tem, entre suas colunas, o nome e o estado da empresa em que trabalha. Se 4 clientes trabalham na mesma empresa, o nome dessa empresa aparece duplicado em 4 linhas. Se o nome da empresa mudar, é preciso atualizar as 4 linhas.
+- **Depois (normalizado)**: os dados da empresa são movidos para uma relação separada (`empresas`), e a relação de clientes passa a referenciar apenas o `id` dessa empresa. Agora, se o nome ou endereço da empresa mudar, basta atualizar **uma única linha** na tabela de empresas.
+
+O modelo relacional usa a linguagem declarativa **SQL** (e variações) para consultas. Linguagens declarativas especificam **o que** você quer, não **como** obtê-lo, essa decisão de "como" fica a cargo do próprio SGBD (Sistema de Gerenciamento de Banco de Dados), que otimiza a execução da query. Isso contrasta com uma linguagem imperativa como Python, onde você mesmo especifica passo a passo como o resultado deve ser calculado. 
+
+Vale notar que alguns bancos relacionais suportam também modelos de dados não relacionais, o **Postgres**, por exemplo, tem suporte nativo a colunas do tipo documento (JSONB), o que pode evitar a necessidade de manter dois bancos de dados separados.
 
 
-- **Modelo de Grafo:** Nesse modelo o foco é exatamente o contrário de documentos uma vez que a aqui relações entre as features são extremamente importantes já que o modelo de grafo usa nós que tem tipo do nó e nome (nó tipo nome_usuário e nome Luis Antonio), como se o nó fosse uma celula da tabela pois temos ali a representação da coluna (tipo) e do conteudo (Nome) enquanto as arestas modelam as relações entre tipos por exemplo a relação entre o nó do tipo usuário e o nó tipo cidade seria uma relação do tipo "mora", então o nó Luis tem uma aresta do tipo "mora" ligada ao nó Belo horizonte. Ele é muito util para quando precisamos fazer queries que exigem interação de muitos tipos de dados diferentes e que no relacional seria necessário uma quantidade muito grande de JOINS ou uma complexidade grande na consulta... Aqui seria mais simples. No geral, queries que são complexas em um modelo são mais simples e eficientes (Um problema de joins virou um problema de caminhar em grafos) em outros e por isso é importante entender os tradeoffs.
+### **Modelo Não Relacional (NoSQL)**
 
-- **Modelo de Chave/Valor**: Citação de Honra para modelos chave-valor que são muito usados para caches pois sua implementalção semelhanta a HASH torna ele muito eficiente para buscas de pertencimento ou não.
+O modelo não relacional surge fundamentalmente da insatisfação com os **schemas fixos** do modelo relacional. Nas relações tradicionais, o número de colunas (features) e o tipo de cada uma são fixos, isso é limitante quando:
+- Os dados são **não estruturados**
+- O schema **muda com frequência**: se antes a relação tinha 5 features e agora precisa de 6, é necessário alterar o schema de todo o banco e popular a nova feature para os registros existentes ou deixá-la nula.
 
-## **Comparativo de Modelos**
+Em cenários de **big data**, sacrificar algumas consistência (normalizacao) tende a acelerar significativamente a leitura/escrita. Também é mais fácil escalar **horizontalmente** (sharding), já que cada instância de dado costuma ser independente e não exige joins entre partições.
 
-| Modelo de Banco de Dados | Problema que Resolve | Trade-offs (Prós / Contras) | Quando é o Melhor Cenário | 
-| :--- | :--- | :--- | :--- | 
-| **Relacional (SQL)** | Necessidade de consistência e eliminação de redundância de dados. | **Prós:** Transações ACID, linguagem universal (SQL).<br>**Contras:** Esquemas rígidos, escalabilidade horizontal complexa, lentidão em *joins* muito profundos. | Sistemas transacionais onde a consistência é inegociável e a estrutura de dados é previsível. 
-| **Documentos (NoSQL)** | Necessidade de flexibilidade no esquema. | **Prós:** Esquema flexível, fácil escalabilidade horizontal (*sharding*), leitura muito rápida.<br>**Contras:** Necessidade de desnormalização (duplicação), transações complexas menos eficientes. | Catálogos, sistemas de gerenciamento de conteúdo ou dados com estruturas que mudam com frequência. 
-| **Grafos** | Consultas lentas em dados altamente conectados (ex: múltiplos *joins* para mapear "amigos de amigos"). | **Prós:** Performance imbatível para descobrir padrões em redes, navegar por conexões e mapear relacionamentos.<br>**Contras:** Curva de aprendizado (linguagens específicas), ineficiente para CRUD simples ou agregações globais. | Redes sociais, detecção de fraudes, grafos de conhecimento e motores de recomendação complexos. 
+#### **Modelo de Documentos**
 
-### **Dados Estruturados x Não Estruturados**
+Os dados são armazenados em **coleções de documentos**, o que antes era uma linha de tabela agora é um documento dentro de uma coleção.
 
-Dados Estruturados basicamente são dados que seguem algum schema como por exemplo o modelo relacional de dados que define formato das tabelas e tipos de cada variavel da coluna da tabela. Como dito anteriormente o principal problema desse tipo é que alterar o schema significa modificar todo dataset correndo risco de algum problema grave acontecer sem ser notado além disso também é dificil consumir varias fontes de dados diferentes pois cada uma pode seguir um schema diferente. È ai que entra os dados não estruturados que podem ser texto, videos, imagens e audios... te da maior flexibilidade na hora de armazenar os dados mas é menos interessantes para fazer analises e buscar algo. O repositório em que armazenamos dados estruturados prontos para análise após um processamento (ETL) é chamado de **data warehouse** que normalmente são otimizados para analises enquanto para dados não estruturados é chamado de **data lake**... repare que nada impede das features do warehouse terem vindo do data lake.
+**Vantagens**:
+- **Schema flexível**: a coleção não impõe uma estrutura rígida, cada documento pode ter campos diferentes, embora normalmente compartilhem semelhanças na prática
+- **Melhor localidade de dados**: todas as informações relacionadas a uma entidade ficam dentro do próprio documento, então uma única leitura já traz tudo, sem necessidade de joins para buscar dados relacionados
 
-### **Processamento Analitico e de Transacoes**
+Esses documentos costumam ser armazenados como **BSON** (Binary JSON), uma variação binária do JSON que usa sequências de bytes para economizar espaço e acelerar o processamento. Esse modelo é **ideal para:** dados não estruturados, dados com muitos valores nulos, estruturas que mudam constantemente, e dados com poucas relações entre si e entre outras coleções.
 
-Enquanto **data models definem a interface**, Databases ou storage engine **implementam** ela em algum software (Postgres por exemplo)... tem dois tipos principais de tarefas principais que esses bancos são otimizados: **Transações (Database) e Analytics (Data werehouse)**... transações são geralmente feitas por usuários em operações que são solicitadas como criar um pedido, excluir um pedido... e por ser feito por usuários a **latencia da transação tem que ser minima**. Os bancos transacionais geralmente seguem o **padrão (ACID)**, são **row-major** e são **otimizados para esse tipo de ação**. Em contrapartida, **não são ideais para operações analiticas** como media de uma coluna... nesse caso entram os bancos analiticos que geralmente são **column-major**... porém isso é um tema antigo e hoje em dia é muito comum que um banco tenha otimizaçoes para ambos os tipos de processamento e o armazenamento seja independente do processamento. Processamento em geral são operações como: Filtrar: "Me mostre apenas vendas acima de R$ 100". Agregar: "Qual foi a soma total de vendas por estado?". Transformar: "Converta todos os preços de Dólar para Real".Calcular: "Aplique um modelo estatístico para prever as vendas do mês que vem".
+**Limitação**: joins entre documentos são caros. Por exemplo, filtrar documentos por um valor `x` exige carregar cada documento inteiro, ler seu conteúdo e comparar com `x`, enquanto em SQL bastaria consultar diretamente a coluna alvo. Por outro lado, se você quer recuperar **todos os dados de uma entidade de uma vez**, o modelo de documentos é mais simples: basta um único retrieve, sem joins.
 
-### **ETL (Extract -> Transform -> Load) e ELT (Extract -> Transform -> Load)**
+> Nota: o modelo de documentos **também tem um "schema"**, a diferença é que esse schema não é validado pelo banco no momento da leitura/escrita, mas sim definido e assumido pelo sistema (aplicação) que consome os dados.
 
-O pipeline ETL consiste na **extração** simultanea de varias fontes de dados pondendo ser bancos de dados internos/externos, APIs, Sistemas de monitoramento, datalakes e dados em arquivos... o problema disso é que **cada fonte modela o dado de uma forma diferente** ou de forma e isso pode ser problemático para se usar pois um uma fonte pode por exemplo definir o genero como "M"/"F" enquanto outras como 0/1 ou "Fem"/"Masc". Para resolver isso temos a etapa de **transformação** em que **limpamos todas as fontes, padronizamos de uma forma unica, extraimos features**... depois dessa transformação podemos **carregar (load)** os dados no nosso objetivo final de tempos em tempos em que ele pode ser um data werehouse, database de aplicação ou feature store (não faz muito sentido enviar para um data lake uma vez que o load é um ponto onde os dados estão teoricamente limpos, etruturados e prontos para uso). Antigamente tanto o **custo de armazenar e transformar era caro** e portanto fazia muito sentido em reduzir ao maximo seu custo de armazenamento através do transform para armazenar apenas o necessário no load... isso acaba gerando uma **perda de informação** para certas aplicações como ML (e incompatibilidade pois não tem como armazenar audios em tabelas). Como hoje em dia armazenar dados em nuvem é **mais barato** devido aos avanços do hardware e o numero de fontes de dados diferentes cresceu bastante, aumentando muito a **complexidade do transform**... compensa mais armazenar os dados não estruturados em um datalake e transformar eles sobdemanda. Isso é chamado de **ELT (Extract->Load->Transform)** em que extraimos os dados das varias fontes e **armazenamos diretamente em um datalake do objetivo sem preprocessamento algum**... hoje em dia existem soluções hibridas chamadas de lakehouses que aceitam tanto dados estruturados como não estruturados. Em geral, ETL é mais interessante para **dados estruturados** uma vez que não tem como enviar dados não estruturados para data werehouse... ETL acaba sendo um pouco **mais lento** devido a etapa de transformação imediatamente depois da extração então demora mais para os dados chegarem ao objetivo (ELT carrega diretamente no objetivo)... ETL também acaba sendo **mais caro** pois antes de definir as transformações toda a equipe de analistas tem que parar e decidir o que extrair e além disso essa extração normalmente ocorre em um servidor separados gerando mais custo... Ou seja, **soluções modernas normalmente são ELT** mas ETL pode ser legal em casos em que os **datasets/fontes são antigos** e bem rigidos, analise/experimentação especifica de algumas variaveis estruturadas e pode ser usado junto com ELT em casos que temos dados estruturados e não estruturados.
+#### **Modelo de Grafo**
+
+Aqui o foco é o oposto do modelo de documentos: as **relações entre os dados** são o elemento central.
+
+- **Nós**: representam entidades, com um **tipo** e um **valor** (ex: nó do tipo `usuário` com valor `Luis Antonio`) — de forma similar a uma célula numa tabela, que também carrega um tipo (a coluna) e um conteúdo (o valor)
+- **Arestas**: modelam o **relacionamento** entre nós (ex: uma aresta do tipo `mora_em` conectando o nó `Luis` ao nó `Belo Horizonte`)
+
+Esse modelo é extremamente útil quando as queries exigem atravessar relações entre muitos tipos de dados diferentes, algo que, no modelo relacional, exigiria uma quantidade grande de JOINs ou consultas muito complexas. No modelo de grafo, essa mesma consulta se torna simplesmente **percorrer conexões** entre nós **(um problema de múltiplos JOINs vira um problema de caminhar em um grafo)**.
+
+#### **Modelo Chave-Valor**
+
+Modelos chave-valor são muito usados para **cache**, já que sua implementação (semelhante a uma hash table) os torna extremamente eficientes para buscas de pertencimento (existe ou não essa chave?).
+
+
+
+## **Dados Estruturados x Não Estruturados**
+
+- **Dados estruturados** são dados que seguem algum schema, como no modelo relacional, que define o formato das tabelas e o tipo de cada coluna. Além dos problemas de flexibilidade também é difícil consumir várias fontes de dados diferentes simultaneamente, já que cada uma pode seguir um schema próprio.
+
+- **Dados não estruturados**: texto, vídeos, imagens, áudios. Eles oferecem maior flexibilidade na hora de armazenar dados, mas são menos interessantes para fazer análises e buscas diretas (não há um schema fixo para consultar).
+
+O repositório onde armazenamos dados estruturados, já prontos para análise após um processamento (ETL), é chamado de **data warehouse**, normalmente otimizado para análises. Já o repositório para dados não estruturados (ou dados brutos, sem processamento) é chamado de **data lake**. Além disso, features usadas no data warehouse podem vir do processamento de dados do data lake.
+
+
+## **ETL (Extract → Transform → Load) e ELT (Extract → Load → Transform)**
+
+### **ETL**
+
+O pipeline ETL consiste em três etapas:
+
+1. **Extração (Extract)**: coleta simultânea de dados de várias fontes, bancos internos/externos, APIs, sistemas de monitoramento, data lakes, arquivos. O problema aqui é que **cada fonte modela o dado de forma diferente**: uma fonte pode representar gênero como `"M"/"F"`, outra como `0/1`, outra como `"Fem"/"Masc"`.
+
+2. **Transformação (Transform)**: nessa etapa, limpamos os dados de todas as fontes, padronizamos num formato único, e extraímos as features necessárias.
+
+3. **Carregamento (Load)**: os dados já limpos e padronizados são carregados no destino final, que pode ser um data warehouse, o banco de dados de uma aplicação, ou uma feature store.
+
+### **Por que o ELT surgiu**
+
+Antigamente, tanto **armazenar** quanto **transformar** dados eram caros, então fazia sentido minimizar o volume de dados armazenados, daí a lógica do ETL: transformar (e reduzir) os dados **antes** de carregá-los no destino final. O problema é que isso gera **perda de informação** para certas aplicações (como ML, que às vezes precisa de dados brutos/detalhados) e cria incompatibilidades óbvias (não há como armazenar áudio dentro de uma tabela relacional).
+
+Hoje, armazenar dados na nuvem ficou muito mais barato (avanços de hardware), enquanto o número de fontes de dados diferentes cresceu bastante, aumentando a complexidade da etapa de transformação. Isso inverteu o cálculo de custo-benefício: hoje compensa mais **armazenar os dados brutos (não estruturados) direto num data lake, e transformá-los sob demanda**, apenas quando forem efetivamente necessários.
+
+Esse é o pipeline **ELT (Extract → Load → Transform)**: extraímos os dados de várias fontes e os **carregamos diretamente em um data lake, sem pré-processamento**, a transformação acontece depois, sob demanda, conforme a necessidade de cada aplicação. Além disso, existem soluções híbridas chamadas **lakehouses**, que aceitam tanto dados estruturados quanto não estruturados no mesmo repositório.
+
+### **Comparando ETL e ELT**
+
+**ETL** ainda faz sentido em casos específicos quando queremos conformidade para analises bem focadas ou criar dashboards. **ELT** é mais flexivel, perdendo menos dados e deixando o destino final decidir oq fazer.
+
 
 ![alt text](images/etl_vs_elt.png)
 
-### **Formas de Fluxo de dados (transferir dados/Dataflow)**
+## **Formas de Fluxo de Dados (Dataflow)**
 
-Outro fator importante a se ponderar é como processos separados em maquinas diferentes vão se comunicar, ou seja, compartilhar dados sem ter uma memória compartilhada, isso é importante pois na vida real não será apenas uma máquina trabalhando... Isso pode ser feito de 3 grandes formas diferentes:
+Como processos separados, rodando em máquinas diferentes, vão se comunicar. ou seja, compartilhar dados sem ter uma memória compartilhada ?
 
-- **Banco de dados intermediário:** Nesse modelo nos usamos um banco intermediário entre o processo A e processo B. O processo A escreve seus dados nesse banco e o processo B lê o que o A escreveu... problema disso é que escrita e leitura no disco podem ser bem lentos e normalmente um requisitos desse sistemas é uma latencia baixa e além disso requer um banco em comum entre 2 sistemas que talvez sejam de empresas diferentes... se dois sistemas dependem do mesmo banco qualquer alteracao do banco tem que ser refletida nos dois sistemas.
+### **Banco de dados intermediário**
 
-- **Serviços (Request-Driven):** Nesse modelo os 2 processos se comunicam através de conexão de rede de forma sincrona (manda e espera) ou assincrona (manda e vai fazer outra coisa) usando APIs tipo REST ou RPC (remote protocol) em que um dos processos faz requisição ao outro ele responde com o conteudo da resposta. Isso permite que varias empresas tenham seus serviços (geralmente em uma arquitetura de microservices) que comuniquem com bancos internos ou externos. REST é uma implementação em cima do HTTPS em que permite requisições do tipo GET/POST/DELETE... RPC faz a comunicação entre os processos parecer uma chamada de função através da interface deles e usam protob que é em binário e portanto mais rapido que JSON que é mais legivel (grpc é o mais comum). Um ponto negativo é a dependencia pois se um servico cair todos que dependem dele caem também... isso pode ser mitigado/resolvido com autoscalig ou replicas. Outra coisa, os 2 servicos que estao se comunicando precisam se conhecer e a comunicacao é um comando do presente, ou seja, nada aconteceu ainda, a requisicao vai fazer acontecer.
+O processo A escreve seus dados num banco compartilhado, e o processo B lê o que A escreveu.
 
-- **Transporte em tempo real (Event-driven):** Nesse modelo usamos um broker/proxy/intermediário (o broker centraliza as comunicações entre os serviços também evitando aumento da complexidade) para transmitir e coordenar os dados passados entre os serviços... nesse modelo temos produtores e consumidores e não requests com retorno, ou seja, aqui os produtores produzem e enviam para o broker e não se importam com quem ou quantos irão usar o que produziou, esse mesmo produtor pode agir como consumidor em algum outro tipo de dado que outro produtor fez... tecnicamente esse intermediário poderia ser um banco de dados também mas como dito antes eles tem escrita e leitura lenta por ser em memória secundária. Então, nossa solução tem que ser feita em memória princial (volátil) ou usando alguma implementacao otimizada em secundária (kafka)... esse modelo geralmente é chamado de mode "movido a eventos" em que cada dado que passa é um evento. As duas principais arquiteturas são publisher-subscriber (produtos-consumidor) em que os Pubs enviam mensagens e os Subs recebem as mensagens apenas de quem eles assinaram e no caso de fila de mensagens a "fila" recebe as mensagens do produtores e distribui corretamente para os consumidores (ela não armazena igual o pub-sub pois no modelo de fila apenas um consumidor recebe o dado e depois o dado é apagado, ou seja, o evento tem um consumidor especifico... mas os dados poderiam ser replicados para filas de dois serviços que querem consumir ele). Esse modelo tem a vantagem de ser assincrono (pode trabalhar enquanto não recebe resposta), tolerancia a falhas uma vez que mesmo que o consumidor caia as mensagens ficam armazedas alguns dias no broker antes de ser apagada ou colocada em memória secundária e os componentes serem independentes.
-
-
-Em geral Request-driven é mais interessante para aplicações com baixo volume de transporte de dados como a maioria das aplicações WEB em que queremos uma resposta imediata (ou o mais rapido possivel) através das requisições e em sistemas que a lógica de negocio é maior que a quantidade de dados por exemplo um login que é um passo a passo (faz um requisição -> resultado -> requisição -> resultado)... Event-driven é mais interessante para casos em que o dado produzido por um serviço é usado por multiplos outros... se fosse requisição teriamos que fazer muitos POSTs para enviar dados e receber respostas a todo momento de status e isso gera interrupção no processador... por isso no de eventos alguns serviços produzem enquanto de forma assincrona outro consomem sem nem avisar e sem dependencia alguma.
-
-
-### **Batch processing vs Stream Processing**
-
-Sistemas e usuários geram dados a todo momento, mas nem todos esses dados possuem a mesma urgência de processamento. O "processamento" de dados consiste em coletar, transformar e extrair valor dessas informações brutas. Isso pode ser feito de duas formas principais:
-
-- **Batch Processing (Processamento em Lote):** Consiste em processar um bloco (batch) de dados históricos armazenados em intervalos de tempo fixos (diariamente, semanalmente, etc.).
-
-    - **Exemplo:** Calcular a média diária de notas de um motorista. Não precisamos atualizar a média a cada nova avaliação, mas sim processar todas as avaliações acumuladas ao final do dia.
-
-    - **Contexto de ML:** Esses lotes são processados em janelas de tempo maiores e geram features estáticas, que são atributos que mudam pouco ou lentamente com o tempo (muito comum no treinamento de modelos em Offline Learning).
+**Problemas**:
+- Escrita e leitura em disco podem ser relativamente lentas, e esses sistemas normalmente exigem **baixa latência**
+- Exige um banco em comum entre os dois sistemas, o que pode ser complicado se pertencerem a empresas diferentes
+- Qualquer alteração no schema do banco precisa ser refletida (e coordenada) em ambos os sistemas que dependem dele
 
 
-- **Stream Processing (Processamento em Fluxo):** Consiste em processar o dado no exato momento em que ele é gerado usando ferramentas Event-driven (ou em intervalos de milissegundos/segundos). A prioridade aqui é a baixa latência e a extração de valor imediato.
+### **Serviços (Request-Driven)**
 
-    - **Stateful Processing:** Além de processar em paralelo, motores de stream (como Flink ou Kafka Streams) são stateful (mantêm estado). Eles lembram de informações recentes. Se quisermos a média móvel dos últimos 30 dias, o stream não recalcula tudo do zero; ele usa uma estrutura de "janela deslizante" (sliding window), adicionando o dado novo que acabou de chegar e descartando o dado mais antigo da janela, economizando muito processamento.
+Os dois processos se comunicam via conexão de rede, de forma **síncrona** (manda e espera a resposta) ou **assíncrona** (manda e segue fazendo outra coisa enquanto aguarda), usando APIs como **REST** ou **RPC**.
 
-    - **Contexto de ML:** As features geradas aqui são as features dinâmicas, que representam o estado atual do sistema (ex: Quantos motoristas estão disponíveis num raio de 2km neste exato momento?). Essencial para Online Learning e inferência em tempo real.
+- **REST**: implementação sobre HTTPS, com metodos como GET/POST/DELETE
+- **RPC** (Remote Procedure Call): faz a comunicação entre processos parecer uma chamada de função local, através de uma interface definida. Geralmente usa **Protocol Buffers (protobuf)**, um formato binário mais rápido que o JSON.
 
-Conceitualmente, o processamento em Batch pode ser visto como um caso específico do Stream Processing, onde o "intervalo" do fluxo é artificialmente grande e definido (ex: uma janela de 24 horas acumulando dados). O contrário, porém, não é verdade. Na prática de sistemas complexos (como motores de busca, recomendação ou detecção de anomalias), é muito comum precisarmos das duas abordagens trabalhando juntas (uma arquitetura conhecida como Arquitetura Lambda).
+**Ponto negativo**: dependência direta entre serviços, se um serviço cai, todos que dependem dele são afetados. Isso pode ser mitigado com autoscaling ou réplicas. Além disso, os dois serviços precisam **se conhecer** previamente (endereço, contrato da API), e a comunicação é um **comando do presente**, nada aconteceu ainda antes da requisição; é a própria requisição que vai fazer a ação acontecer.
 
-- **Exemplo:** Para rankear resultados ou detectar uma fraude, o modelo precisa consumir tanto as features estáticas (o histórico de comportamento do usuário ao longo dos meses, gerado em Batch) quanto as features dinâmicas (o que o usuário clicou ou buscou nos últimos 5 minutos, gerado em Stream) para tomar uma decisão precisa e imediata.
+### **Transporte em tempo real (Event-Driven)**
+
+Aqui usamos um **broker** (intermediário) para transmitir e coordenar dados entre os serviços, centralizando a comunicação e evitando que cada serviço precise conhecer todos os outros diretamente.
+
+Nesse modelo temos **produtores** e **consumidores**, não requisições com retorno direto:
+- Produtores enviam dados para o broker **sem se importar** com quem (ou quantos) vão consumir aquilo
+- Um mesmo serviço pode atuar como produtor de um tipo de dado e consumidor de outro
+
+Esse intermediário poderia ser um banco de dados mas bancos têm leitura/escrita relativamente lentas por trabalharem com memória secundária. Por isso, soluções desse tipo geralmente usam **memória principal (volátil)**, ou implementações otimizadas de memória secundária feitas especificamente para esse fim (ex: **Kafka**). Esse modelo é chamado de **"movido a eventos"**, já que cada dado transmitido representa um evento.
+
+**Duas arquiteturas principais**:
+
+- **Publisher-Subscriber (Pub-Sub)**: publishers enviam mensagens para um "tópico"; subscribers recebem apenas as mensagens dos tópicos aos quais assinaram. A mesma mensagem pode ser entregue a múltiplos subscribers.
+- **Fila de mensagens (Message Queue)**: a fila recebe mensagens dos produtores e as distribui aos consumidores, mas, diferente do pub-sub, cada mensagem é consumida por **um único consumidor** e depois removida da fila (não é "armazenada" para múltiplos leitores). Ainda assim, é possível replicar a mesma mensagem para filas diferentes caso mais de um serviço precise consumi-la.
+
+**Vantagens do modelo event-driven**:
+- **Assíncrono**: o sistema pode continuar trabalhando enquanto aguarda outros eventos
+- **Tolerância a falhas**: mesmo que um consumidor caia, as mensagens ficam retidas no broker por um tempo (antes de serem descartadas ou movidas para memória secundária), evitando perda de dados
+- **Componentes independentes**: produtores e consumidores não precisam se conhecer nem estar disponíveis ao mesmo tempo
+
+
+### **Quando usar cada abordagem**
+
+- **Request-Driven**: mais interessante para aplicações com **baixo volume de dados por transação** e onde se espera uma resposta imediata — a maioria das aplicações web (ex: um fluxo de login, que é essencialmente uma sequência de requisição → resposta → requisição → resposta). Também faz mais sentido quando a **lógica de negócio é mais complexa que o volume de dados** transportado.
+
+- **Event-Driven**: mais interessante quando o dado produzido por um serviço é consumido por **múltiplos outros serviços**. Se isso fosse implementado via requisições, seria necessário fazer múltiplos POSTs repetidamente, gerando overhead constante de comunicação. No modelo de eventos, produtores publicam de forma assíncrona e consumidores leem sem qualquer dependência direta entre eles.
+
+## **Batch Processing vs. Stream Processing**
+
+Sistemas e usuários geram dados o tempo todo, mas nem todo dado tem a mesma urgência de processamento. "Processar" dados significa coletar, transformar e extrair valor de informações brutas e isso pode ser feito de duas formas principais.
+
+### **Batch Processing (Processamento em Lote)**
+
+Processa um bloco (batch) de dados históricos, acumulados, em intervalos de tempo fixos (diário, semanal, etc.).
+
+- **Exemplo**: calcular a média diária de notas de um motorista, não é necessário atualizar a média a cada nova avaliação; basta processar todas as avaliações acumuladas ao final do dia.
+
+Gera **features estáticas**, atributos que mudam pouco ou lentamente com o tempo. Muito comum no treinamento de modelos em **offline learning**.
+
+### **Stream Processing (Processamento em Fluxo)**
+
+Processa o dado no exato momento em que é gerado, tipicamente usando arquiteturas event-driven (ou em janelas de milissegundos/segundos). A prioridade aqui é **baixa latência** e extração de valor imediato.
+
+- **Stateful Processing**: motores de stream (como **Flink** ou **Kafka Streams**) mantêm **estado**, eles "lembram" de informações recentes. Por exemplo, para calcular uma média móvel dos últimos 30 dias, o motor não recalcula tudo do zero a cada novo dado: ele usa uma estrutura de **janela deslizante (sliding window)**, adicionando o dado novo e descartando o mais antigo, economizando processamento.
+
+Gera **features dinâmicas** — que representam o estado atual do sistema (ex: "quantos motoristas estão disponíveis num raio de 2km agora?"). Essencial para **continual learning** e inferência em tempo real **(stream prediction)**.
+
+### **Batch é um caso particular de Stream**
+
+Processamento em batch pode ser visto como um caso específico de stream processing, onde o "intervalo" do fluxo é artificialmente grande e fixo (ex: uma janela de 24 horas acumulando dados).  complexos (motores de busca, recomendação, detecção de anomalias) costumam precisar das **duas abordagens trabalhando juntas**, uma arquitetura conhecida como **Arquitetura Lambda**.
+
+- **Exemplo**: para rankear resultados de busca ou detectar uma fraude, o modelo precisa combinar tanto **features estáticas** (histórico de comportamento do usuário ao longo de meses, gerado em batch) quanto **features dinâmicas** (o que o usuário clicou ou buscou nos últimos 5 minutos, gerado em stream) para tomar uma decisão precisa e imediata.
 
 ![alt text](https://media.licdn.com/dms/image/v2/D5622AQFYz12KQVGCoQ/feedshare-shrink_800/B56Zns9RjNKMAg-/0/1760617124265?e=2147483647&v=beta&t=1JJk7uesQVam9qT3h0jX6FI8kisaW0v4muh6YuOnJF8)
