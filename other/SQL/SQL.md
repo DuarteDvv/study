@@ -48,6 +48,20 @@ ORDER BY
 ASC;
 ```
 
+## **WHERE**
+
+Filtra linhas antes de qualquer agregação, ou seja, trabalha nas linhas coletadas pelo FROM.
+
+```sql
+SELECT
+  p.part, 
+  p.assembly_step
+FROM 
+  parts_assembly AS p
+WHERE 
+  p.finish_date IS NULL
+```
+
 ## **EXISTS**
 
 Verifica se existe pelo menos uma linha na subconsulta e retorna booleano. 
@@ -108,6 +122,18 @@ GROUP BY
 ### **Funções de agregação**
 
 #### **Agregação Condicional**
+
+Funciona da seguinte forma podendo aninhas varias preposições WHEN-THEN. Pode ser usado em funções de agregação como SUM e COUNT mas se for usado com COUNT o else precisa ser NULL para não contar a linha.
+
+CASE WHEN condição1 THEN oq-fazer1 WHEN condição2 THEN oq-fazer2 ELSE oq-fazer-se-nenhuma-condição-verdadeira END 
+
+```sql
+SELECT 
+  SUM(CASE WHEN v.device_type = 'laptop' THEN 1 ELSE 0 END) AS laptop_views,
+  SUM(CASE WHEN v.device_type = 'phone' OR v.device_type = 'tablet' THEN 1 ELSE 0 END) AS mobile_views
+FROM
+  viewership AS v
+```
 
 ### **HAVING** 
 
