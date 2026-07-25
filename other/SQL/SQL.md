@@ -75,9 +75,35 @@ ASC
 
 ## **DISTINCT**
 
+## **LIKE**
+
+## **YEAR**
+
 ## **GROUP BY**
 
 Agrupa as linhas de acordo com colunas especificadas. Todas as colunas que estiverem no SELECT e não forem uma agregação (media, max...) precisam também estar no GROUP BY
+
+```sql
+WITH tweets_p_user AS (
+  SELECT
+    t.user_id,  
+    COUNT(DISTINCT t.tweet_id) AS tweet_n
+  FROM 
+    tweets AS t 
+  WHERE 
+    '1/1/2022' <= t.tweet_date AND t.tweet_date  < '1/1/2023'
+  GROUP BY
+    t.user_id
+)
+
+SELECT 
+  tweet_n AS tweet_bucket,
+  COUNT(user_id) AS users_num
+FROM 
+  tweets_p_user
+GROUP BY
+  tweet_n
+```
 
 ### **Funções de agregação**
 
@@ -101,9 +127,20 @@ HAVING
 ORDER BY
   c.candidate_id
 ASC;
-``
+```
   
+## **WINDOW FUNCTIONS**
 
+### **ROW_NUMBER()**
+
+### **OVER**
+
+usado principalmente com ORDER BY e PARTITION BY
+
+
+### PARTITION BY
+
+### ORDER BY
 
 
 
