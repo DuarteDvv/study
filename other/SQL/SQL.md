@@ -1,4 +1,4 @@
-## **Ordem execução**
+# **Ordem execução**
 
 1. FROM (pega as tabelas)
 
@@ -12,8 +12,31 @@
 
 6. ORDER BY (ordena o resultado)
 
+## **FROM**
 
-## **INTERSECT** 
+FROM é a etapa de criação de tabelas temporárias, recuperação de tabelas e execução de JOINs
+
+### **JOIN (INNER)**
+
+table1 as t1 JOIN table2 as t2 ON t1.id = t2.id -> O join padrão é o INNER JOIN em que casamos cada linha de uma tabela com seu respectivo par de mesmo id (ou ids) na outra tabela. Se não existir correspondencia a linha na tabela resultado não é criada (ignorado). 
+
+```sql
+SELECT 
+  u.city,
+  SUM(CASE WHEN t.status = 'Completed' THEN 1 ELSE 0 END) AS total_orders
+FROM 
+  trades AS t JOIN users AS u ON 
+  u.user_id = t.user_id
+GROUP BY 
+  u.city
+ORDER BY
+  total_orders DESC
+LIMIT 3
+```
+
+## **SELECT**
+
+### **INTERSECT** 
 
 Operador de conjuntos que pega a interseção de linhas entre N consultas, ou seja, SELECTs distintos.
 
@@ -91,11 +114,27 @@ ASC
 
 ## **LIKE**
 
-## **YEAR**
+## **DATE()**
+
+Função que converte TIMESTAMP (Data + Horas) para DATE (apenas data). Qualquer operação com DATE retorna já em dias. Operações com TIMESTAMP retornam itens do tipo INTERVAL com dias, horas, minutos e segundos.
+
+```sql
+SELECT 
+  p.user_id,
+  MAX(DATE(p.post_date)) - MIN(DATE(p.post_date)) AS days_between
+FROM 
+  posts AS p 
+WHERE 
+  p.post_date >= '2021/01/01' AND p.post_date < '2022/01/01'
+GROUP BY 
+  p.user_id
+HAVING 
+  COUNT(p.post_id) >= 2
+```
 
 ## **GROUP BY**
 
-Agrupa as linhas de acordo com colunas especificadas. Todas as colunas que estiverem no SELECT e não forem uma agregação (media, max...) precisam também estar no GROUP BY
+Agrupa as linhas de acordo com colunas especificadas. Todas as colunas que estiverem no SELECT e não forem uma agregação (media, max...) precisam também estar no GROUP BY mas todas as colunas que estiverem no GROUP BY não necessáriamente precisam estar no SELECT.
 
 ```sql
 WITH tweets_p_user AS (
@@ -154,6 +193,26 @@ ORDER BY
   c.candidate_id
 ASC;
 ```
+```sql
+WITH companies_rep AS (SELECT
+  jl.company_id
+FROM 
+  job_listings AS jl
+GROUP BY
+  jl.company_id,
+  jl.title,
+  jl.description
+HAVING
+  COUNT(*) > 1
+)
+  
+SELECT 
+  COUNT(DISTINCT company_id)
+FROM 
+  companies_rep
+```
+
+
   
 ## **WINDOW FUNCTIONS**
 
@@ -164,9 +223,29 @@ ASC;
 usado principalmente com ORDER BY e PARTITION BY
 
 
-### PARTITION BY
+### **PARTITION BY**
 
-### ORDER BY
+### **ORDER BY**
 
+Ordena o resultado do SELECT em ascendente ASC ou descendente DESC. Pode ser usado também com window functions.
 
+## **LIMIT**
+
+Limita o numero de linhas retornadas de baixa para cima
+
+```sql
+SELECT 
+  m.sender_id,
+  COUNT(m.message_id) AS message_count
+FROM 
+  messages AS m 
+WHERE 
+  m.sent_date >= '2022/08/01' AND  m.sent_date < '2022/09/01'
+GROUP BY 
+  m.sender_id
+ORDER BY 
+  message_count DESC
+LIMIT 
+  2
+```
 
