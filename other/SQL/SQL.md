@@ -34,6 +34,22 @@ ORDER BY
 LIMIT 3
 ```
 
+### **SELF JOIN**
+
+Faz join de uma tabela com ela mesmo de acordo com alguma chave. È util para comparar coisas dentro da mesma tabela (como tipos diferentes de funcioários).
+
+```sql
+SELECT 
+  e.employee_id,
+  e.name
+FROM 
+  employee AS e
+INNER JOIN employee AS m 
+  ON e.manager_id = m.employee_id 
+WHERE 
+  e.salary > m.salary;  
+```        
+
 ## **SELECT**
 
 ### **INTERSECT** 
@@ -89,6 +105,25 @@ WHERE
 
 Verifica se existe pelo menos uma linha na subconsulta e retorna booleano. 
 
+
+```sql
+SELECT 
+  e.employee_id,
+  e.name
+FROM 
+  employee AS e
+WHERE 
+  EXISTS(
+    SELECT
+      1
+    FROM
+      employee AS e2
+    WHERE 
+      e.manager_id = e2.employee_id AND
+      e.salary > e2.salary
+  )
+```
+
 ```sql
 SELECT 
   p.page_id
@@ -114,7 +149,7 @@ ASC
 
 ## **LIKE**
 
-## **DATE()**
+## **DATE(Timestamp a ser convertido)**
 
 Função que converte TIMESTAMP (Data + Horas) para DATE (apenas data). Qualquer operação com DATE retorna já em dias. Operações com TIMESTAMP retornam itens do tipo INTERVAL com dias, horas, minutos e segundos.
 
@@ -131,6 +166,25 @@ GROUP BY
 HAVING 
   COUNT(p.post_id) >= 2
 ```
+
+### **EXTRACT( FROM MONTH/DAY/YEAR/HOUR/SECOND/MINUTE )
+
+Serve para extrair dados de data ou hora de date/timestamps. Sintaxe de PostgreSQL.
+
+```sql
+SELECT
+  EXTRACT(MONTH FROM r.submit_date) AS mth,
+  r.product_id AS product,
+  ROUND(AVG(r.stars),2) AS avg_stars
+FROM 
+  reviews AS r
+GROUP BY
+  EXTRACT(MONTH FROM r.submit_date),
+  r.product_id
+ORDER BY
+  mth, product
+```
+  
 
 ## **GROUP BY**
 
@@ -212,7 +266,11 @@ FROM
   companies_rep
 ```
 
+## **SELECT**
 
+### **ROUND(valor, casas decimais)**
+
+Arredonda casas decimais para quanto quiser
   
 ## **WINDOW FUNCTIONS**
 
