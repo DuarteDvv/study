@@ -227,6 +227,21 @@ SELECT
 FROM
   viewership AS v
 ```
+```sql
+SELECT
+  t.account_id,
+  SUM(
+  CASE 
+    WHEN t.transaction_type = 'Deposit' THEN t.amount 
+    WHEN t.transaction_type = 'Withdrawal' THEN -t.amount 
+    ELSE 0
+  END
+  ) 
+FROM 
+  transactions AS t 
+GROUP BY
+  t.account_id
+```
 
 ### **HAVING** 
 
