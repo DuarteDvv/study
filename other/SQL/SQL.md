@@ -284,6 +284,38 @@ GROUP BY
   e.app_id;
 ```
 
+```sql
+SELECT 
+  age_.age_bucket, 
+  ROUND(100.0 *
+    SUM(
+      CASE 
+        WHEN a.activity_type = 'send' THEN a.time_spent 
+        ELSE 0 
+      END) / 
+    SUM(
+      CASE 
+        WHEN a.activity_type = 'send' OR a.activity_type = 'open' THEN a.time_spent 
+        ELSE 0 
+      END),2) AS send_perc,
+  ROUND(100.0*
+    SUM(
+    CASE 
+      WHEN a.activity_type = 'open' THEN a.time_spent 
+      ELSE 0 
+    END) / 
+  SUM(
+    CASE 
+      WHEN a.activity_type = 'send' OR a.activity_type = 'open' THEN a.time_spent 
+      ELSE 0 
+    END),2) AS open_perc
+FROM 
+  activities AS a JOIN age_breakdown AS age_ 
+  ON a.user_id = age_.user_id
+GROUP BY
+  age_.age_bucket
+```
+
 ### **HAVING** 
 
 Filtragem que acontece após o agrupamento. Se agrupamos por candidato_id e tiramos uma média de todas as linhas agrupadas desses candidato_id agora podemos filtrar candidatos pela media calculada.
@@ -328,7 +360,7 @@ FROM
 
 Arredonda casas decimais para quanto quiser
   
-## **WINDOW FUNCTIONS**
+### **WINDOW FUNCTIONS**
 
 Windows functions sempre seguem esse padrão
 
@@ -338,7 +370,7 @@ Em que:
 - X é uma função de agregação, ranking ou navegação
 - Y é quem define quais linhas entram na agregação e qual ordem elas terão
 
-### **OVER()**
+#### **OVER()**
 
 O OVER() funciona como uma janela de observação sobre a tabela inteira que permite calcular agregações, rankings e acúmulos sem destruir as linhas originais (diferente do GROUP BY, que as esmaga). Ele preserva a identidade de cada registro intacta e apenas adiciona uma nova coluna calculada ao lado, permitindo comparar o dado individual com o contexto do grupo de forma simples e direta.
 
@@ -467,9 +499,7 @@ Soma os valores da janela
 
 Calcula a média do grupo. Ignora nulos.
 
-
-
-## **LIMIT**
+### **LIMIT**
 
 Limita o numero de linhas retornadas de baixa para cima
 
@@ -489,3 +519,6 @@ LIMIT
   2
 ```
 
+### **CONCAT**
+
+Usando para concatenar varias coisas em string por exemplo: CONCAT('Soma é ', SUM(), ' mil dolares')
