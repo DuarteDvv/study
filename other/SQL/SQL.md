@@ -160,11 +160,16 @@ ORDER BY 
 ASC 
 ```
 
-## **EXCEPT**
+### **EXCEPT**
 
-## **DISTINCT**
+### **DISTINCT**
 
-## **LIKE**
+Pode ser usado no SELECT DISTINCT para filtrar linhas completamente iguais (todas as colunas). Ou funções de agregação como COUNT(DISTINCT ...) para contar contar coisas unicas.
+
+
+### **LIKE**
+
+Comparação de strings
 
 ### **DATE(Timestamp a ser convertido)**
 
@@ -428,6 +433,25 @@ Atribui a mesma posição em caso de empate, mas pula as posições seguintes (e
 #### **DENSE_RANK()**
 
 Atribui a mesma posição em caso de empate e não pula posições (ex: 1, 2, 2, 3).
+
+```sql
+WITH 
+
+employee_w_row_n AS (
+  SELECT
+    DENSE_RANK() OVER(ORDER BY e.salary DESC) AS row_n,
+    e.salary
+  FROM 
+    employee AS e
+)
+
+SELECT DISTINCT 
+  salary
+FROM 
+  employee_w_row_n 
+WHERE
+  row_n = 2
+```
 
 ### **Funções de agregação**
 
