@@ -16,6 +16,23 @@
 
 FROM é a etapa de criação de tabelas temporárias, recuperação de tabelas e execução de JOINs
 
+### **CTEs**
+
+Para criar tabelas temporarias e deixar a query bem mais legivel a sintaxe é:
+
+```sql
+WITH 
+
+tabela1 AS (
+  query
+),
+
+tabela2 AS (
+  query
+),
+...
+```
+
 ### **JOIN (INNER)**
 
 table1 as t1 JOIN table2 as t2 ON t1.id = t2.id -> O join padrão é o INNER JOIN em que casamos cada linha de uma tabela com seu respectivo par de mesmo id (ou ids) na outra tabela. Se não existir correspondencia a linha na tabela resultado não é criada (ignorado). 
@@ -149,9 +166,13 @@ ASC
 
 ## **LIKE**
 
-## **DATE(Timestamp a ser convertido)**
+### **DATE(Timestamp a ser convertido)**
 
 Função que converte TIMESTAMP (Data + Horas) para DATE (apenas data). Qualquer operação com DATE retorna já em dias. Operações com TIMESTAMP retornam itens do tipo INTERVAL com dias, horas, minutos e segundos.
+
+### **TIME(Timestamp a ser convertido)**
+
+Diferende DATE converte para TIME que preserva apenas horas (hh-mm-ss)
 
 ```sql
 SELECT 
@@ -167,7 +188,7 @@ HAVING
   COUNT(p.post_id) >= 2
 ```
 
-### **EXTRACT( FROM MONTH/DAY/YEAR/HOUR/SECOND/MINUTE )
+### **EXTRACT(FROM MONTH/DAY/YEAR/HOUR/SECOND/MINUTE)**
 
 Serve para extrair dados de data ou hora de date/timestamps. Sintaxe de PostgreSQL.
 
@@ -212,7 +233,7 @@ GROUP BY
   tweet_n
 ```
 
-### **Funções de agregação**
+
 
 #### **Agregação Condicional**
 
@@ -241,6 +262,21 @@ FROM
   transactions AS t 
 GROUP BY
   t.account_id
+```
+```sql
+SELECT
+  e.app_id,
+  ROUND(
+    100.0 * SUM(CASE WHEN e.event_type = 'click' THEN 1 ELSE 0 END) 
+    / 
+    SUM(CASE WHEN e.event_type = 'impression' THEN 1 ELSE 0 END)
+  , 2) AS ctr
+FROM
+  events AS e
+WHERE
+  e.timestamp >= '2022/01/01' AND e.timestamp < '2023/01/01'
+GROUP BY  
+  e.app_id;
 ```
 
 ### **HAVING** 
@@ -289,18 +325,125 @@ Arredonda casas decimais para quanto quiser
   
 ## **WINDOW FUNCTIONS**
 
-### **ROW_NUMBER()**
+Windows functions sempre seguem esse padrão
 
-### **OVER**
+$$\text{Função}(X) \quad \mathbf{OVER} \quad \left( Y \right)$$
 
-usado principalmente com ORDER BY e PARTITION BY
+Em que: 
+- X é uma função de agregação, ranking ou navegação
+- Y é quem define quais linhas entram na agregação e qual ordem elas terão
+
+### **OVER()**
+
+O OVER() funciona como uma janela de observação sobre a tabela inteira que permite calcular agregações, rankings e acúmulos sem destruir as linhas originais (diferente do GROUP BY, que as esmaga). Ele preserva a identidade de cada registro intacta e apenas adiciona uma nova coluna calculada ao lado, permitindo comparar o dado individual com o contexto do grupo de forma simples e direta.
+
+```sql
+WITH transactions_w_number AS (
+  SELECT 
+    *,
+    ROW_NUMBER() OVER(PARTITION BY user_id ORDER BY transaction_date) AS row_n
+  FROM 
+    transactions
+)
+
+SELECT 
+  t.user_id,
+  t.spend,
+  t.transaction_date
+FROM 
+  transactions_w_number AS t 
+WHERE
+  row_n = 3
+```
 
 
-### **PARTITION BY**
+#### **PARTITION BY**
 
-### **ORDER BY**
+Separa a aplicação função em grupos diferentes da janela do OVER() começando sempre do zero. Sem o partition by o ranking leva em consideração todas as linhas. Com o partition by um ranking é criado por grupo. 
 
-Ordena o resultado do SELECT em ascendente ASC ou descendente DESC. Pode ser usado também com window functions.
+
+#### **ORDER BY**
+
+Ordena o resultado do SELECT em ascendente ASC ou descendente DESC. Pode ser usado também com window functions para ordenar a janela do OVER()
+
+
+### **Funções de navegação**
+
+```sql
+SELECT 
+  data_venda,
+  valor AS venda_hoje,
+  
+  -- Pega a venda da 1ª linha ANTERIOR (Ontem)
+  LAG(valor, 1) OVER (ORDER BY data_venda) AS venda_ontem,
+  
+  -- Pega a venda da 1ª linha SEGUINTE (Amanhã)
+  LEAD(valor, 1) OVER (ORDER BY data_venda) AS venda_amanha
+FROM 
+  vendas_diarias;
+```
+
+#### **LAG(coluna, deslocamento k, valor padrão)**
+
+O LAG() acessa o valor de uma única célula localizada exatamente $k$ linhas acima (atrás) da linha atual, considerando a ordem definida na janela do OVER(). Caso não exista retorna o valor padrão ou nulo por padrão.
+
+#### **LEAD(coluna, deslocamento k, valor padrão)**
+
+O LAG() acessa o valor de uma única célula localizada exatamente $k$ linhas abaixo (frente) da linha atual, considerando a ordem definida na janela do OVER(). Caso não exista retorna o valor padrão ou nulo por padrão.
+
+```sql
+WITH 
+
+rides_w_number_and_next_ride AS (
+  SELECT 
+    u.user_id,
+    r.ride_date AS ride_date,
+    u.registration_date,
+    LEAD(r.ride_date,1) OVER (PARTITION BY user_id ORDER BY ride_date) AS next_ride, --- vira null 
+    ROW_NUMBER() OVER (PARTITION BY user_id ORDER BY ride_date) AS row_n 
+  FROM 
+    rides AS r JOIN users AS u 
+    ON r.user_id = u.user_id
+)
+
+SELECT 
+  ROUND(AVG(DATE(next_ride) - DATE(ride_date)),2) AS average_delay
+FROM
+    rides_w_number_and_next_ride
+WHERE 
+  row_n = 1 AND
+  DATE(ride_date) = DATE(registration_date)
+```
+
+### **Funções de ranking**
+
+#### **ROW_NUMBER()**
+
+Numeração sequencial única (1, 2, 3...) para cada linha. Desempata arbitrariamente se houver valores iguais, ou seja, se 2 linhas são iguais vão receber posições diferentes (3,4).
+
+#### **RANK()**
+
+Atribui a mesma posição em caso de empate, mas pula as posições seguintes (ex: 1, 2, 2, 4).
+
+#### **DENSE_RANK()**
+
+Atribui a mesma posição em caso de empate e não pula posições (ex: 1, 2, 2, 3).
+
+### **Funções de agregação**
+
+#### **COUNT()**
+
+Conta o total de registros dentro do intervalo da janela.
+
+#### **SUM()**
+
+Soma os valores da janela
+
+#### **AVG()**
+
+Calcula a média do grupo. Ignora nulos.
+
+
 
 ## **LIMIT**
 
