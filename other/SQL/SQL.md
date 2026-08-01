@@ -424,6 +424,33 @@ FROM
 
 O LAG() acessa o valor de uma única célula localizada exatamente $k$ linhas acima (atrás) da linha atual, considerando a ordem definida na janela do OVER(). Caso não exista retorna o valor padrão ou nulo por padrão.
 
+```sql
+WITH tweets_window AS (
+  SELECT 
+    t.user_id,
+    t.tweet_date,
+    t.tweet_count AS hoje,
+    LAG(t.tweet_count, 1) OVER (PARTITION BY t.user_id ORDER BY t.tweet_date) AS ontem, 
+    LAG(t.tweet_count, 2) OVER (PARTITION BY t.user_id ORDER BY t.tweet_date) AS anteontem
+  FROM tweets AS t
+)
+
+SELECT
+  user_id,
+  tweet_date, 
+  ROUND(
+    1.0 * (hoje + COALESCE(ontem, 0) + COALESCE(anteontem, 0))
+    / 
+    (
+      1.0 + 
+      CASE WHEN ontem IS NULL THEN 0 ELSE 1 END +
+      CASE WHEN anteontem IS NULL THEN 0 ELSE 1 END
+    )
+  , 2) AS rolling_avg_3d
+FROM 
+  tweets_window;
+```
+
 #### **LEAD(coluna, deslocamento k, valor padrão)**
 
 O LAG() acessa o valor de uma única célula localizada exatamente $k$ linhas abaixo (frente) da linha atual, considerando a ordem definida na janela do OVER(). Caso não exista retorna o valor padrão ou nulo por padrão.
