@@ -485,6 +485,34 @@ WHERE
 
 Numeração sequencial única (1, 2, 3...) para cada linha. Desempata arbitrariamente se houver valores iguais, ou seja, se 2 linhas são iguais vão receber posições diferentes (3,4).
 
+```sql
+WITH 
+
+q AS (SELECT 
+  ps.category,
+  ps.product,
+  SUM(ps.spend) AS total_spend,
+  ROW_NUMBER() OVER (PARTITION BY ps.category ORDER BY SUM(ps.spend) DESC) AS row_n
+FROM
+  product_spend AS ps
+WHERE 
+  ps.transaction_date < '2023-01-01' AND 
+  ps.transaction_date >= '2022-01-01'
+GROUP BY 
+  ps.category,
+  ps.product
+)
+
+SELECT
+  category,
+  product,
+  total_spend
+FROM 
+  q 
+WHERE 
+  row_n = 1 OR row_n = 2
+```
+
 #### **RANK()**
 
 Atribui a mesma posição em caso de empate, mas pula as posições seguintes (ex: 1, 2, 2, 4).
