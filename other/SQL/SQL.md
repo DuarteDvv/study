@@ -453,7 +453,7 @@ FROM
 
 #### **LEAD(coluna, deslocamento k, valor padrão)**
 
-O LAG() acessa o valor de uma única célula localizada exatamente $k$ linhas abaixo (frente) da linha atual, considerando a ordem definida na janela do OVER(). Caso não exista retorna o valor padrão ou nulo por padrão.
+O LEAD() acessa o valor de uma única célula localizada exatamente $k$ linhas abaixo (frente) da linha atual, considerando a ordem definida na janela do OVER(). Caso não exista retorna o valor padrão ou nulo por padrão.
 
 ```sql
 WITH 
@@ -524,6 +524,33 @@ Atribui a mesma posição em caso de empate e não pula posições (ex: 1, 2, 2,
 ```sql
 WITH 
 
+temp_ AS (
+
+  SELECT
+    d.department_name,
+    e.name, 
+    e.salary,
+    DENSE_RANK() OVER(PARTITION BY d.department_id ORDER BY e.salary DESC) AS row_n
+  FROM
+    employee AS e JOIN department AS d 
+    ON e.department_id = d.department_id
+)
+
+SELECT 
+  department_name,
+  name, 
+  salary
+FROM 
+  temp_
+WHERE
+  row_n IN (1,2,3)
+ORDER BY 
+  department_name ASC, salary DESC, name ASC
+```
+
+```sql
+WITH 
+
 employee_w_row_n AS (
   SELECT
     DENSE_RANK() OVER(ORDER BY e.salary DESC) AS row_n,
@@ -577,3 +604,7 @@ LIMIT
 ### **CONCAT**
 
 Usando para concatenar varias coisas em string por exemplo: CONCAT('Soma é ', SUM(), ' mil dolares')
+
+### **COALESCE(Valor, Valor-caso-nulo)**
+
+Caso um valor venha nulo substitui por outro padrão
