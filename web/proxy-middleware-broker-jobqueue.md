@@ -96,10 +96,10 @@ Producer → Broker → Consumer(s)
 Uma mensagem é entregue e processada por um único consumer, mesmo que existam vários consumers competindo pela fila (competing consumers pattern). Bom para distribuir trabalho. (Redis e RabbitMQ sao exemplos)
 
 ```
-Producer → [Fila] → Consumer A (pega mensagem 1)
+Producer → [Filas] → Consumer A (pega mensagem 1)
                   → Consumer B (pega mensagem 2)
 ```
-No RabbitMQ, o producer não manda direto pra fila, manda pra um exchange, que decide (via regras de roteamento) pra quais filas replicar:
+No RabbitMQ, o producer não manda direto para filas, manda pra um exchange, que decide (via regras de roteamento) pra quais filas replicar:
 
 - **Direct exchange:** roteia por uma chave exata (routing key = "erro" vai só pra fila de erros)
 - Topic exchange:** roteia por padrão com wildcard (pedido.*.criado)
