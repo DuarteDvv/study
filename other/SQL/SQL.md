@@ -573,6 +573,21 @@ WHERE
 
 Conta o total de registros dentro do intervalo da janela.
 
+```sql
+SELECT 
+  ROUND(
+    COUNT(DISTINCT CASE WHEN t.signup_action = 'Confirmed' THEN e.email_id END)::DECIMAL
+    / 
+    COUNT(DISTINCT e.email_id)
+  , 2) AS confirm_rate
+FROM 
+    emails AS e
+  LEFT JOIN 
+    texts AS t 
+  ON 
+    e.email_id = t.email_id;
+```
+
 #### **SUM()**
 
 Soma os valores da janela
