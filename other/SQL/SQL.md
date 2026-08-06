@@ -53,7 +53,7 @@ LIMIT 3
 
 ### **SELF JOIN**
 
-Faz join de uma tabela com ela mesmo de acordo com alguma chave. È util para comparar coisas dentro da mesma tabela (como tipos diferentes de funcioários).
+Faz join de uma tabela com ela mesma. È util para comparar coisas dentro da mesma tabela (como tipos diferentes de funcioários).
 
 ```sql
 SELECT 
@@ -66,6 +66,79 @@ INNER JOIN employee AS m
 WHERE 
   e.salary > m.salary;  
 ```        
+
+### **CROSS JOIN**
+
+Faz produto cartesiano entre duas tabelas (se uma tem 2 linhas e outra 3, o resultado é uma com 2x3=6). Util para agregar CTEs pequenas com valor escalar unico como por exemplo uma tabela de uma linha e coluna com um unico valor.
+
+```sql
+WITH distinct_categories AS (
+  SELECT 
+    COUNT(DISTINCT product_category) AS total_categories
+  FROM 
+    products
+)
+
+SELECT 
+  cc.customer_id
+FROM 
+  customer_contracts AS cc
+JOIN 
+  products AS p ON cc.product_id = p.product_id
+CROSS JOIN 
+  distinct_categories AS dc
+GROUP BY 
+  cc.customer_id, 
+  dc.total_categories
+HAVING 
+  COUNT(DISTINCT p.product_category) = dc.total_categories;
+```
+
+### **LEFT JOIN**
+
+Trás todos que satisfazerem a junção no ON + todos que não satisfazerem da tabela da esquerda do ON (com null)
+
+### **RIGHT JOIN**
+
+Trás todos que satisfazerem a junção no ON + todos que não satisfazerem da tabela da direita do ON (com null)
+
+### **FULL OUTER JOIN**
+
+Trás todos que satisfazerem a junção no ON + todos que não satisfazerem da tabela da direita do ON (com null) e todos que não satisfazerem da tabela da esquerda do ON (com null)
+
+
+```sql
+WITH 
+
+week_count AS (
+  SELECT 
+    w.user_id,
+    w.song_id,
+    COUNT(*) AS w_song_plays
+  FROM 
+      songs_weekly AS w
+  WHERE
+    DATE(w.listen_time) < '2022-08-05'
+  GROUP BY
+    w.user_id,
+    w.song_id
+)
+
+
+SELECT 
+  COALESCE(wc.user_id, h.user_id),
+  COALESCE(wc.song_id, h.song_id),
+  COALESCE(h.song_plays,0) + COALESCE(wc.w_song_plays,0) AS song_plays
+FROM 
+    week_count AS wc 
+  FULL OUTER JOIN 
+    songs_history AS h 
+  ON 
+    wc.user_id = h.user_id AND
+    wc.song_id = h.song_id
+ORDER BY
+  song_plays DESC
+```
 
 ## **SELECT**
 
