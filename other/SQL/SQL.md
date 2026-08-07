@@ -244,13 +244,13 @@ Pode ser usado no SELECT DISTINCT para filtrar linhas completamente iguais (toda
 
 Comparação de strings
 
-### **DATE(Timestamp a ser convertido)**
+### **(Timestamp a ser convertido)::DATE**
 
 Função que converte TIMESTAMP (Data + Horas) para DATE (apenas data). Qualquer operação com DATE retorna já em dias. Operações com TIMESTAMP retornam itens do tipo INTERVAL com dias, horas, minutos e segundos.
 
-### **TIME(Timestamp a ser convertido)**
+### **(Timestamp a ser convertido)::TIME**
 
-Diferende DATE converte para TIME que preserva apenas horas (hh-mm-ss)
+Converte timestamp para TIME que preserva apenas horas (hh-mm-ss)
 
 ```sql
 SELECT 
@@ -557,6 +557,38 @@ WHERE
 #### **ROW_NUMBER()**
 
 Numeração sequencial única (1, 2, 3...) para cada linha. Desempata arbitrariamente se houver valores iguais, ou seja, se 2 linhas são iguais vão receber posições diferentes (3,4).
+
+```sql
+WITH 
+
+numbered_measurements AS (
+  SELECT 
+    measurement_time::DATE AS day_,
+    measurement_value AS value_,
+    ROW_NUMBER() OVER (PARTITION BY measurement_time::DATE ORDER BY measurement_time::TIME) AS row_n
+  FROM 
+    measurements
+)
+
+SELECT 
+  day_,
+  SUM(
+    CASE
+      WHEN row_n % 2 = 0 THEN 0 
+      ELSE value_
+    END
+  ) AS odd_sum,
+  SUM(
+    CASE
+      WHEN row_n % 2 = 0 THEN value_
+      ELSE 0
+    END
+  ) AS even_sum
+FROM 
+  numbered_measurements
+GROUP BY
+  day_
+```
 
 ```sql
 WITH 
