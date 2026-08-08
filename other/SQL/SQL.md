@@ -317,7 +317,9 @@ GROUP BY
 
 Funciona da seguinte forma podendo aninhas varias preposições WHEN-THEN. Pode ser usado em funções de agregação como SUM e COUNT mas se for usado com COUNT o else precisa ser NULL para não contar a linha.
 
-CASE WHEN condição1 THEN oq-fazer1 WHEN condição2 THEN oq-fazer2 ELSE oq-fazer-se-nenhuma-condição-verdadeira END 
+CASE WHEN condição1 THEN oq-fazer1 WHEN condição2 THEN oq-fazer2 ELSE oq-fazer-se-nenhuma-condição-verdadeira END.
+
+Além disso, não funciona apenas em agregações mas para linhas normais tbm.
 
 ```sql
 SELECT 
@@ -388,6 +390,29 @@ FROM
 GROUP BY
   age_.age_bucket
 ```
+```sql
+WITH 
+
+numbered_orders AS (
+  SELECT
+    *, 
+    ROW_NUMBER() OVER() AS row_n
+  FROM
+    orders
+)
+
+SELECT 
+  (CASE 
+    WHEN row_n % 2 != 0 THEN COALESCE(LEAD(order_id,1) OVER(), order_id)
+    WHEN row_n % 2 = 0 THEN LAG(order_id,1) OVER()
+  END) AS new_id,
+  item
+FROM 
+  numbered_orders
+ORDER BY
+  new_id
+```
+
 
 ### **HAVING** 
 
