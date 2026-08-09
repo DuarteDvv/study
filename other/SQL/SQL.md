@@ -33,6 +33,43 @@ tabela2 AS (
 ...
 ```
 
+```sql
+WITH 
+
+max_stocks AS (
+
+  SELECT 
+    ticker,
+    TO_CHAR(date, 'Mon-YYYY') AS mth,
+    open,
+    ROW_NUMBER() OVER (PARTITION BY ticker ORDER BY open DESC) AS rank_
+  FROM 
+    stock_prices
+),
+
+min_stocks AS (
+
+  SELECT 
+    ticker,
+    TO_CHAR(date, 'Mon-YYYY') AS mth,
+    open,
+    ROW_NUMBER() OVER (PARTITION BY ticker ORDER BY open ASC) AS rank_
+  FROM 
+    stock_prices
+)
+
+SELECT 
+  max_.ticker,
+  max_.mth,
+  max_.open,
+  min_.mth,
+  min_.open
+FROM
+  max_stocks AS max_ JOIN min_stocks AS min_ ON max_.ticker = min_.ticker
+WHERE
+  max_.rank_ = 1 AND min_.rank_ = 1
+```
+
 ### **JOIN (INNER)**
 
 table1 as t1 JOIN table2 as t2 ON t1.id = t2.id -> O join padrão é o INNER JOIN em que casamos cada linha de uma tabela com seu respectivo par de mesmo id (ou ids) na outra tabela. Se não existir correspondencia a linha na tabela resultado não é criada (ignorado). 
