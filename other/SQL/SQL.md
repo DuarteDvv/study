@@ -585,6 +585,32 @@ SELECT
 FROM 
   tweets_window;
 ```
+```sql
+WITH 
+
+num_transactions AS (
+  SELECT
+    *,
+    LAG(transaction_date,1) OVER(PARTITION BY user_id ORDER BY transaction_date) AS last,
+    LAG(transaction_date,2) OVER(PARTITION BY user_id ORDER BY transaction_date) AS second_last
+  FROM 
+    transactions
+)
+
+
+SELECT DISTINCT
+  user_id 
+FROM 
+  num_transactions
+WHERE 
+  last IS NOT NULL AND 
+  second_last IS NOT NULL AND
+  second_last::DATE = last::DATE - 1 AND
+  last::DATE = transaction_date::DATE - 1
+ORDER BY
+  user_id ASC
+```
+
 
 #### **LEAD(coluna, deslocamento k, valor padrão)**
 
