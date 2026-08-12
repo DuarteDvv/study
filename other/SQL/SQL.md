@@ -717,6 +717,33 @@ Atribui a mesma posição em caso de empate e não pula posições (ex: 1, 2, 2,
 ```sql
 WITH 
 
+num_transactions AS  (
+
+  SELECT
+    *,
+    DENSE_RANK() OVER(PARTITION BY user_id ORDER BY transaction_date DESC) AS rank_
+  FROM 
+    user_transactions
+)
+
+SELECT
+  transaction_date,
+  user_id, 
+  COUNT(*)
+FROM 
+  num_transactions
+WHERE 
+  rank_ = 1
+GROUP BY
+  transaction_date,
+  user_id
+ORDER BY
+  transaction_date ASC
+```
+
+```sql
+WITH 
+
 temp_ AS (
 
   SELECT
