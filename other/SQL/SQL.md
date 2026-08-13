@@ -717,6 +717,27 @@ Atribui a mesma posição em caso de empate e não pula posições (ex: 1, 2, 2,
 ```sql
 WITH 
 
+moda AS (
+  SELECT 
+    *,
+    DENSE_RANK() OVER (ORDER BY order_occurrences DESC) AS rank
+  FROM 
+    items_per_order
+)
+
+SELECT 
+  item_count
+FROM 
+  moda
+WHERE 
+  rank = 1
+ORDER BY 
+  item_count ASC
+```
+
+```sql
+WITH 
+
 num_transactions AS  (
 
   SELECT
