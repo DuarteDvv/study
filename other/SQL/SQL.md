@@ -87,6 +87,22 @@ ORDER BY
   total_orders DESC
 LIMIT 3
 ```
+```sql
+SELECT 
+  ROUND(
+    100 * COUNT(
+      CASE 
+        WHEN c_inf.country_id != r_inf.country_id THEN r_inf.country_id
+        ELSE NULL
+      END
+    )::DECIMAL
+    /
+    COUNT(r_inf.country_id)
+  ,1)
+FROM 
+  (phone_calls AS pc JOIN phone_info AS c_inf ON c_inf.caller_id = pc.caller_id) 
+  JOIN phone_info AS r_inf ON pc.receiver_id = r_inf.caller_id
+```
 
 ### **SELF JOIN**
 
@@ -728,7 +744,6 @@ ORDER BY
   issued_amount DESC
 ```
   
-
 #### **RANK()**
 
 Atribui a mesma posição em caso de empate, mas pula as posições seguintes (ex: 1, 2, 2, 4).
