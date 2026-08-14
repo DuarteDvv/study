@@ -706,6 +706,29 @@ WHERE
   row_n = 1 OR row_n = 2
 ```
 
+```sql
+WITH 
+
+num_cards AS (
+  SELECT 
+    *,
+    ROW_NUMBER() OVER(PARTITION BY card_name ORDER BY issue_year ASC, issue_month ASC) AS rank_
+  FROM 
+    monthly_cards_issued
+)
+
+SELECT 
+  card_name,
+  issued_amount
+FROM
+  num_cards
+WHERE 
+  rank_= 1
+ORDER BY
+  issued_amount DESC
+```
+  
+
 #### **RANK()**
 
 Atribui a mesma posição em caso de empate, mas pula as posições seguintes (ex: 1, 2, 2, 4).
