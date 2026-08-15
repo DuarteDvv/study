@@ -15,6 +15,27 @@ def fizz_buzz_sum(target):
   return sum_
 ```
 
+## **most-common problem**
+
+Contagem de caracteres, com ordenação por frequencia e alfabetico
+
+```py
+if __name__ == '__main__':
+  s = input()
+
+  counter = {}
+  for char in s:
+    counter[char] = 1 + counter.get(char, 0)
+
+  key_item = counter.items()
+
+  # ordena primeiro por frequência descrescente (-x[1]) e depois por caractere crescente (x[0])
+  sorted_freq = sorted(key_item, key=lambda x: (-x[1], x[0]))
+
+  for i in range(3):
+    print(f'{sorted_freq[i][0]} {sorted_freq[i][1]}')
+```
+
 # **Complexidades de estruturas de dados**
 
 ## **Heap (Arvore binária)**
@@ -86,5 +107,6 @@ def min_amplitude(arr): # T:O(n) E:O(1)
   
   return min(right3, left3, left2, right2)
 ```
+
 
 

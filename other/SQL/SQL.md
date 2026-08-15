@@ -230,6 +230,38 @@ ORDER BY
 ASC;
 ```
 
+```sql
+WITH 
+
+inter AS (
+  SELECT DISTINCT
+    user_id
+  FROM 
+    user_actions
+  WHERE 
+    EXTRACT(MONTH FROM event_date) = 6 AND
+    EXTRACT(YEAR FROM event_date) = 2022 AND
+    event_type IN ('sign-in', 'like', 'comment')
+  
+INTERSECT
+
+  SELECT DISTINCT
+    user_id
+  FROM 
+    user_actions
+  WHERE 
+    EXTRACT(MONTH FROM event_date) = 7 AND
+    EXTRACT(YEAR FROM event_date) = 2022 AND
+    event_type IN ('sign-in', 'like', 'comment')
+)
+
+SELECT 
+  7 AS month,
+  COUNT(*) AS active
+FROM 
+  inter
+```
+
 ## **WHERE**
 
 Filtra linhas antes de qualquer agregação, ou seja, trabalha nas linhas coletadas pelo FROM.
@@ -319,7 +351,7 @@ HAVING
   COUNT(p.post_id) >= 2
 ```
 
-### **EXTRACT(FROM MONTH/DAY/YEAR/HOUR/SECOND/MINUTE)**
+### **EXTRACT(MONTH/DAY/YEAR/HOUR/SECOND/MINUTE FROM data)**
 
 Serve para extrair dados de data ou hora de date/timestamps. Sintaxe de PostgreSQL.
 
@@ -866,6 +898,22 @@ FROM
   ON 
     e.email_id = t.email_id;
 ```
+```sql
+SELECT 
+  ROUND( 100.0*
+    COUNT(
+      CASE 
+        WHEN call_category = 'n/a' THEN case_id 
+        WHEN call_category IS NULL THEN case_id
+        ELSE NULL
+      END
+    )
+    /
+    COUNT(*)
+  ,1)
+FROM 
+  callers
+```
 
 #### **SUM()**
 
@@ -902,3 +950,7 @@ Usando para concatenar varias coisas em string por exemplo: CONCAT('Soma é ', S
 ### **COALESCE(Valor, Valor-caso-nulo)**
 
 Caso um valor venha nulo substitui por outro padrão
+
+### **TO_CHAR(timestamp, 'formato')**
+
+Converte um timestamp para um formato especifico em string como MM-YYYY (06-2022) ou Mon-YYYY (Jun-2022)
