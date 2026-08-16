@@ -151,6 +151,43 @@ HAVING
 
 Trás todos que satisfazerem a junção no ON + todos que não satisfazerem da tabela da esquerda do ON (com null)
 
+```sql
+WITH 
+
+spend_by_year AS (
+  SELECT
+    EXTRACT(YEAR FROM transaction_date) AS year_,
+    product_id,
+    SUM(spend) AS total_spend
+  FROM 
+    user_transactions
+  GROUP BY 
+    EXTRACT(YEAR FROM transaction_date), 
+    product_id
+)
+
+
+SELECT 
+  curr.year_,
+  curr.product_id,
+  curr.total_spend AS curr_spend, 
+  last_year.total_spend AS last_spend,
+  ROUND(100.0 *
+    (curr.total_spend - last_year.total_spend) 
+    /
+    last_year.total_spend
+  ,2)
+FROM 
+  spend_by_year AS curr LEFT JOIN spend_by_year AS last_year 
+  ON 
+    curr.product_id = last_year.product_id AND
+    curr.year_ = last_year.year_ + 1
+ORDER BY
+  product_id,
+  curr.year_ ASC
+```
+
+
 ### **RIGHT JOIN**
 
 Trás todos que satisfazerem a junção no ON + todos que não satisfazerem da tabela da direita do ON (com null)
