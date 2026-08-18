@@ -47,3 +47,23 @@ Aqui a pergunta muda: entre os problemas computáveis (decidíveis), quais têm 
 
 Todo problema em P também está em NP (se dá pra resolver rápido, dá pra verificar rápido também, é só resolver de novo). A pergunta em aberto mais famosa da computação é se vale a volta: P = NP? A maioria dos pesquisadores acredita que não, mas ninguém conseguiu provar.
 
+# **Algoritmos de manipulacao de sequencias**
+
+Problema recorrente em diversos lugares, por exemplo control-f em que queremos encontrar ocorrencias de uma pradrao especifico, mas também é util em diversas outras aplicacoes como encontrar padroes em DNAs ou proteinas, compressao de textos e antivirus. 
+
+## **String Matching**
+
+Busca de padroes em texto, esses padroes e textos sao subconjuntos de um conjunto finito de caracteres chamado chamado alfabeto (sigma maiusculo).
+
+- Texto: Representado como T[1...n]
+- Padrao: Representado como P[1...m]
+- Amboa indexados em 1
+
+O problema entao é encontrar um indice s em que 0 <= s <= n - m (se isso nao for verdade o padrao P nao cabe no final do texto T). Tal que T[s+1...s+m] = P[1...n], ou seja, s é o indice anterior ao padrao totalmente igual encontrado no texto. E como indices vao de 0 a n-m entao podemor usar -1 como flag para nao existe padrao.
+
+- Tamanho de uma string w é |w|
+- string vazia é denotada como lambda λ
+- Concatenacao de duas strings x e y é xy
+
+
+
