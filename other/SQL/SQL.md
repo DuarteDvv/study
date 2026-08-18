@@ -232,6 +232,49 @@ ORDER BY
 
 ## **SELECT**
 
+### **UNION e UNION ALL**
+
+UNION junta as linhas de 2 consultas e remove as linhas duplicadas. UNION ALL junta sem remover duplicatas  
+
+```sql
+WITH spec_batch AS (
+  SELECT
+    item_type,
+    COUNT(*) AS batch_itens,
+    SUM(square_footage) AS batch_size
+  FROM 
+    inventory
+  GROUP BY 
+    item_type
+),
+
+prime_used AS (
+  SELECT
+    item_type,
+    TRUNC(500000 / batch_size) * batch_itens AS item_count,
+    MOD(500000, batch_size) AS resto
+  FROM 
+    spec_batch 
+  WHERE 
+    item_type = 'prime_eligible'
+),
+
+non_prime AS (
+  SELECT 
+    sb.item_type,
+    TRUNC(pu.resto / sb.batch_size) * sb.batch_itens AS item_count
+  FROM 
+    prime_used AS pu 
+    CROSS JOIN spec_batch AS sb
+  WHERE 
+    sb.item_type = 'not_prime'
+)
+
+SELECT item_type, item_count FROM prime_used
+UNION ALL
+SELECT item_type, item_count FROM non_prime;
+```
+
 ### **INTERSECT** 
 
 Operador de conjuntos que pega a interseção de linhas entre N consultas, ou seja, SELECTs distintos.
@@ -357,10 +400,11 @@ ASC
 
 ### **EXCEPT**
 
+Subtração de conjuntos (consultas), ou seja, A - B remove tudo de B que esta em A
+
 ### **DISTINCT**
 
 Pode ser usado no SELECT DISTINCT para filtrar linhas completamente iguais (todas as colunas). Ou funções de agregação como COUNT(DISTINCT ...) para contar contar coisas unicas.
-
 
 ### **LIKE**
 
@@ -432,7 +476,6 @@ FROM
 GROUP BY
   tweet_n
 ```
-
 
 
 #### **Agregação Condicional**
@@ -589,6 +632,10 @@ $$\text{Função}(X) \quad \mathbf{OVER} \quad \left( Y \right)$$
 Em que: 
 - X é uma função de agregação, ranking ou navegação
 - Y é quem define quais linhas entram na agregação e qual ordem elas terão
+
+### **SUM()**
+
+SUM() junto com OVER() faz soma acumulada seguindo alguma ordem 
 
 #### **OVER()**
 
@@ -991,3 +1038,15 @@ Caso um valor venha nulo substitui por outro padrão
 ### **TO_CHAR(timestamp, 'formato')**
 
 Converte um timestamp para um formato especifico em string como MM-YYYY (06-2022) ou Mon-YYYY (Jun-2022)
+
+### **MOD()**
+
+Função de modulo que é mais segura que %
+
+### **TRUNC(valor, x)**
+
+Corta na xth casa decimal, o padrão é x = 0 que trunca para inteiro 
+
+### **FLOOR()**
+
+Arredonda para baixo
