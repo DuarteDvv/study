@@ -637,6 +637,25 @@ Em que:
 
 SUM() junto com OVER() faz soma acumulada seguindo alguma ordem 
 
+```sql
+WITH cumulative AS (
+  SELECT 
+    searches,
+    SUM(num_users) OVER (ORDER BY searches ASC) AS cum_asc,
+    SUM(num_users) OVER (ORDER BY searches DESC) AS cum_desc,
+    SUM(num_users) OVER () AS total_n
+  FROM 
+    search_frequency
+)
+SELECT 
+  ROUND(AVG(searches * 1.0), 1) AS median
+FROM 
+  cumulative
+WHERE 
+  cum_asc >= total_n / 2.0 
+  AND cum_desc >= total_n / 2.0;
+```
+
 #### **OVER()**
 
 O OVER() funciona como uma janela de observação sobre a tabela inteira que permite calcular agregações, rankings e acúmulos sem destruir as linhas originais (diferente do GROUP BY, que as esmaga). Ele preserva a identidade de cada registro intacta e apenas adiciona uma nova coluna calculada ao lado, permitindo comparar o dado individual com o contexto do grupo de forma simples e direta.

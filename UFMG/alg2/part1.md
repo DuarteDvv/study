@@ -63,7 +63,17 @@ O problema entao é encontrar um indice s em que 0 <= s <= n - m (se isso nao fo
 
 - Tamanho de uma string w é |w|
 - string vazia é denotada como lambda λ
-- Concatenacao de duas strings x e y é xy
+- Concatenacao w de duas strings x e y é xy
+
+x é chamado de *prefixo* de w e pode ter tamanho menor ou igual a w (ou seja, se x = w então w é prefixo dele mesmo). O simbolo de prefixo é x ⊏ w. y é chamado de *sufixo* de w e segue a mesma logica que o prefixo mas seu simbolo é y ⊐ w. O vazio é prefixo e sufixo de qualquer string. 
+
+- **Transitividade:** Se *a* é prefixo de *b* (a ⊏ b) e *b* é prefixo de *c* (b ⊏ c) então *a* é prefixo de *c* (a ⊏ c). Da mesma forma se *a* é sufixo de *b* (a ⊐ b) e *b* é sufixo de *c* (b ⊐ c), então *a* é sufixo de *c* (a ⊐ c).
+
+
+**Lema 1 (Sobreposição):** Se duas strings x1 e x2 são simultaneamente prefixos ou sufixos de um terceira string y, existem 3 casos possiveis:
+- x1 e x2 tem mesmo tamanho e são iguais
+- x1 é maior que x2, portanto x2 é sufixo ou prefixo de x1
+- x2 é maior que x1, portanto x1 é sufico ou prefixo de x2
 
 
 
