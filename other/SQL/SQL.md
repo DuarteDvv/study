@@ -889,6 +889,27 @@ Atribui a mesma posição em caso de empate e não pula posições (ex: 1, 2, 2,
 
 ```sql
 WITH 
+  
+ranked_products AS (
+  SELECT
+    DENSE_RANK() OVER (PARTITION BY p.category_name ORDER BY ps.sales_quantity DESC, ps.rating DESC) AS rnk,
+    *
+  FROM 
+    products AS p JOIN product_sales AS ps ON p.product_id = ps.product_id
+)
+
+SELECT 
+  category_name,
+  product_name
+FROM 
+  ranked_products
+WHERE 
+  rnk = 1
+
+```
+
+```sql
+WITH 
 
 moda AS (
   SELECT 
