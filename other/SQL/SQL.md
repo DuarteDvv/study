@@ -190,6 +190,35 @@ ORDER BY
 
 ### **RIGHT JOIN**
 
+
+```sql
+WITH 
+
+count_by_employee AS (
+  SELECT 
+    e.employee_id,
+    COALESCE(COUNT(DISTINCT q.query_id),0) AS count_
+  FROM 
+    queries AS q RIGHT JOIN employees AS e 
+  ON 
+    q.employee_id = e.employee_id AND
+    (query_starttime < '2023-10-01' AND 
+    query_starttime >= '2023-07-01') 
+  GROUP BY 
+    e.employee_id
+)
+
+SELECT 
+  count_,
+  COUNT(*)
+FROM 
+  count_by_employee
+GROUP BY
+  count_
+ORDER BY
+  count_ ASC
+```
+
 Trás todos que satisfazerem a junção no ON + todos que não satisfazerem da tabela da direita do ON (com null)
 
 ### **FULL OUTER JOIN**
