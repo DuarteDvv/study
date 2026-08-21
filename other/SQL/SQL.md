@@ -414,6 +414,17 @@ Comparação de strings
 
 Função que converte TIMESTAMP (Data + Horas) para DATE (apenas data). Qualquer operação com DATE retorna já em dias. Operações com TIMESTAMP retornam itens do tipo INTERVAL com dias, horas, minutos e segundos.
 
+```sql
+SELECT DISTINCT
+  user_id
+FROM 
+  emails AS e JOIN texts AS t ON e.email_id = t.email_id
+WHERE 
+  t.action_date::DATE = e.signup_date::DATE + 1 AND 
+  t.signup_action = 'Confirmed'
+```
+
+
 ### **(Timestamp a ser convertido)::TIME**
 
 Converte timestamp para TIME que preserva apenas horas (hh-mm-ss)
