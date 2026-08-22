@@ -1087,6 +1087,22 @@ Soma os valores da janela
 
 Calcula a média do grupo. Ignora nulos.
 
+#### **MIN() e MAX()**
+
+Retorna o min ou max do grupo
+
+```sql
+SELECT 
+  card_name,
+  MAX(issued_amount) - MIN(issued_amount) as difference
+FROM 
+  monthly_cards_issued
+GROUP BY 
+  card_name
+ORDER BY 
+  difference DESC
+```
+
 ### **LIMIT**
 
 Limita o numero de linhas retornadas de baixa para cima
