@@ -1083,6 +1083,16 @@ FROM
 
 Soma os valores da janela
 
+```sql
+SELECT 
+  ROUND(
+    SUM(item_count * order_occurrences)::DECIMAL /
+    SUM(order_occurrences)
+  ,1)
+FROM 
+  items_per_order
+```
+
 #### **AVG()**
 
 Calcula a média do grupo. Ignora nulos.
