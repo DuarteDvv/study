@@ -727,6 +727,18 @@ Separa a aplicação função em grupos diferentes da janela do OVER() começand
 
 #### **ORDER BY**
 
+```sql
+SELECT 
+  drug,
+  (total_sales - cogs) AS proft
+FROM 
+  pharmacy_sales
+ORDER BY  
+  proft DESC
+LIMIT 
+  3
+```
+
 Ordena o resultado do SELECT em ascendente ASC ou descendente DESC. Pode ser usado também com window functions para ordenar a janela do OVER()
 
 
