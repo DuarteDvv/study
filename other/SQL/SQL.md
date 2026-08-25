@@ -1104,6 +1104,21 @@ SELECT
 FROM 
   items_per_order
 ```
+```sql
+SELECT 
+  manufacturer,
+  COUNT(*),
+  - SUM(total_sales - cogs) AS loss
+FROM 
+  pharmacy_sales
+WHERE 
+  (total_sales - cogs < 0)
+GROUP BY 
+  manufacturer 
+ORDER BY
+  loss DESC
+```
+
 
 #### **AVG()**
 
