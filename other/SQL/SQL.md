@@ -1164,6 +1164,25 @@ LIMIT
 
 Usando para concatenar varias coisas em string por exemplo: CONCAT('Soma é ', SUM(), ' mil dolares')
 
+```sql
+SELECT 
+  manufacturer,
+  CONCAT('$',
+    ROUND(
+      SUM(total_sales) / 1000000
+    ),
+    ' million'
+  ) AS sale
+FROM 
+  pharmacy_sales
+GROUP BY
+  manufacturer
+ORDER BY 
+  (SUM(total_sales) / 1000000) DESC,
+  manufacturer ASC
+```
+  
+
 ### **COALESCE(Valor, Valor-caso-nulo)**
 
 Caso um valor venha nulo substitui por outro padrão

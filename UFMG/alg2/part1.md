@@ -56,10 +56,10 @@ Problema recorrente em diversos lugares, por exemplo control-f em que queremos e
 Busca de padroes em texto, esses padroes e textos sao subconjuntos de um conjunto finito de caracteres chamado chamado alfabeto (sigma maiusculo).
 
 - Texto: Representado como T[1...n]
-- Padrao: Representado como P[1...m]
+- Padrao: Representado como P[1...m] e se queremos representar kth prefixo do padrão (k primeiros elementos P[1...k]) usamos $P_k$
 - Amboa indexados em 1
 
-O problema entao é encontrar um indice s em que 0 <= s <= n - m (se isso nao for verdade o padrao P nao cabe no final do texto T). Tal que T[s+1...s+m] = P[1...n], ou seja, s é o indice anterior ao padrao totalmente igual encontrado no texto. E como indices vao de 0 a n-m entao podemor usar -1 como flag para nao existe padrao.
+O problema entao é encontrar um indice s em que 0 <= s <= n - m (se isso nao for verdade o padrao P nao cabe no final do texto T). Tal que T[s+1...s+m] = P[1...n], ou seja, s é o indice anterior ao padrao totalmente igual encontrado no texto. E como indices vao de 0 a n-m entao podemor usar -1 como flag para nao existe padrao. Outra forma de definir é encontrar s tal que P ⊐ $T_{s + m}$, ou seja, s tal que o padrão é sufixo do prefixo de T que vai s+m.
 
 - Tamanho de uma string w é |w|
 - string vazia é denotada como lambda λ
@@ -75,5 +75,31 @@ x é chamado de *prefixo* de w e pode ter tamanho menor ou igual a w (ou seja, s
 - x1 é maior que x2, portanto x2 é sufixo ou prefixo de x1
 - x2 é maior que x1, portanto x1 é sufico ou prefixo de x2
 
+### **Algortimo ingênuo**
+
+```py
+def naive(P, T):
+
+    n = len(T)
+    m = len(P)
+
+    matchs = []
+
+    for i in range(n - m):
+        if T[i:i + m] = P:
+            matchs.append(i)
+```
+
+Aqui passamos uma janela deslizante de tamanho m no texto T inteiro e comparamos cada uma dessas janelas com o padrão P de tamanho m. Todas as janelas deslizantes tem complexidade O(n) e para cada janela temos uma comparação de tamanho O(m). 
+
+- *Complexidade de tempo:* O(n * m) para padrões de tamanho m > n/2 podemos dizer que a complexidade é O(n^2)
+- *Complexidade de espaço:* O(1)
+
+### **Algoritmo de automato finito para String Matching**
 
 
+### **KMP**
+
+### **Boyer-Moore-Horspool** 
+
+### **Shift-And**
