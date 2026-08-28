@@ -624,6 +624,26 @@ ORDER BY
 Filtragem que acontece após o agrupamento. Se agrupamos por candidato_id e tiramos uma média de todas as linhas agrupadas desses candidato_id agora podemos filtrar candidatos pela media calculada.
 
 ```sql
+WITH 
+
+calls_by_holder AS (
+  SELECT 
+    policy_holder_id
+  FROM 
+    callers
+  GROUP BY 
+    policy_holder_id
+  HAVING 
+    COUNT(case_id) > 2
+)
+
+SELECT
+  COUNT(*)
+FROM 
+  calls_by_holder 
+```
+
+```sql
 SELECT 
   c.candidate_id
 FROM 
@@ -718,6 +738,49 @@ FROM
 WHERE
   row_n = 3
 ```
+```sql
+WITH
+
+freq_top10_by_song AS (
+  SELECT 
+    song_id,
+    COUNT(*) AS freq
+  FROM 
+    global_song_rank
+  WHERE 
+    rank <= 10
+  GROUP BY
+    song_id
+),
+
+
+rank_artists AS (
+  SELECT
+    s.artist_id,
+    SUM(f.freq),
+    DENSE_RANK() OVER(ORDER BY SUM(f.freq) DESC) AS rnk
+  FROM 
+    songs AS s JOIN freq_top10_by_song AS f ON s.song_id = f.song_id
+  GROUP BY
+    s.artist_id
+)
+
+
+SELECT 
+  a.artist_name,
+  ra.rnk
+FROM 
+  rank_artists AS ra JOIN artists AS a ON ra.artist_id = a.artist_id
+WHERE 
+  ra.rnk <= 5
+ORDER BY 
+  ra.rnk ASC
+```
+  
+  
+
+
+
 
 
 #### **PARTITION BY**
