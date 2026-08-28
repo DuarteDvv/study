@@ -434,61 +434,6 @@ Subtração de conjuntos (consultas), ou seja, A - B remove tudo de B que esta e
 ### **DISTINCT**
 
 Pode ser usado no SELECT DISTINCT para filtrar linhas completamente iguais (todas as colunas). Ou funções de agregação como COUNT(DISTINCT ...) para contar contar coisas unicas.
-
-### **LIKE**
-
-Comparação de strings
-
-### **(Timestamp a ser convertido)::DATE**
-
-Função que converte TIMESTAMP (Data + Horas) para DATE (apenas data). Qualquer operação com DATE retorna já em dias. Operações com TIMESTAMP retornam itens do tipo INTERVAL com dias, horas, minutos e segundos.
-
-```sql
-SELECT DISTINCT
-  user_id
-FROM 
-  emails AS e JOIN texts AS t ON e.email_id = t.email_id
-WHERE 
-  t.action_date::DATE = e.signup_date::DATE + 1 AND 
-  t.signup_action = 'Confirmed'
-```
-
-
-### **(Timestamp a ser convertido)::TIME**
-
-Converte timestamp para TIME que preserva apenas horas (hh-mm-ss)
-
-```sql
-SELECT 
-  p.user_id,
-  MAX(DATE(p.post_date)) - MIN(DATE(p.post_date)) AS days_between
-FROM 
-  posts AS p 
-WHERE 
-  p.post_date >= '2021/01/01' AND p.post_date < '2022/01/01'
-GROUP BY 
-  p.user_id
-HAVING 
-  COUNT(p.post_id) >= 2
-```
-
-### **EXTRACT(MONTH/DAY/YEAR/HOUR/SECOND/MINUTE FROM data)**
-
-Serve para extrair dados de data ou hora de date/timestamps. Sintaxe de PostgreSQL.
-
-```sql
-SELECT
-  EXTRACT(MONTH FROM r.submit_date) AS mth,
-  r.product_id AS product,
-  ROUND(AVG(r.stars),2) AS avg_stars
-FROM 
-  reviews AS r
-GROUP BY
-  EXTRACT(MONTH FROM r.submit_date),
-  r.product_id
-ORDER BY
-  mth, product
-```
   
 
 ## **GROUP BY**
@@ -1250,10 +1195,6 @@ ORDER BY
 
 Caso um valor venha nulo substitui por outro padrão
 
-### **TO_CHAR(timestamp, 'formato')**
-
-Converte um timestamp para um formato especifico em string como MM-YYYY (06-2022) ou Mon-YYYY (Jun-2022)
-
 ### **MOD()**
 
 Função de modulo que é mais segura que %
@@ -1265,3 +1206,105 @@ Corta na xth casa decimal, o padrão é x = 0 que trunca para inteiro
 ### **FLOOR()**
 
 Arredonda para baixo
+
+
+## **DATE FUNCTIONS**
+
+### **DATE_TRUNC(Unidade, data)**
+
+Trunca a data mantendo apenas informacoes maiores que a unidade, por exemplo:
+
+```sql
+DATE_TRUNC('year', '2026-08-27 14:35:22')   → 2026-01-01 00:00:00
+DATE_TRUNC('month', '2026-08-27 14:35:22')  → 2026-08-01 00:00:00
+DATE_TRUNC('day', '2026-08-27 14:35:22')    → 2026-08-27 00:00:00
+DATE_TRUNC('hour', '2026-08-27 14:35:22')   → 2026-08-27 14:00:00
+```
+
+### **DATEDIFF(Unidade, data1, data2)**
+
+Retorna a diferenca entre 2 datas ou timestamps em uma unidade como days, hours, minutes e etc
+
+### **EXTRACT(MONTH/DAY/YEAR/HOUR/SECOND/MINUTE FROM data)**
+
+Serve para extrair dados de data ou hora de date/timestamps. Sintaxe de PostgreSQL.
+
+```sql
+SELECT
+  EXTRACT(MONTH FROM r.submit_date) AS mth,
+  r.product_id AS product,
+  ROUND(AVG(r.stars),2) AS avg_stars
+FROM 
+  reviews AS r
+GROUP BY
+  EXTRACT(MONTH FROM r.submit_date),
+  r.product_id
+ORDER BY
+  mth, product
+```
+
+### **(Timestamp a ser convertido)::DATE**
+
+Função que converte TIMESTAMP (Data + Horas) para DATE (apenas data). Qualquer operação com DATE retorna já em dias. Operações com TIMESTAMP retornam itens do tipo INTERVAL com dias, horas, minutos e segundos.
+
+```sql
+SELECT DISTINCT
+  user_id
+FROM 
+  emails AS e JOIN texts AS t ON e.email_id = t.email_id
+WHERE 
+  t.action_date::DATE = e.signup_date::DATE + 1 AND 
+  t.signup_action = 'Confirmed'
+```
+```sql
+SELECT 
+  p.user_id,
+  MAX(p.post_date::DATE) - MIN(p.post_date::DATE) AS days_between
+FROM 
+  posts AS p 
+WHERE 
+  p.post_date >= '2021/01/01' AND p.post_date < '2022/01/01'
+GROUP BY 
+  p.user_id
+HAVING 
+  COUNT(p.post_id) >= 2
+```
+
+### **(Timestamp a ser convertido)::TIME**
+
+Converte timestamp para TIME que preserva apenas horas (hh-mm-ss)
+
+### **TO_CHAR(timestamp, 'formato')**
+
+Converte um timestamp para um formato especifico em string como MM-YYYY (06-2022) ou Mon-YYYY (Jun-2022)
+
+```sql
+SELECT 
+    TO_CHAR(trans_date,'YYYY-MM') AS month,
+    country,
+    COUNT(*) AS trans_count,
+    COUNT(
+        CASE
+            WHEN state = 'approved' THEN state
+            ELSE NULL
+        END
+    ) AS approved_count,
+    SUM(amount) AS trans_total_amount,
+    SUM(
+        CASE 
+            WHEN state = 'approved' THEN amount
+            ELSE 0
+        END
+    ) AS approved_total_amount
+FROM 
+    Transactions 
+GROUP BY
+    TO_CHAR(trans_date,'YYYY-MM'), 
+    country
+```
+
+## **STRING MANIPULATION**
+
+### **LIKE**
+
+Comparacao de strings
