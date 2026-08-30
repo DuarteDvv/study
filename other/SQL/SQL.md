@@ -1225,6 +1225,21 @@ DATE_TRUNC('hour', '2026-08-27 14:35:22')   → 2026-08-27 14:00:00
 
 Retorna a diferenca entre 2 datas ou timestamps em uma unidade como days, hours, minutes e etc
 
+```sql
+SELECT 
+  DATE_TRUNC('month', pickup_time) AS month,
+  AVG(DATEDIFF('minutes', pickup_time, dropoff_time)) AS avg_trip_duration,
+  COUNT(driver_id) AS num_trips
+FROM 
+  trips
+GROUP BY 
+  DATE_TRUNC('month', pickup_time)
+HAVING 
+  AVG(DATEDIFF('minutes', pickup_time, dropoff_time)) > 15
+ORDER BY 
+  month ASC;
+```
+
 ### **EXTRACT(MONTH/DAY/YEAR/HOUR/SECOND/MINUTE FROM data)**
 
 Serve para extrair dados de data ou hora de date/timestamps. Sintaxe de PostgreSQL.
