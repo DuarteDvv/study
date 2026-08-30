@@ -1168,27 +1168,10 @@ LIMIT
   2
 ```
 
-### **CONCAT**
+### **IS / IN** 
 
-Usando para concatenar varias coisas em string por exemplo: CONCAT('Soma é ', SUM(), ' mil dolares')
-
-```sql
-SELECT 
-  manufacturer,
-  CONCAT('$',
-    ROUND(
-      SUM(total_sales) / 1000000
-    ),
-    ' million'
-  ) AS sale
-FROM 
-  pharmacy_sales
-GROUP BY
-  manufacturer
-ORDER BY 
-  (SUM(total_sales) / 1000000) DESC,
-  manufacturer ASC
-```
+- IS é reservado para nulos e booleanos (IS NULL, IS NOT NULL)
+- IN é usado para verificar se existe dentro de um vetor (IN (1,2,3))
   
 
 ### **COALESCE(Valor, Valor-caso-nulo)**
@@ -1322,4 +1305,63 @@ GROUP BY
 
 ### **LIKE**
 
-Comparacao de strings
+Comparacao de strings: % é qualquer coisa de qualquer tamanho. 
+
+```sql
+LIKE '%gmail.com'      -- termina com "gmail.com"
+LIKE 'A%'               -- começa com "A"
+LIKE '%uber%'           -- contém "uber" em qualquer posição
+LIKE '_a%'              -- segunda letra é "a" (_ = exatamente 1 caractere qualquer)
+```
+
+```sql
+SELECT 
+  d.driver_id,
+  COUNT(t.trip_id) AS trip_num,
+  AVG(t.fare) AS fare_avg
+FROM 
+  trips AS t 
+JOIN 
+  drivers AS d ON t.driver_id = d.driver_id
+WHERE 
+  d.email LIKE '%gmail.com'
+  AND DATEDIFF('month', d.signup_date, '2026-08-30') <= 6
+  AND (
+    d.driver_name LIKE 'A%' OR 
+    d.driver_name LIKE 'E%' OR 
+    d.driver_name LIKE 'I%' OR
+    d.driver_name LIKE 'O%' OR 
+    d.driver_name LIKE 'U%'
+  )
+GROUP BY
+  d.driver_id
+ORDER BY 
+  trip_num DESC;
+```
+
+### **LOWER / UPPER**
+
+Converte string para totalmente minuscula ou maiuscula 
+
+### **CONCAT**
+
+Usando para concatenar varias coisas em string por exemplo: CONCAT('Soma é ', SUM(), ' mil dolares')
+
+```sql 
+SELECT 
+  manufacturer,
+  CONCAT('$',
+    ROUND(
+      SUM(total_sales) / 1000000
+    ),
+    ' million'
+  ) AS sale
+FROM 
+  pharmacy_sales
+GROUP BY
+  manufacturer
+ORDER BY 
+  (SUM(total_sales) / 1000000) DESC,
+  manufacturer ASC
+```
+
