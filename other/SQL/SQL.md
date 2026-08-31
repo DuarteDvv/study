@@ -768,7 +768,7 @@ FROM
 
 #### **LAG(coluna, deslocamento k, valor padrão)**
 
-O LAG() acessa o valor de uma única célula localizada exatamente $k$ linhas acima (atrás) da linha atual, considerando a ordem definida na janela do OVER(). Caso não exista retorna o valor padrão ou nulo por padrão.
+O LAG() acessa o valor de uma única célula localizada exatamente $k$ linhas acima (atrás) da linha atual, considerando a ordem definida na janela do OVER(). Caso não exista retorna o valor padrão ou nulo por padrão. Olha para linhas que tem rank < que o rank da linha atual.
 
 ```sql
 WITH tweets_window AS (
@@ -825,7 +825,7 @@ ORDER BY
 
 #### **LEAD(coluna, deslocamento k, valor padrão)**
 
-O LEAD() acessa o valor de uma única célula localizada exatamente $k$ linhas abaixo (frente) da linha atual, considerando a ordem definida na janela do OVER(). Caso não exista retorna o valor padrão ou nulo por padrão.
+O LEAD() acessa o valor de uma única célula localizada exatamente $k$ linhas abaixo (frente) da linha atual, considerando a ordem definida na janela do OVER(). Caso não exista retorna o valor padrão ou nulo por padrão. Olha para linhas que tem rank > que o rank da linha atual.
 
 ```sql
 WITH 
@@ -849,6 +849,53 @@ FROM
 WHERE 
   row_n = 1 AND
   DATE(ride_date) = DATE(registration_date)
+```
+
+#### **FRAME ROWS BETWEEN [início] AND [fim]**
+
+ROWS BETWEEN [início] AND [fim] tal que as opcoes para inicio e fim:
+
+```sql
+N PRECEDING → N linhas antes da atual
+CURRENT ROW → a própria linha atual
+N FOLLOWING → N linhas depois da atual
+UNBOUNDED PRECEDING → desde o início da partição
+UNBOUNDED FOLLOWING → até o final da partição
+```
+
+```sql
+WITH 
+  ranked_rides AS (
+    SELECT
+      rider_id,
+      ride_date,
+      fare_amount,
+      LAG(ride_date, 1) OVER (
+        PARTITION BY
+          rider_id
+        ORDER BY
+          ride_date ASC
+      ) AS last_ride_date,
+      AVG(fare_amount) OVER (
+        PARTITION BY
+          rider_id
+        ORDER BY
+          ride_date ASC
+        ROWS 
+          BETWEEN 2 PRECEDING AND CURRENT ROW 
+      ) AS 3_avg
+    FROM 
+      rides
+  )
+
+SELECT
+  rider_id,
+  ride_date,
+  fare_amount,
+  DATEDIFF('days', last_ride_date, ride_date) AS days_since_last_ride,
+  3_avg
+FROM
+  ranked_rides
 ```
 
 ### **Funções de ranking**
@@ -1222,6 +1269,7 @@ HAVING
 ORDER BY 
   month ASC;
 ```
+
 
 ### **EXTRACT(MONTH/DAY/YEAR/HOUR/SECOND/MINUTE FROM data)**
 
