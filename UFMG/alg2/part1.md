@@ -83,11 +83,13 @@ def naive(P, T):
     n = len(T)
     m = len(P)
 
-    matchs = []
+    matches = []
 
     for i in range(n - m):
         if T[i:i + m] = P:
-            matchs.append(i)
+            matches.append(i)
+
+    return matches
 ```
 
 Aqui passamos uma janela deslizante de tamanho m no texto T inteiro e comparamos cada uma dessas janelas com o padrão P de tamanho m. Todas as janelas deslizantes tem complexidade O(n) e para cada janela temos uma comparação de tamanho O(m). 
@@ -97,6 +99,58 @@ Aqui passamos uma janela deslizante de tamanho m no texto T inteiro e comparamos
 
 ### **Algoritmo de automato finito para String Matching**
 
+Em vez de comparar caracteres repetidamente como no algoritmo ingênuo, você constrói um autômato finito determinístico (AFD) a partir do padrão P. Depois, você *percorre o texto T uma única vez, alimentando cada caractere no autômato*. Cada vez que o autômato atinge o estado de aceitação (estado final, igual ao comprimento do padrão), significa que uma ocorrência do padrão termina naquela posição do texto. Isso dá complexidade O(n) para a busca no texto (depois do pré-processamento), sem nunca precisar retroceder no texto. 
+
+- **Função sufixo:** σ(w) = max {k | Pk ⊐ w} que retorna o maior tamanho k do prefixo do padrão P que é sufixo do texto de entrada.
+
+- **Componentes:**
+
+    - **Estados:** 0, 1, 2, ..., m onde m = |P|. O estado representa "quantos caracteres do padrão já casei até agora" (o maior prefixo de P que é sufixo do que já li).
+    - **Estado inicial:** 0
+    - **Estado de aceitação:** m (padrão completo casado)
+    - **Função de transição δ(estado, caractere novo):** diz para qual estado ir dado o estado atual e o próximo caractere do alfabeto lido do texto.
+
+Para conseguir manter a complexidade linear precisamos ja ter calculado todas as funções de transição, ou seja, um dicionário que mapeia estado atual e novo caractere para um proximo estado. Calcular essa tabela é chamado de pre processamento e ele precisa ser feito para cada padrão novo mas não necessáriamente para cada texto novo dado que os textos podem seguir o mesmo alfabeto. Para calcular essa tabela usamos o algortimo:
+
+```py
+def compute_transition_function(P,Alfabeto):
+    m = len(P)
+    TF = {} # {estado, novo char}
+
+    for q in range(m): # para cada estado possivel no padrão
+        for novo_char in Alfabeto: # para qualquer novo 
+            # agora vamos testar varios prefixos do padrão de tamanho k e comparar com estado atual + novo char (tamanho q+1) para encontrar o maior k que é sufixo do estado atual + novo char
+
+            k = min(m,q+1) # tamanho do padrão não pode ser maior que o proprio padrão nem maior dq ja foi casado ate agora 
+            while k > 0 and P[:k] != (P[:q] + [novo_char]):
+                k -= 1
+            
+            TF[(q, novo_char)]
+
+    return TF 
+```
+
+Uma vez que a tabela é computada só precisamos passar pelo texto usando essa tabela:
+
+```py
+def find(P, T, Alfabeto):
+
+    δ = compute_transition_function(P,Alfabeto)
+    matches = []
+
+    q = 0  // estado atual
+    for i = 1 to n:  // percorre o texto mudando os estados na maquina de estados
+        q = δ(q, T[i])
+        if q == m:
+            matches.append(i)
+
+    return matches    
+```
+**Complexidades:**
+
+- **Pré-processamento (construir δ):** O(m³ · |Σ|) pois para cada estado m, exploramos |Σ| novos caracteres, comparando no maximo m prefixos (k) com o estado atual + novo caracter. Temos então m^2 * |Σ|, porém a comparação é O(m) então vira m^3 * |Σ|.
+
+- **Busca no texto:** O(n), sempre, sem exceção, cada caractere do texto é lido exatamente uma vez.
 
 ### **KMP**
 
