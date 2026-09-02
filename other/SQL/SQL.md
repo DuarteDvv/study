@@ -920,6 +920,20 @@ SELECT
 FROM
   ranked_rides
 ```
+
+```sql 
+SELECT 
+  MAX(fare_amount) OVER(
+    PARTITION BY 
+      driver_id
+    ORDER BY  
+      ride_date ASC
+    ROWS 
+      BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW
+    ) 
+FROM 
+  rides
+```
   
 
 ### **Funções de ranking**
