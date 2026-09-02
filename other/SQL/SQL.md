@@ -300,7 +300,7 @@ non_prime AS (
 )
 
 SELECT item_type, item_count FROM prime_used
-UNION ALL
+UNION 
 SELECT item_type, item_count FROM non_prime;
 ```
 
@@ -371,18 +371,36 @@ FROM
   inter
 ```
 
-## **WHERE**
+### **EXCEPT**
 
-Filtra linhas antes de qualquer agregação, ou seja, trabalha nas linhas coletadas pelo FROM.
+Subtração de conjuntos (consultas), ou seja, A - B remove tudo de B que esta em A
 
 ```sql
-SELECT
-  p.part, 
-  p.assembly_step
-FROM 
-  parts_assembly AS p
-WHERE 
-  p.finish_date IS NULL
+WITH 
+
+sp_2025 AS (
+  SELECT 
+    riders_id
+  FROM 
+    signups
+  WHERE 
+    city = 'SP' AND
+    EXTRACT(YEAR FROM signup_date) = 2025
+),
+
+rj_2025 AS (
+  SELECT 
+    riders_id
+  FROM 
+    signups
+  WHERE 
+    city = 'RJ' AND
+    EXTRACT(YEAR FROM signup_date) = 2025
+)
+
+SELECT * FROM sp_2025  
+EXCEPT 
+SELECT * FROM rj_2025
 ```
 
 ## **EXISTS**
@@ -427,14 +445,24 @@ ORDER BY 
 ASC 
 ```
 
-### **EXCEPT**
-
-Subtração de conjuntos (consultas), ou seja, A - B remove tudo de B que esta em A
 
 ### **DISTINCT**
 
 Pode ser usado no SELECT DISTINCT para filtrar linhas completamente iguais (todas as colunas). Ou funções de agregação como COUNT(DISTINCT ...) para contar contar coisas unicas.
-  
+
+## **WHERE**
+
+Filtra linhas antes de qualquer agregação, ou seja, trabalha nas linhas coletadas pelo FROM.
+
+```sql
+SELECT
+  p.part, 
+  p.assembly_step
+FROM 
+  parts_assembly AS p
+WHERE 
+  p.finish_date IS NULL
+```
 
 ## **GROUP BY**
 
@@ -721,11 +749,6 @@ WHERE
 ORDER BY 
   ra.rnk ASC
 ```
-  
-  
-
-
-
 
 
 #### **PARTITION BY**
@@ -897,6 +920,7 @@ SELECT
 FROM
   ranked_rides
 ```
+  
 
 ### **Funções de ranking**
 
@@ -1249,6 +1273,34 @@ DATE_TRUNC('year', '2026-08-27 14:35:22')   → 2026-01-01 00:00:00
 DATE_TRUNC('month', '2026-08-27 14:35:22')  → 2026-08-01 00:00:00
 DATE_TRUNC('day', '2026-08-27 14:35:22')    → 2026-08-27 00:00:00
 DATE_TRUNC('hour', '2026-08-27 14:35:22')   → 2026-08-27 14:00:00
+```
+
+```sql
+SELECT 
+  rider_id,
+  created_at,
+  TO_CHAR(created_at, 'Mon-YYYY') AS month,
+  ticket_id,
+  subject,
+  DATEDIFF(
+    'days',
+    LAG(created_at, 1) OVER(
+      PARTITION BY 
+        rider_id, 
+        DATE_TRUNC('month', created_at)
+      ORDER BY 
+        created_at ASC 
+    ), 
+  created_at
+  ) AS days_since_previous_ticket_on_same_month,
+
+FROM 
+  support_tickets 
+WHERE 
+  LOWER(subject) LIKE '%refund%'
+ORDER BY 
+  rider_id ASC,
+  created_at ASC 
 ```
 
 ### **DATEDIFF(Unidade, data1, data2)**
