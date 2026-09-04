@@ -187,6 +187,17 @@ ORDER BY
   curr.year_ ASC
 ```
 
+```sql
+SELECT
+  d.driver_id,
+  d.driver_name,
+  COALESCE(COUNT(DISTINCT r.ride_id), 0) AS count
+FROM
+  drivers AS d LEFT JOIN rides as r ON d.driver_id = r.driver_id
+GROUP BY
+  d.driver_id,
+  d.driver_name
+```
 
 ### **RIGHT JOIN**
 
@@ -403,6 +414,21 @@ EXCEPT
 SELECT * FROM rj_2025
 ```
 
+```sql
+SELECT DISTINCT
+  driver_id
+FROM 
+  drivers
+
+EXCEPT
+
+SELECT DISTINCT
+  driver_id
+FROM 
+  rides
+```
+
+
 ## **EXISTS**
 
 Verifica se existe pelo menos uma linha na subconsulta e retorna booleano. 
@@ -463,6 +489,7 @@ FROM
 WHERE 
   p.finish_date IS NULL
 ```
+
 
 ## **GROUP BY**
 
@@ -874,7 +901,7 @@ WHERE
   DATE(ride_date) = DATE(registration_date)
 ```
 
-#### **FRAME ROWS BETWEEN [início] AND [fim]**
+#### **ROWS/RANGE BETWEEN [início] AND [fim]**
 
 ROWS BETWEEN [início] AND [fim] tal que as opcoes para inicio e fim:
 
@@ -885,6 +912,8 @@ N FOLLOWING → N linhas depois da atual
 UNBOUNDED PRECEDING → desde o início da partição
 UNBOUNDED FOLLOWING → até o final da partição
 ```
+
+ROWS conta literalmente linhas entao se temos linhas iguais no ranking apenas uma entra, RANGE olha para o rank da linha entao se tem duplicatas contas ambas
 
 ```sql
 WITH 
@@ -934,7 +963,53 @@ SELECT
 FROM 
   rides
 ```
-  
+
+```sql
+SELECT 
+  AVG(fare_amount) OVER(
+    PARTITION BY 
+      driver_id 
+    ORDER BY 
+      ride_date ASC
+    ROWS BETWEEN 2 PRECEDING AND CURRENT ROW
+  ) AS type1_window,
+  AVG(fare_amount) OVER(
+    PARTITION BY 
+      driver_id 
+    ORDER BY 
+      ride_date ASC
+    ROWS BETWEEN 1 PRECEDING AND 1 FOLLOWING
+  ) AS type2_window,
+  AVG(fare_amount) OVER(
+    PARTITION BY 
+      driver_id 
+    ORDER BY 
+      ride_date ASC
+    ROWS BETWEEN CURRENT ROW AND 2 FOLLOWING
+  ) AS type3_window
+FROM 
+  rides
+```
+
+```sql
+SELECT 
+  SUM(fare_amount) OVER(
+    PARTITION BY 
+      driver_id 
+    ORDER BY 
+      ride_date ASC
+    ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW
+  ) AS cumulative_sum,
+  SUM(fare_amount) OVER(
+    PARTITION BY 
+      driver_id 
+    ORDER BY 
+      ride_date ASC
+    ROWS BETWEEN CURRENT ROW AND UNBOUNDED FOLLOWING
+  ) AS cumulative_sum_inverse
+FROM
+  rides
+```
 
 ### **Funções de ranking**
 
@@ -1315,6 +1390,47 @@ WHERE
 ORDER BY 
   rider_id ASC,
   created_at ASC 
+```
+
+```sql
+WITH 
+
+total_fare AS (
+  SELECT 
+    city,
+    driver_id,
+    SUM(fare_amount) AS total_amount
+  FROM 
+    rides 
+  WHERE 
+    DATE_TRUNC('month', ride_date) = '2026-08-01'
+  GROUP BY 
+    city,
+    driver_id
+),
+
+ranked_drivers AS (
+  SELECT 
+    city,
+    driver_id,
+    DENSE_RANK() OVER(
+      PARTITION BY 
+        city 
+      ORDER BY
+        total_amount DESC 
+    ) AS rnk
+  FROM
+    total_fare 
+)
+
+SELECT 
+  city, 
+  driver_id
+FROM 
+  ranked_drivers 
+WHERE 
+  rnk = 1
+
 ```
 
 ### **DATEDIFF(Unidade, data1, data2)**
