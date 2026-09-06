@@ -618,6 +618,28 @@ ORDER BY
   new_id
 ```
 
+```sql
+SELECT 
+  driver_id,
+  COUNT(ride_id),
+  100 *(
+    COUNT(
+      CASE
+        WHEN rating < 3 THEN rating
+        ELSE NULL
+      END
+    )::DECIMAL
+    /
+    COUNT(rating)
+  )
+
+FROM
+  rides
+GROUP BY 
+  driver_id
+
+```
+
 
 ### **HAVING** 
 
@@ -720,24 +742,8 @@ WHERE
 
 O OVER() funciona como uma janela de observação sobre a tabela inteira que permite calcular agregações, rankings e acúmulos sem destruir as linhas originais (diferente do GROUP BY, que as esmaga). Ele preserva a identidade de cada registro intacta e apenas adiciona uma nova coluna calculada ao lado, permitindo comparar o dado individual com o contexto do grupo de forma simples e direta.
 
-```sql
-WITH transactions_w_number AS (
-  SELECT 
-    *,
-    ROW_NUMBER() OVER(PARTITION BY user_id ORDER BY transaction_date) AS row_n
-  FROM 
-    transactions
-)
 
-SELECT 
-  t.user_id,
-  t.spend,
-  t.transaction_date
-FROM 
-  transactions_w_number AS t 
-WHERE
-  row_n = 3
-```
+
 ```sql
 WITH
 
@@ -757,7 +763,6 @@ freq_top10_by_song AS (
 rank_artists AS (
   SELECT
     s.artist_id,
-    SUM(f.freq),
     DENSE_RANK() OVER(ORDER BY SUM(f.freq) DESC) AS rnk
   FROM 
     songs AS s JOIN freq_top10_by_song AS f ON s.song_id = f.song_id
@@ -1011,11 +1016,83 @@ FROM
   rides
 ```
 
+```sql
+WITH 
+
+daily AS (
+  SELECT 
+    driver_id,
+    DATE_TRUNC('day', ride_date) AS day,
+    SUM(fare_amount) AS daily_fare
+  FROM
+    rides   
+  GROUP BY 
+    driver_id,
+    DATE_TRUNC('day', ride_date)
+),
+
+window3_avg AS (
+  SELECT 
+    driver_id,
+    day,
+    AVG(daily_fare) OVER (
+      PARTITION BY 
+        driver_id
+      ORDER BY 
+        day ASC
+      ROWS 
+        BETWEEN 2 PRECEDING AND CURRENT ROW
+    ) AS avg3
+  FROM 
+    daily
+),
+
+count_month_rides AS (
+  SELECT 
+    driver_id,
+    DATE_TRUNC('month', ride_date) AS month,
+    COUNT(DISTINCT DATE_TRUNC('day', ride_date)) AS work_days
+  FROM 
+    rides
+  GROUP BY 
+    driver_id,
+    DATE_TRUNC('month', ride_date)
+)
+
+SELECT 
+  w.driver_id,
+  w.day,
+  w.avg3,
+  c.month,
+  c.work_days
+FROM 
+  window3_avg AS w JOIN count_month_rides AS c ON w.driver_id = c.driver_id AND DATE_TRUNC('month', w.day) = c.month
+```
+
 ### **Funções de ranking**
 
 #### **ROW_NUMBER()**
 
 Numeração sequencial única (1, 2, 3...) para cada linha. Desempata arbitrariamente se houver valores iguais, ou seja, se 2 linhas são iguais vão receber posições diferentes (3,4).
+
+```sql
+WITH transactions_w_number AS (
+  SELECT 
+    *,
+    ROW_NUMBER() OVER(PARTITION BY user_id ORDER BY transaction_date) AS row_n
+  FROM 
+    transactions
+)
+
+SELECT 
+  t.user_id,
+  t.spend,
+  t.transaction_date
+FROM 
+  transactions_w_number AS t 
+WHERE
+  row_n = 3
+```
 
 ```sql
 WITH 
@@ -1341,6 +1418,43 @@ Caso um valor venha nulo substitui por outro padrão
 ### **MOD()**
 
 Função de modulo que é mais segura que %
+
+### **NULLIF(coluna, valor)**
+
+transforma em nulo se a coluna tiver o valor especificado
+
+```sql
+WITH 
+month_fare AS (
+  SELECT 
+    city,
+    SUM(
+      CASE 
+        WHEN DATE_TRUNC('month', ride_date) = '2026-08-01' THEN fare_amount
+        ELSE 0
+      END
+    ) AS aug,
+    SUM(
+      CASE 
+        WHEN DATE_TRUNC('month', ride_date) = '2026-07-01' THEN fare_amount
+        ELSE 0
+      END
+    ) AS july
+  FROM  
+    rides
+  GROUP BY 
+    city
+)
+
+SELECT
+  city,
+  july,
+  aug,
+  ((aug - july) / NULLIF(july, 0))* 100
+FROM 
+  month_fare
+
+```
 
 ### **TRUNC(valor, x)**
 
