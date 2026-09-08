@@ -101,7 +101,7 @@ Aqui passamos uma janela deslizante de tamanho m no texto T inteiro e comparamos
 
 Em vez de comparar caracteres repetidamente como no algoritmo ingênuo, você constrói um autômato finito determinístico (AFD) a partir do padrão P. Depois, você *percorre o texto T uma única vez, alimentando cada caractere no autômato*. Cada vez que o autômato atinge o estado de aceitação (estado final, igual ao comprimento do padrão), significa que uma ocorrência do padrão termina naquela posição do texto. Isso dá complexidade O(n) para a busca no texto (depois do pré-processamento), sem nunca precisar retroceder no texto. 
 
-- **Função sufixo:** σ(w) = max {k | Pk ⊐ w} que retorna o maior tamanho k do prefixo do padrão P que é sufixo do texto de entrada.
+- **Função sufixo:** σ(w) = max {k | Pk ⊐ w} dado uma string qualquer w (que pode ser P[1..q] + um novo char *a*, uma string que nem faz parte do padrão original), qual é o maior prefixo do padrão P que é sufixo de w. 
 
 - **Componentes:**
 
@@ -117,15 +117,17 @@ def compute_transition_function(P,Alfabeto):
     m = len(P)
     TF = {} # {estado, novo char}
 
-    for q in range(m): # para cada estado possivel no padrão
+    # para cada par (estado atual q, novo caractere), aplica a função sufixo σ na string (P[:q] + novo_char), para achar o novo estado (maior prefixo de P que bate como sufixo dessa string)
+
+    for q in range(m + 1): # para cada estado possivel no padrão
         for novo_char in Alfabeto: # para qualquer novo 
             # agora vamos testar varios prefixos do padrão de tamanho k e comparar com estado atual + novo char (tamanho q+1) para encontrar o maior k que é sufixo do estado atual + novo char
 
             k = min(m,q+1) # tamanho do padrão não pode ser maior que o proprio padrão nem maior dq ja foi casado ate agora 
-            while k > 0 and P[:k] != (P[:q] + [novo_char]):
+            while k > 0 and P[:k] != (P[:q] + novo_char)[-k:]: # busca o tamanho do maior prefixo de P que é sufixo do (já casado + novo char) já lido
                 k -= 1
             
-            TF[(q, novo_char)]
+            TF[(q, novo_char)] = k 
 
     return TF 
 ```
@@ -133,18 +135,16 @@ def compute_transition_function(P,Alfabeto):
 Uma vez que a tabela é computada só precisamos passar pelo texto usando essa tabela:
 
 ```py
-def find(P, T, Alfabeto):
-
-    δ = compute_transition_function(P,Alfabeto)
+def find(P, T, alfabeto):
+    delta = compute_transition_function(P, alfabeto)
     matches = []
-
-    q = 0  // estado atual
-    for i = 1 to n:  // percorre o texto mudando os estados na maquina de estados
-        q = δ(q, T[i])
+    n, m = len(T), len(P)
+    q = 0
+    for i in range(n): # le os caracteres gradualmente mudando o estado (tamanho ja casado do padrão no texto) ate que ele seja igual ao tamanho do padrão
+        q = delta[(q, T[i])]
         if q == m:
-            matches.append(i)
-
-    return matches    
+            matches.append(i - m + 1)  
+    return matches
 ```
 **Complexidades:**
 
@@ -153,6 +153,55 @@ def find(P, T, Alfabeto):
 - **Busca no texto:** O(n), sempre, sem exceção, cada caractere do texto é lido exatamente uma vez.
 
 ### **KMP**
+
+A ideia do KMP é reduzir o fator |Σ| (alfabeto) e a complexidade no termo m. Para isso usa uma função:
+
+- **Função prefixo:** π(q) = max{k < q | P[1..k] é sufixo de P[1..q]}. Dado o indice *q* do proprio padrão P, qual o maior prefixo do padrão que é sufixo do padrão P_q (padrão ate o indice q). Ou seja, não precisamos saber oq fazer para qualquer novo caractere, apenas para posições do proprio padrão. k tem que ser menor que q pois se for igual o maior prefixo é sempre ele mesmo.
+
+Para isso criamos uma tabela para todos os indices do padrão (preprocessamento)
+
+```py
+def compute_prefix_function(P):
+    m = len(P)
+    pi = [0] * m
+    k = 0  # tamanho do prefixo casado até agora
+    for q in range(1, m):
+        # enquanto houver incompatibilidade, recua usando π já calculado
+        while k > 0 and P[k] != P[q]:
+            k = pi[k - 1]
+        # se bateu, estende o casamento
+        if P[k] == P[q]:
+            k += 1
+        pi[q] = k
+    return pi
+```
+
+Depois é só percorrer o texto
+
+```py
+def kmp_search(P, T):
+    n, m = len(T), len(P)
+    pi = compute_prefix_function(P)
+    matches = []
+    q = 0  # estado atual (quantos caracteres do padrão já casaram)
+    for i in range(n):
+        # enquanto o próximo caractere do padrão não bate com T[i], recua
+        while q > 0 and P[q] != T[i]:
+            q = pi[q - 1]
+
+        if P[q] == T[i]:
+            q += 1
+        if q == m:
+            matches.append(i - m + 1)  # achou! posição inicial do match
+            q = pi[q - 1]  # continua procurando outras ocorrências
+    return matches
+```
+**Complexidade:** 
+
+- Pré-processamento: O(m)
+- Busca: O(n)
+- Total: O(n + m) 
+
 
 ### **Boyer-Moore-Horspool** 
 
