@@ -270,6 +270,275 @@ ORDER BY
   song_plays DESC
 ```
 
+## **WHERE**
+
+Filtra linhas antes de qualquer agregação, ou seja, trabalha nas linhas coletadas pelo FROM.
+
+```sql
+SELECT
+  p.part, 
+  p.assembly_step
+FROM 
+  parts_assembly AS p
+WHERE 
+  p.finish_date IS NULL
+```
+
+### **IS / IN** 
+
+- IS é reservado para nulos e booleanos (IS NULL, IS NOT NULL)
+- IN é usado para verificar se existe dentro de um vetor (IN (1,2,3))
+  
+### **EXISTS**
+
+Verifica se existe pelo menos uma linha na subconsulta e retorna booleano. 
+
+```sql
+SELECT 
+  e.employee_id,
+  e.name
+FROM 
+  employee AS e
+WHERE 
+  EXISTS(
+    SELECT
+      1
+    FROM
+      employee AS e2
+    WHERE 
+      e.manager_id = e2.employee_id AND
+      e.salary > e2.salary
+  )
+```
+
+```sql
+SELECT 
+  p.page_id
+FROM
+  pages as p 
+WHERE 
+  NOT EXISTS(
+    SELECT
+      *
+    FROM 
+      page_likes AS pl
+    WHERE 
+      p.page_id = pl.page_id
+  )
+ORDER BY 
+  p.page_id
+ASC 
+```
+
+## **GROUP BY**
+
+Agrupa as linhas de acordo com colunas especificadas. Todas as colunas que estiverem no SELECT e não forem uma agregação (media, max...) precisam também estar no GROUP BY mas todas as colunas que estiverem no GROUP BY não necessáriamente precisam estar no SELECT.
+
+```sql
+WITH tweets_p_user AS (
+  SELECT
+    t.user_id,  
+    COUNT(DISTINCT t.tweet_id) AS tweet_n
+  FROM 
+    tweets AS t 
+  WHERE 
+    '1/1/2022' <= t.tweet_date AND t.tweet_date  < '1/1/2023'
+  GROUP BY
+    t.user_id
+)
+
+SELECT 
+  tweet_n AS tweet_bucket,
+  COUNT(user_id) AS users_num
+FROM 
+  tweets_p_user
+GROUP BY
+  tweet_n
+```
+
+
+### **Agregação Condicional**
+
+Funciona da seguinte forma podendo aninhas varias preposições WHEN-THEN. Pode ser usado em funções de agregação como SUM e COUNT mas se for usado com COUNT o else precisa ser NULL para não contar a linha.
+
+CASE WHEN condição1 THEN oq-fazer1 WHEN condição2 THEN oq-fazer2 ELSE oq-fazer-se-nenhuma-condição-verdadeira END.
+
+Além disso, não funciona apenas em agregações mas para linhas normais tbm.
+
+```sql
+SELECT 
+  SUM(CASE WHEN v.device_type = 'laptop' THEN 1 ELSE 0 END) AS laptop_views,
+  SUM(CASE WHEN v.device_type = 'phone' OR v.device_type = 'tablet' THEN 1 ELSE 0 END) AS mobile_views
+FROM
+  viewership AS v
+```
+```sql
+SELECT
+  t.account_id,
+  SUM(
+  CASE 
+    WHEN t.transaction_type = 'Deposit' THEN t.amount 
+    WHEN t.transaction_type = 'Withdrawal' THEN -t.amount 
+    ELSE 0
+  END
+  ) 
+FROM 
+  transactions AS t 
+GROUP BY
+  t.account_id
+```
+```sql
+SELECT
+  e.app_id,
+  ROUND(
+    100.0 * SUM(CASE WHEN e.event_type = 'click' THEN 1 ELSE 0 END) 
+    / 
+    SUM(CASE WHEN e.event_type = 'impression' THEN 1 ELSE 0 END)
+  , 2) AS ctr
+FROM
+  events AS e
+WHERE
+  e.timestamp >= '2022/01/01' AND e.timestamp < '2023/01/01'
+GROUP BY  
+  e.app_id;
+```
+
+```sql
+SELECT 
+  age_.age_bucket, 
+  ROUND(100.0 *
+    SUM(
+      CASE 
+        WHEN a.activity_type = 'send' THEN a.time_spent 
+        ELSE 0 
+      END) / 
+    SUM(
+      CASE 
+        WHEN a.activity_type = 'send' OR a.activity_type = 'open' THEN a.time_spent 
+        ELSE 0 
+      END),2) AS send_perc,
+  ROUND(100.0*
+    SUM(
+    CASE 
+      WHEN a.activity_type = 'open' THEN a.time_spent 
+      ELSE 0 
+    END) / 
+  SUM(
+    CASE 
+      WHEN a.activity_type = 'send' OR a.activity_type = 'open' THEN a.time_spent 
+      ELSE 0 
+    END),2) AS open_perc
+FROM 
+  activities AS a JOIN age_breakdown AS age_ 
+  ON a.user_id = age_.user_id
+GROUP BY
+  age_.age_bucket
+```
+```sql
+WITH 
+
+numbered_orders AS (
+  SELECT
+    *, 
+    ROW_NUMBER() OVER() AS row_n
+  FROM
+    orders
+)
+
+SELECT 
+  (CASE 
+    WHEN row_n % 2 != 0 THEN COALESCE(LEAD(order_id,1) OVER(), order_id)
+    WHEN row_n % 2 = 0 THEN LAG(order_id,1) OVER()
+  END) AS new_id,
+  item
+FROM 
+  numbered_orders
+ORDER BY
+  new_id
+```
+
+```sql
+SELECT 
+  driver_id,
+  COUNT(ride_id),
+  100 *(
+    COUNT(
+      CASE
+        WHEN rating < 3 THEN rating
+        ELSE NULL
+      END
+    )::DECIMAL
+    /
+    COUNT(rating)
+  )
+
+FROM
+  rides
+GROUP BY 
+  driver_id
+
+```
+
+## **HAVING** 
+
+Filtragem que acontece após o agrupamento. Se agrupamos por candidato_id e tiramos uma média de todas as linhas agrupadas desses candidato_id agora podemos filtrar candidatos pela media calculada.
+
+```sql
+WITH 
+
+calls_by_holder AS (
+  SELECT 
+    policy_holder_id
+  FROM 
+    callers
+  GROUP BY 
+    policy_holder_id
+  HAVING 
+    COUNT(case_id) > 2
+)
+
+SELECT
+  COUNT(*)
+FROM 
+  calls_by_holder 
+```
+
+```sql
+SELECT 
+  c.candidate_id
+FROM 
+  candidates AS c
+WHERE 
+  c.skill IN ('Python','Tableau','PostgreSQL')
+GROUP BY
+  c.candidate_id
+HAVING 
+  COUNT(DISTINCT c.skill) = 3
+ORDER BY
+  c.candidate_id
+ASC;
+```
+```sql
+WITH companies_rep AS (SELECT
+  jl.company_id
+FROM 
+  job_listings AS jl
+GROUP BY
+  jl.company_id,
+  jl.title,
+  jl.description
+HAVING
+  COUNT(*) > 1
+)
+  
+SELECT 
+  COUNT(DISTINCT company_id)
+FROM 
+  companies_rep
+```
+
+
+
 ## **SELECT**
 
 ### **UNION e UNION ALL**
@@ -428,278 +697,9 @@ FROM
   rides
 ```
 
-
-## **EXISTS**
-
-Verifica se existe pelo menos uma linha na subconsulta e retorna booleano. 
-
-
-```sql
-SELECT 
-  e.employee_id,
-  e.name
-FROM 
-  employee AS e
-WHERE 
-  EXISTS(
-    SELECT
-      1
-    FROM
-      employee AS e2
-    WHERE 
-      e.manager_id = e2.employee_id AND
-      e.salary > e2.salary
-  )
-```
-
-```sql
-SELECT 
-  p.page_id
-FROM
-  pages as p 
-WHERE 
-  NOT EXISTS(
-    SELECT
-      *
-    FROM 
-      page_likes AS pl
-    WHERE 
-      p.page_id = pl.page_id
-  )
-ORDER BY 
-  p.page_id
-ASC 
-```
-
-
 ### **DISTINCT**
 
 Pode ser usado no SELECT DISTINCT para filtrar linhas completamente iguais (todas as colunas). Ou funções de agregação como COUNT(DISTINCT ...) para contar contar coisas unicas.
-
-## **WHERE**
-
-Filtra linhas antes de qualquer agregação, ou seja, trabalha nas linhas coletadas pelo FROM.
-
-```sql
-SELECT
-  p.part, 
-  p.assembly_step
-FROM 
-  parts_assembly AS p
-WHERE 
-  p.finish_date IS NULL
-```
-
-
-## **GROUP BY**
-
-Agrupa as linhas de acordo com colunas especificadas. Todas as colunas que estiverem no SELECT e não forem uma agregação (media, max...) precisam também estar no GROUP BY mas todas as colunas que estiverem no GROUP BY não necessáriamente precisam estar no SELECT.
-
-```sql
-WITH tweets_p_user AS (
-  SELECT
-    t.user_id,  
-    COUNT(DISTINCT t.tweet_id) AS tweet_n
-  FROM 
-    tweets AS t 
-  WHERE 
-    '1/1/2022' <= t.tweet_date AND t.tweet_date  < '1/1/2023'
-  GROUP BY
-    t.user_id
-)
-
-SELECT 
-  tweet_n AS tweet_bucket,
-  COUNT(user_id) AS users_num
-FROM 
-  tweets_p_user
-GROUP BY
-  tweet_n
-```
-
-
-#### **Agregação Condicional**
-
-Funciona da seguinte forma podendo aninhas varias preposições WHEN-THEN. Pode ser usado em funções de agregação como SUM e COUNT mas se for usado com COUNT o else precisa ser NULL para não contar a linha.
-
-CASE WHEN condição1 THEN oq-fazer1 WHEN condição2 THEN oq-fazer2 ELSE oq-fazer-se-nenhuma-condição-verdadeira END.
-
-Além disso, não funciona apenas em agregações mas para linhas normais tbm.
-
-```sql
-SELECT 
-  SUM(CASE WHEN v.device_type = 'laptop' THEN 1 ELSE 0 END) AS laptop_views,
-  SUM(CASE WHEN v.device_type = 'phone' OR v.device_type = 'tablet' THEN 1 ELSE 0 END) AS mobile_views
-FROM
-  viewership AS v
-```
-```sql
-SELECT
-  t.account_id,
-  SUM(
-  CASE 
-    WHEN t.transaction_type = 'Deposit' THEN t.amount 
-    WHEN t.transaction_type = 'Withdrawal' THEN -t.amount 
-    ELSE 0
-  END
-  ) 
-FROM 
-  transactions AS t 
-GROUP BY
-  t.account_id
-```
-```sql
-SELECT
-  e.app_id,
-  ROUND(
-    100.0 * SUM(CASE WHEN e.event_type = 'click' THEN 1 ELSE 0 END) 
-    / 
-    SUM(CASE WHEN e.event_type = 'impression' THEN 1 ELSE 0 END)
-  , 2) AS ctr
-FROM
-  events AS e
-WHERE
-  e.timestamp >= '2022/01/01' AND e.timestamp < '2023/01/01'
-GROUP BY  
-  e.app_id;
-```
-
-```sql
-SELECT 
-  age_.age_bucket, 
-  ROUND(100.0 *
-    SUM(
-      CASE 
-        WHEN a.activity_type = 'send' THEN a.time_spent 
-        ELSE 0 
-      END) / 
-    SUM(
-      CASE 
-        WHEN a.activity_type = 'send' OR a.activity_type = 'open' THEN a.time_spent 
-        ELSE 0 
-      END),2) AS send_perc,
-  ROUND(100.0*
-    SUM(
-    CASE 
-      WHEN a.activity_type = 'open' THEN a.time_spent 
-      ELSE 0 
-    END) / 
-  SUM(
-    CASE 
-      WHEN a.activity_type = 'send' OR a.activity_type = 'open' THEN a.time_spent 
-      ELSE 0 
-    END),2) AS open_perc
-FROM 
-  activities AS a JOIN age_breakdown AS age_ 
-  ON a.user_id = age_.user_id
-GROUP BY
-  age_.age_bucket
-```
-```sql
-WITH 
-
-numbered_orders AS (
-  SELECT
-    *, 
-    ROW_NUMBER() OVER() AS row_n
-  FROM
-    orders
-)
-
-SELECT 
-  (CASE 
-    WHEN row_n % 2 != 0 THEN COALESCE(LEAD(order_id,1) OVER(), order_id)
-    WHEN row_n % 2 = 0 THEN LAG(order_id,1) OVER()
-  END) AS new_id,
-  item
-FROM 
-  numbered_orders
-ORDER BY
-  new_id
-```
-
-```sql
-SELECT 
-  driver_id,
-  COUNT(ride_id),
-  100 *(
-    COUNT(
-      CASE
-        WHEN rating < 3 THEN rating
-        ELSE NULL
-      END
-    )::DECIMAL
-    /
-    COUNT(rating)
-  )
-
-FROM
-  rides
-GROUP BY 
-  driver_id
-
-```
-
-
-### **HAVING** 
-
-Filtragem que acontece após o agrupamento. Se agrupamos por candidato_id e tiramos uma média de todas as linhas agrupadas desses candidato_id agora podemos filtrar candidatos pela media calculada.
-
-```sql
-WITH 
-
-calls_by_holder AS (
-  SELECT 
-    policy_holder_id
-  FROM 
-    callers
-  GROUP BY 
-    policy_holder_id
-  HAVING 
-    COUNT(case_id) > 2
-)
-
-SELECT
-  COUNT(*)
-FROM 
-  calls_by_holder 
-```
-
-```sql
-SELECT 
-  c.candidate_id
-FROM 
-  candidates AS c
-WHERE 
-  c.skill IN ('Python','Tableau','PostgreSQL')
-GROUP BY
-  c.candidate_id
-HAVING 
-  COUNT(DISTINCT c.skill) = 3
-ORDER BY
-  c.candidate_id
-ASC;
-```
-```sql
-WITH companies_rep AS (SELECT
-  jl.company_id
-FROM 
-  job_listings AS jl
-GROUP BY
-  jl.company_id,
-  jl.title,
-  jl.description
-HAVING
-  COUNT(*) > 1
-)
-  
-SELECT 
-  COUNT(DISTINCT company_id)
-FROM 
-  companies_rep
-```
-
-## **SELECT**
 
 ### **ROUND(valor, casas decimais)**
 
@@ -715,33 +715,9 @@ Em que:
 - X é uma função de agregação, ranking ou navegação
 - Y é quem define quais linhas entram na agregação e qual ordem elas terão
 
-### **SUM()**
-
-SUM() junto com OVER() faz soma acumulada seguindo alguma ordem 
-
-```sql
-WITH cumulative AS (
-  SELECT 
-    searches,
-    SUM(num_users) OVER (ORDER BY searches ASC) AS cum_asc,
-    SUM(num_users) OVER (ORDER BY searches DESC) AS cum_desc,
-    SUM(num_users) OVER () AS total_n
-  FROM 
-    search_frequency
-)
-SELECT 
-  ROUND(AVG(searches * 1.0), 1) AS median
-FROM 
-  cumulative
-WHERE 
-  cum_asc >= total_n / 2.0 
-  AND cum_desc >= total_n / 2.0;
-```
-
 #### **OVER()**
 
 O OVER() funciona como uma janela de observação sobre a tabela inteira que permite calcular agregações, rankings e acúmulos sem destruir as linhas originais (diferente do GROUP BY, que as esmaga). Ele preserva a identidade de cada registro intacta e apenas adiciona uma nova coluna calculada ao lado, permitindo comparar o dado individual com o contexto do grupo de forma simples e direta.
-
 
 
 ```sql
@@ -785,125 +761,40 @@ ORDER BY
 
 #### **PARTITION BY**
 
-Separa a aplicação função em grupos diferentes da janela do OVER() começando sempre do zero. Sem o partition by o ranking leva em consideração todas as linhas. Com o partition by um ranking é criado por grupo. 
+Separa a aplicação função em grupos diferentes da janela do OVER(). Sem o PARTITION BY o resultado leva em consideração todas as linhas. Com o PARTITION BY o resultado é criado por grupo. 
 
+Se qualquer funcao de agregacao (SUM, AVG, MIN, MAX, COUNT...) for usada junto com PARTITION BY e apenas com ele. Entao o comportamento é identico ao do GROUP BY porém sem colapsar as linhas, apenas copiando o valor do grupo para todas as linhas do grupo. (Equivalente a um .transform do pandas)
+
+```sql
+SELECT 
+  SUM(fare) OVER (PARTITION BY city) -- cada linha da cidade x vai ter a media da cidade x
+FROM 
+  rides
+```
 
 #### **ORDER BY**
 
-```sql
-SELECT 
-  drug,
-  (total_sales - cogs) AS proft
-FROM 
-  pharmacy_sales
-ORDER BY  
-  proft DESC
-LIMIT 
-  3
-```
+Uma vez que a clausula ORDER BY é usada dentro do OVER() ele deixa de levar em consideracao o grupo inteiro de uma vez e vai passar de linha em linha (do rank 1 ao rank final) fazendo operacoes como DENSE_RANK() e LAG() em que a ordem importa. 
 
-Ordena o resultado do SELECT em ascendente ASC ou descendente DESC. Pode ser usado também com window functions para ordenar a janela do OVER()
-
-
-### **Funções de navegação**
+Por exemplo o comportamento padrao do SUM() junto com order é uma soma acumulada ate a linha atual.
 
 ```sql
-SELECT 
-  data_venda,
-  valor AS venda_hoje,
-  
-  -- Pega a venda da 1ª linha ANTERIOR (Ontem)
-  LAG(valor, 1) OVER (ORDER BY data_venda) AS venda_ontem,
-  
-  -- Pega a venda da 1ª linha SEGUINTE (Amanhã)
-  LEAD(valor, 1) OVER (ORDER BY data_venda) AS venda_amanha
-FROM 
-  vendas_diarias;
-```
-
-#### **LAG(coluna, deslocamento k, valor padrão)**
-
-O LAG() acessa o valor de uma única célula localizada exatamente $k$ linhas acima (atrás) da linha atual, considerando a ordem definida na janela do OVER(). Caso não exista retorna o valor padrão ou nulo por padrão. Olha para linhas que tem rank < que o rank da linha atual.
-
-```sql
-WITH tweets_window AS (
+WITH cumulative AS (
   SELECT 
-    t.user_id,
-    t.tweet_date,
-    t.tweet_count AS hoje,
-    LAG(t.tweet_count, 1) OVER (PARTITION BY t.user_id ORDER BY t.tweet_date) AS ontem, 
-    LAG(t.tweet_count, 2) OVER (PARTITION BY t.user_id ORDER BY t.tweet_date) AS anteontem
-  FROM tweets AS t
-)
-
-SELECT
-  user_id,
-  tweet_date, 
-  ROUND(
-    1.0 * (hoje + COALESCE(ontem, 0) + COALESCE(anteontem, 0))
-    / 
-    (
-      1.0 + 
-      CASE WHEN ontem IS NULL THEN 0 ELSE 1 END +
-      CASE WHEN anteontem IS NULL THEN 0 ELSE 1 END
-    )
-  , 2) AS rolling_avg_3d
-FROM 
-  tweets_window;
-```
-```sql
-WITH 
-
-num_transactions AS (
-  SELECT
-    *,
-    LAG(transaction_date,1) OVER(PARTITION BY user_id ORDER BY transaction_date) AS last,
-    LAG(transaction_date,2) OVER(PARTITION BY user_id ORDER BY transaction_date) AS second_last
+    searches,
+    SUM(num_users) OVER (ORDER BY searches ASC) AS cum_asc,
+    SUM(num_users) OVER (ORDER BY searches DESC) AS cum_desc,
+    SUM(num_users) OVER () AS total_n
   FROM 
-    transactions
+    search_frequency
 )
-
-
-SELECT DISTINCT
-  user_id 
-FROM 
-  num_transactions
-WHERE 
-  last IS NOT NULL AND 
-  second_last IS NOT NULL AND
-  second_last::DATE = last::DATE - 1 AND
-  last::DATE = transaction_date::DATE - 1
-ORDER BY
-  user_id ASC
-```
-
-
-#### **LEAD(coluna, deslocamento k, valor padrão)**
-
-O LEAD() acessa o valor de uma única célula localizada exatamente $k$ linhas abaixo (frente) da linha atual, considerando a ordem definida na janela do OVER(). Caso não exista retorna o valor padrão ou nulo por padrão. Olha para linhas que tem rank > que o rank da linha atual.
-
-```sql
-WITH 
-
-rides_w_number_and_next_ride AS (
-  SELECT 
-    u.user_id,
-    r.ride_date AS ride_date,
-    u.registration_date,
-    LEAD(r.ride_date,1) OVER (PARTITION BY user_id ORDER BY ride_date) AS next_ride, --- vira null 
-    ROW_NUMBER() OVER (PARTITION BY user_id ORDER BY ride_date) AS row_n 
-  FROM 
-    rides AS r JOIN users AS u 
-    ON r.user_id = u.user_id
-)
-
 SELECT 
-  ROUND(AVG(DATE(next_ride) - DATE(ride_date)),2) AS average_delay
-FROM
-    rides_w_number_and_next_ride
+  ROUND(AVG(searches * 1.0), 1) AS median
+FROM 
+  cumulative
 WHERE 
-  row_n = 1 AND
-  DATE(ride_date) = DATE(registration_date)
+  cum_asc >= total_n / 2.0 
+  AND cum_desc >= total_n / 2.0;
 ```
 
 #### **ROWS/RANGE BETWEEN [início] AND [fim]**
@@ -919,6 +810,27 @@ UNBOUNDED FOLLOWING → até o final da partição
 ```
 
 ROWS conta literalmente linhas entao se temos linhas iguais no ranking apenas uma entra, RANGE olha para o rank da linha entao se tem duplicatas contas ambas
+
+```sql
+SELECT
+  city, 
+  ride_date, 
+  ride_id, 
+  fare_amount,
+  SUM(fare_amount) OVER (
+    PARTITION BY 
+      city
+    ORDER BY
+      ride_date ASC
+    ROWS BETWEEN 
+      UNBOUNDED PRECEDING AND CURRENT ROW
+  ) AS running_total,
+  100 * fare_amount::DECIMAL / NULLIF(SUM(fare_amount) OVER (
+    PARTITION BY city, ride_date
+  ), 0) AS pct_of_day_total
+FROM 
+  rides
+```
 
 ```sql
 WITH 
@@ -1067,6 +979,108 @@ SELECT
   c.work_days
 FROM 
   window3_avg AS w JOIN count_month_rides AS c ON w.driver_id = c.driver_id AND DATE_TRUNC('month', w.day) = c.month
+```
+
+
+### **Funções de navegação**
+
+```sql
+SELECT 
+  data_venda,
+  valor AS venda_hoje,
+  
+  -- Pega a venda da 1ª linha ANTERIOR (Ontem)
+  LAG(valor, 1) OVER (ORDER BY data_venda) AS venda_ontem,
+  
+  -- Pega a venda da 1ª linha SEGUINTE (Amanhã)
+  LEAD(valor, 1) OVER (ORDER BY data_venda) AS venda_amanha
+FROM 
+  vendas_diarias;
+```
+
+#### **LAG(coluna, deslocamento k, valor padrão)**
+
+O LAG() acessa o valor de uma única célula localizada exatamente $k$ linhas acima (atrás) da linha atual, considerando a ordem definida na janela do OVER(). Caso não exista retorna o valor padrão ou nulo por padrão. Olha para linhas que tem rank < que o rank da linha atual.
+
+```sql
+WITH tweets_window AS (
+  SELECT 
+    t.user_id,
+    t.tweet_date,
+    t.tweet_count AS hoje,
+    LAG(t.tweet_count, 1) OVER (PARTITION BY t.user_id ORDER BY t.tweet_date) AS ontem, 
+    LAG(t.tweet_count, 2) OVER (PARTITION BY t.user_id ORDER BY t.tweet_date) AS anteontem
+  FROM tweets AS t
+)
+
+SELECT
+  user_id,
+  tweet_date, 
+  ROUND(
+    1.0 * (hoje + COALESCE(ontem, 0) + COALESCE(anteontem, 0))
+    / 
+    (
+      1.0 + 
+      CASE WHEN ontem IS NULL THEN 0 ELSE 1 END +
+      CASE WHEN anteontem IS NULL THEN 0 ELSE 1 END
+    )
+  , 2) AS rolling_avg_3d
+FROM 
+  tweets_window;
+```
+```sql
+WITH 
+
+num_transactions AS (
+  SELECT
+    *,
+    LAG(transaction_date,1) OVER(PARTITION BY user_id ORDER BY transaction_date) AS last,
+    LAG(transaction_date,2) OVER(PARTITION BY user_id ORDER BY transaction_date) AS second_last
+  FROM 
+    transactions
+)
+
+
+SELECT DISTINCT
+  user_id 
+FROM 
+  num_transactions
+WHERE 
+  last IS NOT NULL AND 
+  second_last IS NOT NULL AND
+  second_last::DATE = last::DATE - 1 AND
+  last::DATE = transaction_date::DATE - 1
+ORDER BY
+  user_id ASC
+```
+
+
+#### **LEAD(coluna, deslocamento k, valor padrão)**
+
+O LEAD() acessa o valor de uma única célula localizada exatamente $k$ linhas abaixo (frente) da linha atual, considerando a ordem definida na janela do OVER(). Caso não exista retorna o valor padrão ou nulo por padrão. Olha para linhas que tem rank > que o rank da linha atual.
+
+```sql
+WITH 
+
+rides_w_number_and_next_ride AS (
+  SELECT 
+    u.user_id,
+    r.ride_date AS ride_date,
+    u.registration_date,
+    LEAD(r.ride_date,1) OVER (PARTITION BY user_id ORDER BY ride_date) AS next_ride, --- vira null 
+    ROW_NUMBER() OVER (PARTITION BY user_id ORDER BY ride_date) AS row_n 
+  FROM 
+    rides AS r JOIN users AS u 
+    ON r.user_id = u.user_id
+)
+
+SELECT 
+  ROUND(AVG(DATE(next_ride) - DATE(ride_date)),2) AS average_delay
+FROM
+    rides_w_number_and_next_ride
+WHERE 
+  row_n = 1 AND
+  DATE(ride_date) = DATE(registration_date)
 ```
 
 ### **Funções de ranking**
@@ -1363,8 +1377,6 @@ GROUP BY
 ORDER BY
   loss DESC
 ```
-
-
 #### **AVG()**
 
 Calcula a média do grupo. Ignora nulos.
@@ -1404,12 +1416,6 @@ ORDER BY
 LIMIT 
   2
 ```
-
-### **IS / IN** 
-
-- IS é reservado para nulos e booleanos (IS NULL, IS NOT NULL)
-- IN é usado para verificar se existe dentro de um vetor (IN (1,2,3))
-  
 
 ### **COALESCE(Valor, Valor-caso-nulo)**
 
@@ -1464,6 +1470,21 @@ Corta na xth casa decimal, o padrão é x = 0 que trunca para inteiro
 
 Arredonda para baixo
 
+## **ORDER BY**
+
+```sql
+SELECT 
+  drug,
+  (total_sales - cogs) AS proft
+FROM 
+  pharmacy_sales
+ORDER BY  
+  proft DESC
+LIMIT 
+  3
+```
+
+Ordena o resultado do SELECT em ascendente ASC ou descendente DESC. Pode ser usado também com window functions para ordenar a janela do OVER()
 
 ## **DATE FUNCTIONS**
 
