@@ -90,7 +90,7 @@ Ambos aqui sao representados por 2 linhas tracejadas e o nome da relacao no meio
 
 Divisao em subclasses:
 
-- *Triângulo preto/preenchido* ->	Total, toda instância da superclasse obrigatoriamente cai em alguma subclasse (não pode "sobrar" instância sem categoria)
+- *Triângulo preto/preenchido* -> Total, toda instância da superclasse obrigatoriamente cai em alguma subclasse (não pode "sobrar" instância sem categoria)
 - *Triângulo vazado/contorno* -> Parcial, pode existir instância da superclasse que não pertence a nenhuma subclasse
 - *Com bolinha* -> Sobreposto, uma mesma instância pode pertencer a mais de uma subclasse simultaneamente
 - *Sem bolinha* -> Disjunto, as subclasses são mutuamente exclusivas; uma instância só pode estar em uma delas
@@ -106,7 +106,37 @@ Indicada em cada ponta do relacionamento, no formato *(mínimo, máximo)*:
 (0,*) → participação opcional, pode ter vários
 (1,*) → participação obrigatória, pelo menos um, pode ter vários
 
-### **Restricoes**
+Se uma classe A tem proximo dela um (1,*) significa que a outra classe B que tem relacionamento com ela tem no minimo uma instancia de A e no maximo varias.
 
+### **Restricoes de integridade espacial**
 
+#### **Para geocampos**
 
+- **R1:** Vale para todo geocampo, diz que para qualquer ponto no espaço deve existir um valor
+- **R2:** Isolinhas, diz que as linhas não se cruzam e o valor deve ser constante na linha (iso = igual)
+- **R3:** Tesselação, diz que é necessários celulas regulares que combrem toda a região
+- **R4:** Subdivisão planar, diz que os poligonos não tem interseção e combrem toda a area
+- **R5:** Malha triangular, diz que os valores do centro do triangulo serão interpolados pelos valores conhecidos nos 3 vértices
+
+#### **Para relacionamentos**
+
+- **R6:** Aresta e nó, todo nó tem pelo menos uma aresta; toda aresta liga exatamente dois nós
+- **R7:** Aresta e Aresta, toda aresta deve estar ligada a pelo menos um outra aresta
+
+#### **Agregação especial**
+
+- **R8:** Agregação espacial, cada parte contida no todo; o todo é coberto pela união das partes; as partes só se tocam ou são disjuntas entre si (nunca se sobrepõem).
+
+#### **Para geo-objetos**
+
+- **R9:** Linhas, não podem se autointerceptar (devem ser simples).
+- **R10:** Polígonos simples, contorno fechado, sem autointerseção.
+- **R11:** Regiões poligonais, validade de polígonos com buracos/múltiplas partes.
+
+#### **Topologia**
+
+- **RT**, garante que a instância realmente obedece ao tipo de relação espacial declarado no diagrama (ex.: se você modelou "Lote dentro de Quadra", o SGBD tem que impedir, via trigger, um lote que não esteja de fato dentro da quadra).
+
+#### **Como isso é garantido?**
+
+Na prática (implementação via AST-PostGIS), cada restrição vira um trigger no banco,  por isso a tabela de mapeamento lógico->físico associa cada tipo de classe/relacionamento espacial diretamente a um tipo de trigger específico (ast_line, ast_polygon, ast_node, etc., cada um já "carregando" as restrições que precisa checar).
