@@ -146,18 +146,21 @@ def find(P, T, alfabeto):
             matches.append(i - m + 1)  
     return matches
 ```
-**Complexidades:**
+#### **Complexidades**
 
 - **Pré-processamento (construir δ):** O(m³ · |Σ|) pois para cada estado m, exploramos |Σ| novos caracteres, comparando no maximo m prefixos (k) com o estado atual + novo caracter. Temos então m^2 * |Σ|, porém a comparação é O(m) então vira m^3 * |Σ|.
 
 - **Busca no texto:** O(n), sempre, sem exceção, cada caractere do texto é lido exatamente uma vez.
 
+- **Total:** O(m^3 * |Σ|)
+
 #### **Intuição**
 
+Primeiro passo é computar a tabela de transições que mapeia o estado atual + novo char lido para um novo estado.
 
 ### **KMP**
 
-A ideia do KMP é reduzir o fator |Σ| (alfabeto) e a complexidade no termo m. Para isso usa uma função:
+A ideia do KMP simular o automato simulando ele e reduzir o fator |Σ| (alfabeto) e a complexidade no termo m. Para isso usa uma função:
 
 - **Função prefixo:** π(q) = max{k < q | P[1..k] é sufixo de P[1..q]}. Dado o indice *q* do proprio padrão P, qual o maior prefixo do padrão que é sufixo do padrão P_q (padrão ate o indice q). Ou seja, não precisamos saber oq fazer para qualquer novo caractere, apenas para posições do proprio padrão. k tem que ser menor que q pois se for igual o maior prefixo é sempre ele mesmo.
 
@@ -189,29 +192,76 @@ def kmp_search(P, T):
     matched = 0  # estado atual (quantos caracteres do padrão já casaram)
     for i in range(n):
 
-        # enquanto o próximo caractere do padrão não bate com T[i], recua
+        # enquanto o próximo caractere do padrão não bate com T[i], olha o maior prefixo que ainda da para casar
         while matched > 0 and P[matched] != T[i]:  # matched = proximo a char do padrão a casar
             matched = pi[matched - 1] # matched - 1 = indice do ultimo char casado do padrão
 
         if P[matched] == T[i]:
             matched += 1
         if matched == m:
-            matches.append(i - m + 1)  # achou! posição inicial do match
-            matched = pi[matched - 1]  # continua procurando outras ocorrências
+            matches.append(i - m + 1)  # achou
+            matched = pi[matched - 1]  # continua procurando no maior prefixo que casa 
     return matches
 ```
-**Complexidade:** 
+#### **Complexidade** 
 
-- Pré-processamento: O(m)
-- Busca: O(n)
-- Total: O(n + m) 
+- **Pré-processamento:** O(m)
+- **Busca:** O(n)
+- **Total:** O(n + m) 
 
 #### **Intuição**
 
-Primeiro passo é computar a tabela pi de estados de tamanho *m* que é o tamanho do padrão. A entrada *q* dessa função/tabela varia de *0* a *m-1* e significa que já casei P[:q] valores do padrão pois *q* é o indice do final do prefixo já casado. Essa tabela (função prefixo) retorna o tamanho *k* < *q* do maior prefixo P[:k] que é sufixo do que eu já casei P[-q:]. Para o padrão "abca", q=0 significa que já casei 'a' e retorna 0, q=1 significa que já casei 'ab' e retorna 0, q=2 que já casei 'abc' e retorna 0 e q = 3 significa que já casei 'abcd' e retorna 1 pois o maior prefixo que casa é o 'a'.
+Primeiro passo é computar a tabela pi (função prefixo) de estados de tamanho *m* que é o tamanho do padrão. A entrada *q* dessa função/tabela varia de *0* a *m-1* e significa que já casei P[:q] valores do padrão pois *q* é o indice do final do prefixo já casado. Essa tabela (função prefixo) retorna o tamanho *k* < *q* do maior prefixo P[:k] que é sufixo do que eu já casei P[-q:]. Para o padrão "abca", q=0 significa que já casei 'a' e retorna 0, q=1 significa que já casei 'ab' e retorna 0, q=2 que já casei 'abc' e retorna 0 e q = 3 significa que já casei 'abcd' e retorna 1 pois o maior prefixo que casa é o 'a'.
 
 Uma vez que a tabela esta calculada, passamos no texto e para cada caractere T[*i*], verificamos o proximo caractere a ser casado P[*q*]. Se eles são iguais, casamos e incrementamos *matched* que aponta sempre para o proximo char do padrão que não casei. Se *matched* == *m* casamos o padrão inteiro e podemos armazenar o indice de onde a ocorrencia começou *(*i*-*m* + 1)* e mudamos *matched* para o valor do maior prefixo que é sufixo... ou seja, *pi*[matched-1]. Caso o proximo char do padrão não case o do texto então buscamos na tabela *pi* o tamanho do maior prefixo que da para reaproveitar e verificamos se ele casa com char do texto, se não repetimos o processo ate no pior caso começar o padrão do zero novamente.
 
 ### **Boyer-Moore-Horspool** 
+
+Diferente do autômato/KMP, que percorrem o texto da esquerda para a direita, o Boyer-Moore-Horspool compara o padrão com o texto da direita para a esquerda, e usa essa informação para dar saltos maiores que 1, pulando trechos do texto que certamente não vão casar.
+
+Para isso precisamos novamente de um pre processamento mas com objetivo diferente:
+
+```py
+def compute_shift_table(P):
+    m = len(P)
+    shift ={}
+
+    for i in range(m-1):
+        shift[P[i]] = m - i - 1 # distancia da ultima aparição no padrão para o ultimo indice do padrão
+
+    return shift
+```
+
+Depois podemos buscar o padrão no texto
+
+```py
+def horspool_search(P, T):
+    n, m = len(T), len(P)
+    shift = compute_shift_table(P)
+    matches = []
+    i = 0
+    while i <= n - m:
+        j = i + m - 1
+
+        while j >= 0 and T[i + j] == P[j]:
+            j -= 1
+        
+        if j < 0:
+            matches.append(i)
+            
+        shift.get(T[i + m - 1], m)
+
+    return matches
+```
+
+#### **Complexidade**
+
+- **Pré-processamento:** O(m)
+- **Busca:** O(n·m) no pior caso, mas O(n/m) no caso médio/prático, na prática é um dos algoritmos mais rápidos, especialmente para alfabetos grandes, porque os saltos costumam ser grandes. Pior caso com texto = "aaaaaaaaa...a" e padrão = "baaaa", da passos de tamanho 1 e sempre compara m-1 antes de pular.
+- **Total:** O(n·m)
+
+#### **Intuição**
+
+
 
 ### **Shift-And**
