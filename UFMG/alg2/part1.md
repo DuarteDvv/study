@@ -152,6 +152,9 @@ def find(P, T, alfabeto):
 
 - **Busca no texto:** O(n), sempre, sem exceção, cada caractere do texto é lido exatamente uma vez.
 
+#### **Intuição**
+
+
 ### **KMP**
 
 A ideia do KMP é reduzir o fator |Σ| (alfabeto) e a complexidade no termo m. Para isso usa uma função:
@@ -183,17 +186,18 @@ def kmp_search(P, T):
     n, m = len(T), len(P)
     pi = compute_prefix_function(P)
     matches = []
-    q = 0  # estado atual (quantos caracteres do padrão já casaram)
+    matched = 0  # estado atual (quantos caracteres do padrão já casaram)
     for i in range(n):
-        # enquanto o próximo caractere do padrão não bate com T[i], recua
-        while q > 0 and P[q] != T[i]:
-            q = pi[q - 1]
 
-        if P[q] == T[i]:
-            q += 1
-        if q == m:
+        # enquanto o próximo caractere do padrão não bate com T[i], recua
+        while matched > 0 and P[matched] != T[i]:  # matched = proximo a char do padrão a casar
+            matched = pi[matched - 1] # matched - 1 = indice do ultimo char casado do padrão
+
+        if P[matched] == T[i]:
+            matched += 1
+        if matched == m:
             matches.append(i - m + 1)  # achou! posição inicial do match
-            q = pi[q - 1]  # continua procurando outras ocorrências
+            matched = pi[matched - 1]  # continua procurando outras ocorrências
     return matches
 ```
 **Complexidade:** 
@@ -202,6 +206,11 @@ def kmp_search(P, T):
 - Busca: O(n)
 - Total: O(n + m) 
 
+#### **Intuição**
+
+Primeiro passo é computar a tabela pi de estados de tamanho *m* que é o tamanho do padrão. A entrada *q* dessa função/tabela varia de *0* a *m-1* e significa que já casei P[:q] valores do padrão pois *q* é o indice do final do prefixo já casado. Essa tabela (função prefixo) retorna o tamanho *k* < *q* do maior prefixo P[:k] que é sufixo do que eu já casei P[-q:]. Para o padrão "abca", q=0 significa que já casei 'a' e retorna 0, q=1 significa que já casei 'ab' e retorna 0, q=2 que já casei 'abc' e retorna 0 e q = 3 significa que já casei 'abcd' e retorna 1 pois o maior prefixo que casa é o 'a'.
+
+Uma vez que a tabela esta calculada, passamos no texto e para cada caractere T[*i*], verificamos o proximo caractere a ser casado P[*q*]. Se eles são iguais, casamos e incrementamos *matched* que aponta sempre para o proximo char do padrão que não casei. Se *matched* == *m* casamos o padrão inteiro e podemos armazenar o indice de onde a ocorrencia começou *(*i*-*m* + 1)* e mudamos *matched* para o valor do maior prefixo que é sufixo... ou seja, *pi*[matched-1]. Caso o proximo char do padrão não case o do texto então buscamos na tabela *pi* o tamanho do maior prefixo que da para reaproveitar e verificamos se ele casa com char do texto, se não repetimos o processo ate no pior caso começar o padrão do zero novamente.
 
 ### **Boyer-Moore-Horspool** 
 
