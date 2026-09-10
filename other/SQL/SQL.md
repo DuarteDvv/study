@@ -1381,6 +1381,34 @@ ORDER BY
 
 Calcula a média do grupo. Ignora nulos.
 
+```sql
+WITH 
+
+ranked_fare AS (
+  SELECT 
+    driver_id,
+    fare_amount,
+    DENSE_RANK() OVER(
+      PARTITION BY driver_id
+      ORDER BY fare_amount DESC, ride_date DESC
+    ) AS fare_rank,
+    AVG(fare_amount) OVER(
+      PARTITION BY driver_id
+    ) AS driver_avg
+  FROM
+    rides
+)
+
+SELECT 
+  driver_id,
+  fare_amount AS second_highest,
+  driver_avg 
+FROM 
+  ranked_fare
+WHERE 
+  fare_rank = 2 AND fare_amount > driver_avg  
+```
+
 #### **MIN() e MAX()**
 
 Retorna o min ou max do grupo
