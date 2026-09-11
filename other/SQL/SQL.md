@@ -1516,6 +1516,45 @@ Ordena o resultado do SELECT em ascendente ASC ou descendente DESC. Pode ser usa
 
 ## **DATE FUNCTIONS**
 
+### **AT TIME ZONE** 
+
+Converte um timestampz (timestamp com timezone) para outro timestampz com timezone definida. Entretanto se a entrada for um timestamp sem timezone (sem o z), usar essa funcao apenas rotula o timestamp bruto como timestampz na timezone escolhida. O uso é *[timestampz] AT TIME ZONE 'nome da timezone nova'*
+
+```sql
+WITH 
+
+deduplicated_trips AS (
+  SELECT DISTINCT
+    *
+  FROM 
+    trips
+  WHERE 
+    fare_amount IS NOT NULL AND 
+    status = 'completed' AND 
+    DATE_TRUNC('year', trip_timestamp_utc AT TIME ZONE 'UTC' AT TIME ZONE 'America/Sao_Paulo') = '2026-01-01'
+),
+
+fare_by_driver AS (
+  SELECT 
+    driver_id,
+    SUM(fare_amount) AS total_earned
+  FROM 
+    deduplicated_trips
+  GROUP BY 
+    driver_id
+  ORDER BY 
+    total_earned DESC
+)
+
+SELECT 
+  *
+FROM 
+  fare_by_driver
+LIMIT 1
+
+```
+
+
 ### **DATE_TRUNC(Unidade, data)**
 
 Trunca a data mantendo apenas informacoes maiores que a unidade, por exemplo:
