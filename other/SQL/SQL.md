@@ -366,6 +366,34 @@ CASE WHEN condição1 THEN oq-fazer1 WHEN condição2 THEN oq-fazer2 ELSE oq-faz
 Além disso, não funciona apenas em agregações mas para linhas normais tbm.
 
 ```sql
+WITH 
+
+counts AS (
+SELECT 
+  city,
+  COUNT(ride_id) as total_rides,
+  COUNT(
+    CASE 
+      WHEN rating = 5 THEN ride_id
+      ELSE NULL
+    END
+  ) AS five_star_rides
+FROM 
+  rides
+GROUP BY
+  city
+)
+
+SELECT 
+  *,
+  ROUND(
+    100.0 * (five_star_rides::DECIMAL / total_rides)
+  ,1) AS pct_five_star
+FROM 
+  counts
+```
+
+```sql
 SELECT 
   SUM(CASE WHEN v.device_type = 'laptop' THEN 1 ELSE 0 END) AS laptop_views,
   SUM(CASE WHEN v.device_type = 'phone' OR v.device_type = 'tablet' THEN 1 ELSE 0 END) AS mobile_views
@@ -1520,6 +1548,29 @@ Ordena o resultado do SELECT em ascendente ASC ou descendente DESC. Pode ser usa
 
 Converte um timestampz (timestamp com timezone) para outro timestampz com timezone definida. Entretanto se a entrada for um timestamp sem timezone (sem o z), usar essa funcao apenas rotula o timestamp bruto como timestampz na timezone escolhida. O uso é *[timestampz] AT TIME ZONE 'nome da timezone nova'*
 
+```sql 
+WITH 
+
+deduplicated_trips AS (
+  SELECT DISTINCT
+    *
+  FROM 
+    trips AS t INNER JOIN cities AS c ON t.city_id = c.city_id
+  WHERE 
+    status = 'completed' AND 
+    city_name = 'San Francisco' AND 
+    DATE_TRUNC('year' ,trip_timestamp_utc AT TIME ZONE 'UTC' AT TIME ZONE timezone) = '2024-01-01'
+)
+
+SELECT 
+  TO_CHAR(trip_timestamp_utc AT TIME ZONE 'UTC' AT TIME ZONE timezone, 'Mon'),
+  COUNT(trip_id)
+FROM 
+  deduplicated_trips
+GROUP BY
+  TO_CHAR(trip_timestamp_utc AT TIME ZONE 'UTC' AT TIME ZONE timezone, 'Mon')
+```
+
 ```sql
 WITH 
 
@@ -1635,9 +1686,9 @@ WHERE
 
 ```
 
-### **DATEDIFF(Unidade, data1, data2)**
+### **DATEDIFF(Unidade, start_date, end_date)**
 
-Retorna a diferenca entre 2 datas ou timestamps em uma unidade como days, hours, minutes e etc
+Retorna a diferenca entre 2 datas ou timestamps em uma unidade como days, hours, minutes e etc. end_date > start_date pois é computado como end_date - start_date
 
 ```sql
 SELECT 
@@ -1652,6 +1703,40 @@ HAVING
   AVG(DATEDIFF('minutes', pickup_time, dropoff_time)) > 15
 ORDER BY 
   month ASC;
+```
+
+```sql 
+WITH 
+
+last_rides AS (
+SELECT
+  rider_id,
+  ride_date,
+  ROW_NUMBER() OVER(
+    PARTITION BY 
+      rider_id
+    ORDER BY
+      ride_date ASC 
+  ) AS rnk,
+  LAG(ride_date,1) OVER(
+    PARTITION BY 
+      rider_id
+    ORDER BY
+      ride_date ASC 
+  ) AS last_ride_date
+FROM
+  rides
+)
+
+SELECT 
+  rider_id,
+  ride_date AS second_date,
+  last_ride_date AS first_date,
+  DATEDIFF('day', last_ride_date, ride_date) AS day_since_first_ride
+FROM 
+  last_rides
+WHERE 
+  rnk = 2
 ```
 
 
