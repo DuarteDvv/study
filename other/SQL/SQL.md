@@ -366,6 +366,18 @@ CASE WHEN condição1 THEN oq-fazer1 WHEN condição2 THEN oq-fazer2 ELSE oq-faz
 Além disso, não funciona apenas em agregações mas para linhas normais tbm.
 
 ```sql
+SELECT
+  DATE_TRUNC('month', ride_date) AS month,
+  COALESCE(AVG(CASE WHEN city = 'Sao Paulo' THEN fare_amount END), 0) AS sao_paulo,
+  COALESCE(AVG(CASE WHEN city = 'Rio de Janeiro' THEN fare_amount END), 0) AS rio_de_janeiro,
+  COALESCE(AVG(CASE WHEN city = 'Belo Horizonte' THEN fare_amount END), 0) AS belo_horizonte,
+  COALESCE(AVG(CASE WHEN city = 'Curitiba' THEN fare_amount END), 0) AS curitiba
+FROM rides
+GROUP BY DATE_TRUNC('month', ride_date)
+ORDER BY month;
+```
+
+```sql
 WITH 
 
 counts AS (
