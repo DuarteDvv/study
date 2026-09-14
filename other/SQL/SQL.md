@@ -1868,6 +1868,80 @@ ORDER BY
   trip_num DESC;
 ```
 
+```sql
+WITH 
+
+refund_tickets AS (
+    SELECT
+        t.ticket_id,
+        t.rider_id,
+        t.created_at,
+        LAG(t.created_at) OVER (
+            PARTITION BY t.rider_id
+            ORDER BY t.created_at, t.ticket_id
+        ) AS previous_created_at
+    FROM support_tickets AS t
+    WHERE
+        LOWER(t.subject) LIKE '%refund%'
+        AND t.created_at >= '2026-01-01'
+        AND t.created_at < '2027-01-01'
+),
+
+rider_stats AS (
+    SELECT
+        rider_id,
+        COUNT(*) AS refund_ticket_count,
+        COUNT(DISTINCT DATE_TRUNC('day', created_at)) AS distinct_contact_days,
+        AVG(
+            DATEDIFF(
+                'day',
+                previous_created_at,
+                created_at
+            )
+        ) AS avg_days_between_tickets
+    FROM refund_tickets
+    GROUP BY rider_id
+    HAVING
+        COUNT(*) >= 3 AND 
+        COUNT(DISTINCT DATE_TRUNC('day', created_at)) >= 2
+),
+
+ranked_riders AS (
+    SELECT
+        r.city,
+        r.rider_id,
+        CONCAT(r.first_name, ' ', r.last_name) AS rider_name,
+        rs.refund_ticket_count,
+        rs.distinct_contact_days,
+        rs.avg_days_between_tickets,
+
+        ROW_NUMBER() OVER (
+            PARTITION BY r.city
+            ORDER BY
+                rs.refund_ticket_count DESC,
+                rs.distinct_contact_days DESC,
+                r.rider_id ASC
+        ) AS city_rank
+
+    FROM rider_stats AS rs
+    INNER JOIN riders AS r
+        ON rs.rider_id = r.rider_id
+)
+
+SELECT
+    city,
+    rider_name,
+    refund_ticket_count,
+    distinct_contact_days,
+    avg_days_between_tickets,
+    city_rank
+FROM ranked_riders
+WHERE city_rank <= 3
+ORDER BY
+    city ASC,
+    city_rank ASC;
+```
+
 ### **LOWER / UPPER**
 
 Converte string para totalmente minuscula ou maiuscula 
