@@ -156,7 +156,7 @@ def find(P, T, alfabeto):
 
 #### **Intuição**
 
-Primeiro passo é computar a tabela de transições que mapeia o estado atual + novo char lido para um novo estado.
+Primeiro passo é computar a tabela de transições que mapeia o estado atual + novo char lido para um novo estado (dado que estado é quantos caracteres do padrao ja casamos). A construcao dessa tabela tem complexidade m^3 * alfabeto e após ser construida passamos linearmente no texto T e atualizamos o estado atual com os novos caracteres lidos do texto, se chegarmos ao estado final (estado = tamanho do padrao) entao ja casamos todo o padrao e podemos salvar uma aparicao.
 
 ### **KMP**
 
