@@ -468,3 +468,30 @@ e parte da vantagem diminui.
 # **Estruturas de dados para casamento de padrões**
 
 ## **Trie (Arvore de prefixo)**
+
+Uma arvore M-nária, ou seja, cada nó pode ter ate M filhos em que esses filhos podem ser qualquer digito/char de um alfabeto. Palavras de um texto/conteudo são adicionadas sequencialmente na arvore (ordens diferentes geram arvores diferentes) em que cada cada nó dessa arvore é um caractere dessas palavras. Uma consequencia disso é que todas as palavras de uma mesma subarvore compartilham o mesmo prefixo. Elas são uteis para indices invertidos, autocomplete e geração de itemsets frequentes em mineração de dados (fp_growth). Cada nó dessa arvore guarda um valor que representa quantas vezes uma palavra terminada nesse nó aparece.
+
+### **Busca**
+
+Iniciamos a busca pela raiz (que não possui um char) e vamos descendo na arvore usando o i-esimo char do chave que estamos buscando. Existem 3 casos possiveis:
+
+- Algum simbolo da chave (nó) não existe (chave não existe na arvore) -> False
+- Os simbolos da chave (nó) existem mas o valor associado ao ultimo nó é 0 (A palavra nunca foi adicionada na arvore) -> False
+- Os simbolos da chave (nó) existem e o valor é maior que 0 (palavra ja foi adicionada) -> True
+
+### **Inserção**
+
+Fazemos uma busca (igual a anterior) adicionando os simbolos da esquerda para direita.
+
+- Se durante a busca chegar um momento em que não existe nós na arvore para o simbolo atual, criar o nó, repetir a criação de nó até chegar ao simbolo final e incrementar o valor do final.
+- Se todo os simbolos da chave já estiverem na arvore, incrementamos o valor do nó do ultimo simbolo (ou adicionamos alguma coisa nele como documentos e etc)
+
+### **Remoção**
+
+
+
+## **Trie Ternária**
+
+## **Trie Compacta**
+
+## **Arvore de sufixo**
