@@ -488,9 +488,20 @@ Fazemos uma busca (igual a anterior) adicionando os simbolos da esquerda para di
 
 ### **Remoção**
 
+Buscamos a chave que queremos remover ate chegar no ultimo nó dela
+
+- Se nó final tem filhos, apenas reduz o contador e apaga os valores
+- Se o nó não tiver filhos, apaga e repete recursivamente
+
+
+### **Tradeoff espaço x tempo**
+
+Trie tem um otimo desempenho em tempo mas custo de armazenamento depende do numero de palavras e tamanho do alfabeto e pode se tornar muito cara para alfabetos e palavras muito longas.
 
 
 ## **Trie Ternária**
+
+Para tentar mitigar o problema de memória na Trie ternária cada nó tem apenas 3 filhos 
 
 ## **Trie Compacta**
 

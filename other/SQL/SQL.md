@@ -1556,6 +1556,13 @@ Ordena o resultado do SELECT em ascendente ASC ou descendente DESC. Pode ser usa
 
 ## **DATE FUNCTIONS**
 
+### **MIN/MAX/DESC/ASC em datas**
+
+MIN -> data mais antiga / menor data
+MAX -> data mais nova / maior data
+DESC -> do mais recente para o mais antigo 
+ASC -> do mais antigo ao mais recente
+
 ### **AT TIME ZONE** 
 
 Converte um timestampz (timestamp com timezone) para outro timestampz com timezone definida. Entretanto se a entrada for um timestamp sem timezone (sem o z), usar essa funcao apenas rotula o timestamp bruto como timestampz na timezone escolhida. O uso é *[timestampz] AT TIME ZONE 'nome da timezone nova'*
