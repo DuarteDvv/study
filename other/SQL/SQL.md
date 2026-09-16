@@ -104,6 +104,32 @@ FROM
   JOIN phone_info AS r_inf ON pc.receiver_id = r_inf.caller_id
 ```
 
+```sql
+WITH
+
+qualified_users AS (
+  SELECT 
+    o.user_id,
+    SUM(o.amount) AS total
+  FROM 
+    orders AS o 
+  WHERE 
+    EXTRACT(YEAR FROM o.order_date) = 2026 AND 
+    o.status = 'completed'
+  GROUP BY 
+    o.user_id
+  HAVING
+    COUNT(*) >= 2
+)
+
+SELECT 
+  city,
+  COUNT(user_id) AS total_users,
+  AVG(total) AS avg_total
+FROM users AS u INNER JOIN qualified_users AS q ON u.user_id = q.user_id
+GROUP BY city
+```
+
 ### **SELF JOIN**
 
 Faz join de uma tabela com ela mesma. È util para comparar coisas dentro da mesma tabela (como tipos diferentes de funcioários).
@@ -197,6 +223,83 @@ FROM
 GROUP BY
   d.driver_id,
   d.driver_name
+```
+
+```sql
+WITH converted_users AS (
+    SELECT DISTINCT
+        o.user_id
+    FROM orders AS o
+    WHERE
+        o.status = 'completed' AND
+        EXTRACT(YEAR FROM o.order_date) = 2026
+)
+
+SELECT
+    u.city,
+    COUNT(*) AS total_users,
+    COUNT(c.user_id) AS users_with_orders,
+    COUNT(*) - COUNT(c.user_id) AS users_without_orders,
+    COUNT(c.user_id)::DECIMAL / COUNT(*) AS conversion_rate
+FROM users AS u
+LEFT JOIN converted_users AS c
+    ON u.user_id = c.user_id
+WHERE
+    EXTRACT(YEAR FROM u.signup_date) = 2026
+GROUP BY
+    u.city;
+```
+
+```sql
+WITH 
+
+c_drivers AS (
+  SELECT 
+    * 
+  FROM 
+    drivers
+  WHERE 
+    signup_date < '2026-09-01'
+),
+
+active_drivers AS (
+  SELECT 
+    driver_id,
+    SUM(t.fare)
+  FROM  
+    c_drivers as c INNER JOIN trips AS t ON c.driver_id = t.driver_id
+  WHERE 
+    t.status = 'completed' AND
+    DATE_TRUNC('month', t.trip_date) = '2026-08-01'
+  GROUP BY 
+    driver_id
+  HAVING 
+    COUNT(*) >= 2
+),
+
+driver_status AS (
+    SELECT
+        c.driver_id,
+        c.city,
+        a.total_revenue,
+        CASE
+            WHEN a.driver_id IS NOT NULL THEN 1
+            ELSE 0
+        END AS is_active
+    FROM c_drivers AS c
+    LEFT JOIN active_drivers AS a
+        ON c.driver_id = a.driver_id
+)
+
+SELECT
+    city,
+    COUNT(*) AS total_drivers,
+    SUM(is_active) AS active_drivers,
+    COUNT(*) - SUM(is_active) AS inactive_drivers,
+    AVG(total_revenue) AS avg_revenue_per_active_driver
+FROM driver_status
+GROUP BY city;
+
 ```
 
 ### **RIGHT JOIN**

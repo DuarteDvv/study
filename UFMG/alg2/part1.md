@@ -479,12 +479,16 @@ Iniciamos a busca pela raiz (que não possui um char) e vamos descendo na arvore
 - Os simbolos da chave (nó) existem mas o valor associado ao ultimo nó é 0 (A palavra nunca foi adicionada na arvore) -> False
 - Os simbolos da chave (nó) existem e o valor é maior que 0 (palavra ja foi adicionada) -> True
 
+*Complexidade de tempo:* O(m) sendo m o tamanho da chave
+
 ### **Inserção**
 
 Fazemos uma busca (igual a anterior) adicionando os simbolos da esquerda para direita.
 
 - Se durante a busca chegar um momento em que não existe nós na arvore para o simbolo atual, criar o nó, repetir a criação de nó até chegar ao simbolo final e incrementar o valor do final.
 - Se todo os simbolos da chave já estiverem na arvore, incrementamos o valor do nó do ultimo simbolo (ou adicionamos alguma coisa nele como documentos e etc)
+
+*Complexidade de tempo:* O(m) sendo m o tamanho da chave
 
 ### **Remoção**
 
@@ -493,16 +497,120 @@ Buscamos a chave que queremos remover ate chegar no ultimo nó dela
 - Se nó final tem filhos, apenas reduz o contador e apaga os valores
 - Se o nó não tiver filhos, apaga e repete recursivamente
 
+*Complexidade de tempo:* O(m) sendo m o tamanho da chave
 
 ### **Tradeoff espaço x tempo**
 
 Trie tem um otimo desempenho em tempo mas custo de armazenamento depende do numero de palavras e tamanho do alfabeto e pode se tornar muito cara para alfabetos e palavras muito longas.
 
+*Complexidade de espaço:* O(N * alfabeto) pois cada um dos N nós da arvore temos que armazenar *alfabeto* ponteiros (pois cada nó pode ter alfabeto ponteiros)
 
 ## **Trie Ternária**
 
-Para tentar mitigar o problema de memória na Trie ternária cada nó tem apenas 3 filhos 
+Para tentar mitigar o problema de memória na Trie ternária cada nó tem apenas 3 filhos em que:
+
+- **left_children:** se o simbolo procurado atualmente é menor alfabeticamente que o simbolo pai
+- **mid_children:** se o simbolo procurado é exatamente o simbolo do nó pai
+- **right_children:** se o simbolo procurado atualmente é maior alfabeticamente que o simbolo pai
+
+### **Busca**
+
+Passamos pela chave da esquerda para direita e para cada simbolo:
+
+- se o *simbolo* é menor que o nó atual -> vai para a esquerda
+- se o *simbolo* é igual que o nó atual -> vai para o meio
+- se o *simbolo* é maior que o nó atual -> vai para a direita 
+- se nó não não existe ou valor é nulo -> False
+
+*Complexidade de tempo:* O(m + log N)
+
+### **Inserção**
+
+- Busca a chave na arvore
+- Ao encontrar nós nulos insere
+- Ao inserir o último símbolo, marcamos o nó como fim da chave
+
+*Complexidade de tempo:* *O(m + log N)*
+
+### **Memória**
+
+*O(N)* pois cada nó tem apenas 3 ponteiros (constante) em cada um dos N nós
 
 ## **Trie Compacta**
 
-## **Arvore de sufixo**
+Aqui ataca o problema de forma diferente em que condensamos varios nós em um unico criando nós de prefixos inteiros. Nessa formulação apenas nós de folha armazenam valores/itens e o restante serve para acelerar a busca. Para a Trie compacta é melhor imaginar que toda palavra/chave é igual a ela mesmo concatenada com um simbolo terminal $, ou seja, "water" -> "water$".
+
+### **Busca**
+
+- Vamos casando os prefixo da chave com os nós
+- Se chegar em uma folha e ainda existe simbolos na chave -> False
+- Se chegar em uma folha e chave já foi toda processada, achou -> True
+
+### **Inserção**
+
+- Se a árvore estiver vazia, criamos um nó folha contendo toda a chave. 
+- Caso contrário, buscamos a chave comparando o restante dela com o prefixo dos nós.
+- Durante a busca:
+
+    - **Prefixo inteiro do nó casa com o início da chave restante** → avançamos para esse nó e continuamos a busca com o restante da chave.
+
+    - **Nenhum filho compartilha prefixo com a chave restante** → criamos um novo nó folha contendo todo o restante da chave.
+
+    - **Apenas parte do prefixo do nó casa com a chave restante** → dividimos o nó:
+
+        - criamos um nó interno com o maior prefixo comum;
+        - alteramos o prefixo do nó antigo para seu sufixo restante e o colocamos como filho;
+        - criamos outro nó folha com o sufixo restante da nova chave.
+
+    - **A chave termina no meio do prefixo de um nó** → dividimos o nó no ponto onde a chave termina:
+
+        - criamos um nó interno com o prefixo comum;
+        - o nó antigo passa a armazenar apenas seu sufixo restante;
+        - criamos uma folha terminal para representar o fim da nova chave.
+
+### **Remoção**
+
+- Buscar nó contendo a chave
+- se o nó não for nulo, remove
+- se o pai desse nó ficar com apenas 1 filho, concatena prefixo do pai e filho e remove o filho 
+
+### **Memória**
+
+Reduz bastante o numero de nós mas ao custo de se armazenar mais coisas em cada nó... um jeito de mitigar isso é dado que as palavras estão em um vetor ou outra estrutura, podemos armazenar os indices para essa estrutura na trie.
+
+## **Árvore de Sufixos**
+
+Uma árvore de sufixos (Suffix Tree) é uma **Trie compactada contendo todos os sufixos de um texto `T`**.A ideia vem do fato de que um padrão `P` ocorre em `T` se, e somente se, `P` é prefixo de algum sufixo de `T`.
+
+Por exemplo, para:
+
+```text
+T = banana$
+```
+
+inserimos conceitualmente os sufixos:
+
+```text
+banana$
+anana$
+nana$
+ana$
+na$
+a$
+$
+```
+
+Depois compactamos caminhos com apenas um filho, armazenando substrings inteiras nas arestas em vez de um caractere por aresta. Para buscar um padrão `P`, percorremos a árvore consumindo seus caracteres. Se conseguirmos consumir todo `P`, então ele ocorre em `T`.
+
+### **Complexidade**
+
+Se \(n = |T|\) e \(m = |P|\):
+
+* **Construção ingênua:** \(O(n^2)\) 
+* **Construção com algoritmos como Ukkonen:** \(O(n)\), sob hipóteses apropriadas
+* **Espaço da Suffix Tree:** \(O(n)\) -> um nó para cada sufixo (seria O(n^2) com a normal)
+* **Busca do padrão:** \(O(m)\)
+
+O pré-processamento pode valer a pena quando o texto permanece fixo e queremos realizar **muitas consultas de padrões diferentes**, pois construímos a estrutura uma vez e cada busca posterior depende essencialmente apenas do tamanho do padrão.
+
+# **Geometria Computacional**
