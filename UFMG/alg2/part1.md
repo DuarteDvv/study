@@ -614,3 +614,62 @@ Se \(n = |T|\) e \(m = |P|\):
 O pré-processamento pode valer a pena quando o texto permanece fixo e queremos realizar **muitas consultas de padrões diferentes**, pois construímos a estrutura uma vez e cada busca posterior depende essencialmente apenas do tamanho do padrão.
 
 # **Geometria Computacional**
+
+Ramo da computação que estuda soluções algorítmicas para problemas geométricos
+
+## **Operações com seguimentos de reta**
+
+Dado seguimentos de retas (vetores) definidos por seus pontos das extremidades, ou seja, p0p1 é uma reta que vai do ponto p0 ao p1. Todas as operações que aqui tem complexidade de O(1).
+
+### **Orientação/Direção de um seguimento em relação a outro**
+
+Se temos 2 seguimentos de reta de mesma origem, por exemplo, a = p0p1 e b = p0p2 como sabemos se *a* esta a direita ou esquerda de *b*, *a* esta no sentido horario de *b* ou antihorario ?
+
+A ideia aqui é o usar o produto vetorial a x b que é equivalente a area do paralelograma entre esses vetores para descobrir a direção de b em relação a a, esse produto vetorial pode ser calculado como o determinante da matriz desses 2 vetores. Lembrando que (a x b) = - (b x a).
+
+- Se o determinante é *positivo*, então b esta a *esquerda* de a, ou seja, sentido antihorario 
+- Se o determinante é *negativo*, então b esta a *direita* de a, ou seja, sentido horario
+- Se o determinante é *0*, então b e a são *colineares* (mesma reta)
+
+### **Detectar mudança de direção da rota**
+
+Dado uma rota composta por 3 pontos p0 -> p1 -> p2, no ponto p1 queremos saber se vamos virar a esquerda, direita ou continuar reto. Isso converge para exatamente o problema anterior, só precisamos considerar os 2 vetores p0p2 e p0p1 e o determinante responderá as mesmas perguntas.
+
+### **Determinar se dois seguimentos se interceptam**
+
+Considerando 2 seguimentos p0p1 e p2p3, eles vão se interceptar se as extremidades desses segmentos tiverem direções opostas, ou seja, p0 esta a direita de p2 e p1 esta a esquerda de p3, então existe uma interceptação. Entretanto se alguma das 4 orientações der 0 então significa que um ponto esta na mesma reta mas não necessáriamente no mesmo segmento de reta (segmento é um subconjunto da reta), se isso acontecer é necessário verificar o ponto e as extremidades do segmento para er se existe ou não interseção.
+
+## **Alguns problemas relacionados**
+
+### **Determinar se há interseção de segmentos em um conjunto de segmentos**
+
+Assumindo que:
+- Três segmentos não se interceptam em um único ponto
+- Não há segmentos puramente verticais
+
+O algoritmo é:
+
+1. Ordene todos os pontos das extremidades dos segmentos por x 
+2. Passe por todas as coordenadas x dos pontos ordenados da esquerda para a direita 
+3. Mantenha os segmentos ativos ordenados por y (O seguimento é ativo se a coordenada x atual é >= a menor coordenada x do seguimento e <= que a maior)
+4. Ao inserir um segmento (chegamos em um x que inclui os limites do seguimento), teste interseção com seus vizinhos (vizinhos da ordenação por y, ou seja, o ponto maior que o atual e o menor)
+5. Ao remover um segmento, teste os dois vizinhos que ficaram juntos
+6. Se algum teste detectar interseção retorne True
+	​
+A complexidade da abordagem ingenua é quadratica pois precisamos testar interseção de todos os pontos com todos os outros. Essa abordagem, usando uma arvore binária balanceada por exemplo tem complexidade O(nlogn) devido as inserções e remoções em logn.
+
+### **Determinar se um ponto está dentro de um polígono**
+
+A ideia aqui é bem simples:
+
+- Dado um ponto p, criamos uma reta apartir dele em qualquer direção
+- Contamos quantas vezes essa reta cruza uma aresta do poligono:
+    - par -> p esta fora
+    - impar -> p esta dentro
+	​
+## **Problema da envoltoria convexa**
+
+Consiste em encontrar o menor polígono (estritamente) convexo (todos os angulos internos menores que π) que contenha um conjunto de pontos P. Dessa forma, se H é a envoltória convexa de P, todo ponto de P está dentro ou na borda de H. A saida é um subconjunto de P que são os vértices do resultado.
+
+### **Varredura de Graham**
+
