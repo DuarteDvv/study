@@ -1201,55 +1201,55 @@ FROM
 O LAG() acessa o valor de uma única célula localizada exatamente $k$ linhas acima (atrás) da linha atual, considerando a ordem definida na janela do OVER(). Caso não exista retorna o valor padrão ou nulo por padrão. Olha para linhas que tem rank < que o rank da linha atual.
 
 ```sql
-WITH tweets_window AS (
-  SELECT 
-    t.user_id,
-    t.tweet_date,
-    t.tweet_count AS hoje,
-    LAG(t.tweet_count, 1) OVER (PARTITION BY t.user_id ORDER BY t.tweet_date) AS ontem, 
-    LAG(t.tweet_count, 2) OVER (PARTITION BY t.user_id ORDER BY t.tweet_date) AS anteontem
-  FROM tweets AS t
+WITH daily_tweets AS (
+    SELECT user_id, tweet_date, COUNT(tweet_id) AS tweet_count
+    FROM tweets
+    GROUP BY user_id, tweet_date
 )
-
-SELECT
-  user_id,
-  tweet_date, 
-  ROUND(
-    1.0 * (hoje + COALESCE(ontem, 0) + COALESCE(anteontem, 0))
-    / 
-    (
-      1.0 + 
-      CASE WHEN ontem IS NULL THEN 0 ELSE 1 END +
-      CASE WHEN anteontem IS NULL THEN 0 ELSE 1 END
-    )
-  , 2) AS rolling_avg_3d
-FROM 
-  tweets_window;
+SELECT 
+    user_id, 
+    tweet_date, 
+    ROUND(
+        AVG(tweet_count) OVER (
+            PARTITION BY user_id 
+            ORDER BY tweet_date ASC 
+            ROWS BETWEEN 2 PRECEDING AND CURRENT ROW
+        ), 2
+    ) AS rolling_avg_3d 
+FROM daily_tweets;
 ```
 ```sql
-WITH 
+WITH daily_transactions AS (
+    SELECT DISTINCT
+        user_id,
+        transaction_date::DATE AS transaction_date
+    FROM transactions
+),
 
-num_transactions AS (
-  SELECT
-    *,
-    LAG(transaction_date,1) OVER(PARTITION BY user_id ORDER BY transaction_date) AS last,
-    LAG(transaction_date,2) OVER(PARTITION BY user_id ORDER BY transaction_date) AS second_last
-  FROM 
-    transactions
+with_lags AS (
+    SELECT
+        user_id,
+        transaction_date,
+
+        LAG(transaction_date, 1) OVER (
+            PARTITION BY user_id
+            ORDER BY transaction_date
+        ) AS prev_day,
+
+        LAG(transaction_date, 2) OVER (
+            PARTITION BY user_id
+            ORDER BY transaction_date
+        ) AS two_days_ago
+
+    FROM daily_transactions
 )
 
-
 SELECT DISTINCT
-  user_id 
-FROM 
-  num_transactions
-WHERE 
-  last IS NOT NULL AND 
-  second_last IS NOT NULL AND
-  second_last::DATE = last::DATE - 1 AND
-  last::DATE = transaction_date::DATE - 1
-ORDER BY
-  user_id ASC
+    user_id
+FROM with_lags
+WHERE
+    prev_day = transaction_date - 1
+    AND two_days_ago = transaction_date - 2;
 ```
 
 
@@ -1339,31 +1339,38 @@ GROUP BY
 ```
 
 ```sql
-WITH 
+WITH product_totals AS (
+    SELECT
+        category,
+        product,
+        SUM(spend) AS total_spend
+    FROM product_spend
+    WHERE
+        transaction_date >= '2022-01-01'
+        AND transaction_date < '2023-01-01'
+    GROUP BY
+        category,
+        product
+),
 
-q AS (SELECT 
-  ps.category,
-  ps.product,
-  SUM(ps.spend) AS total_spend,
-  ROW_NUMBER() OVER (PARTITION BY ps.category ORDER BY SUM(ps.spend) DESC) AS row_n
-FROM
-  product_spend AS ps
-WHERE 
-  ps.transaction_date < '2023-01-01' AND 
-  ps.transaction_date >= '2022-01-01'
-GROUP BY 
-  ps.category,
-  ps.product
+ranked_products AS (
+    SELECT
+        category,
+        product,
+        total_spend,
+        ROW_NUMBER() OVER (
+            PARTITION BY category
+            ORDER BY total_spend DESC
+        ) AS row_n
+    FROM product_totals
 )
 
 SELECT
-  category,
-  product,
-  total_spend
-FROM 
-  q 
-WHERE 
-  row_n = 1 OR row_n = 2
+    category,
+    product,
+    total_spend
+FROM ranked_products
+WHERE row_n <= 2;
 ```
 
 ```sql
