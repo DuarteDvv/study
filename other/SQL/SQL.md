@@ -146,6 +146,20 @@ WHERE
   e.salary > m.salary;  
 ```        
 
+```sql
+SELECT 
+    e.employee_name,
+    e.salary AS employee_salary,
+    m.employee_name AS manager_name,
+    m.salary AS manager_salary,
+    e.department
+FROM employees AS e
+INNER JOIN employees AS m
+    ON e.manager_id = m.employee_id
+WHERE
+    e.salary < m.salary;
+```
+
 ### **CROSS JOIN**
 
 Faz produto cartesiano entre duas tabelas (se uma tem 2 linhas e outra 3, o resultado é uma com 2x3=6). Util para agregar CTEs pequenas com valor escalar unico como por exemplo uma tabela de uma linha e coluna com um unico valor.
@@ -299,6 +313,47 @@ SELECT
     AVG(total_revenue) AS avg_revenue_per_active_driver
 FROM driver_status
 GROUP BY city;
+
+```
+
+```sql
+WITH
+
+riders26 AS (
+  SELECT 
+    * 
+  FROM 
+    riders
+  WHERE
+    EXTRACT(YEAR FROM signup_date) = 2026
+),
+
+repeat_riders AS (
+  SELECT 
+    r.rider_id,
+    SUM(fare) AS total_spend
+  FROM 
+    riders26 AS r INNER JOIN trips AS t ON r.rider_id = t.rider_id
+  WHERE 
+    t.status = 'completed' AND
+    EXTRACT(YEAR FROM trip_date) = 2026
+  GROUP BY
+    r.rider_id
+  HAVING 
+    COUNT(trip_id) >= 2
+)
+
+
+SELECT 
+  r.city,
+  COUNT(r.rider_id) AS total_riders,
+  COUNT(rp.rider_id) AS repeated_riders,
+  ROUND(COUNT(rp.rider_id)::DECIMAL / COUNT(r.rider_id), 2) AS repeat_rate,
+  AVG(rp.total_spend) AS avg_spend
+FROM 
+  riders26 AS r LEFT JOIN repeat_riders AS rp ON r.rider_id = rp.rider_id
+GROUP BY 
+  r.city
 
 ```
 
