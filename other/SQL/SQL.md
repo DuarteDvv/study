@@ -2133,3 +2133,36 @@ ORDER BY
   manufacturer ASC
 ```
 
+```sql
+WITH 
+
+users_w_trips AS (
+  SELECT
+    user_id,
+    COUNT(trip_id) AS n_trips,
+    SUM(fare) AS total_spend
+  FROM 
+    trips
+  WHERE 
+    status = 'completed'
+  GROUP BY 
+    user_id
+)
+
+SELECT 
+  CONCAT(u.first_name, ' ', u.last_name) AS full_name,
+  COALESCE(n_trips, 0) AS trips_number,
+  COALESCE(total_spend, 0) AS total_amount,
+  (
+    CASE
+      WHEN COALESCE(n_trips, 0) >= 2 THEN 'Active'
+      WHEN COALESCE(n_trips, 0) = 1 THEN 'Occasional'
+      ELSE 'Inactive'
+    END
+  )
+FROM
+  users AS u LEFT JOIN users_w_trips AS uwt ON u.user_id = uwt.user_id
+
+```
+
+
