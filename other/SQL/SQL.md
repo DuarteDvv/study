@@ -1614,6 +1614,46 @@ WHERE
   fare_rank = 2 AND fare_amount > driver_avg  
 ```
 
+### **PERCENTILE_CONT(percentile) WITHIN GROUP(ORDER BY column)**
+
+Calcula o percentil de uma coluna ordenada da forma definida no GROUP
+
+```sql
+
+WITH pu_ AS (
+    SELECT 
+        pu_location,
+        SUM(total_amount) AS revenue
+    FROM trips
+    GROUP BY pu_location
+),
+
+median_ AS (
+    SELECT
+        PERCENTILE_CONT(0.5) WITHIN GROUP (
+            ORDER BY revenue
+        ) AS median_revenue
+    FROM pu_
+),
+
+filtered AS (
+    SELECT
+        p.pu_location,
+        p.revenue
+    FROM pu_ AS p
+    CROSS JOIN median_ AS m
+    WHERE
+        p.revenue > 1.5 * m.median_revenue
+)
+
+SELECT 
+    pu_location,
+    revenue
+FROM filtered
+ORDER BY revenue DESC
+LIMIT 10;
+```
+
 #### **MIN() e MAX()**
 
 Retorna o min ou max do grupo
@@ -2171,5 +2211,4 @@ FROM
   users AS u LEFT JOIN users_w_trips AS uwt ON u.user_id = uwt.user_id
 
 ```
-
 
