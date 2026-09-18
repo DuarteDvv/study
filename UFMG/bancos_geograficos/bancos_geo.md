@@ -140,3 +140,140 @@ Se uma classe A tem proximo dela um (1,*) significa que a outra classe B que tem
 #### **Como isso é garantido?**
 
 Na prática (implementação via AST-PostGIS), cada restrição vira um trigger no banco,  por isso a tabela de mapeamento lógico->físico associa cada tipo de classe/relacionamento espacial diretamente a um tipo de trigger específico (ast_line, ast_polygon, ast_node, etc., cada um já "carregando" as restrições que precisa checar).
+
+## **GEOsql**
+
+Num banco tradicional, você guarda números, textos e datas. Num banco geográfico, cada registro pode ter também uma geometria. As extensões espaciais acrescentam esses tipos e funções ao SQL.
+
+### **PostGIS**
+
+O PostGIS é uma extensão gratuita de código aberto para o sistema de gerenciamento de banco de dados PostgreSQL que adiciona suporte a dados e análises espaciais.
+
+#### **Geometry x Geography**
+
+O PostGIS oferece dois tipos espaciais principais.
+
+- **geometry:** trabalha num sistema cartesiano/plano. As unidades utilizadas nas operações dependem do sistema de coordenadas usado.
+- **geography:** considera a Terra de forma esférica/esferoidal, usando WGS84, e as medidas são feitas em metros.
+
+```sql
+ST_Distance(a.geom::geography, b.geom::geography) 
+```
+O casting ::geography é usado porque queremos uma distância real sobre a Terra, em metros.
+
+#### **SRID**
+
+Uma geometria não é apenas uma sequência de números. É necessário saber o que aquelas coordenadas representam. O SRID identifica o sistema de referência espacial. Por exemplo, coordenadas podem estar em latitude/longitude ou em uma projeção métrica e portanto elas nao sao comparaveis.
+
+#### **Funcoes de relações espaciais**
+
+Essas funcoes permitem computar relacoes, atributos e novas geometrias/geografias
+
+#### **Funções de relações espaciais**
+
+Essas funções permitem verificar relações espaciais, calcular medidas e gerar novas geometrias/geografias.
+
+- `ST_Contains(A, B)`
+  - **O que faz:** Verifica se a geometria A contém espacialmente a geometria B. Nenhum ponto de B pode estar fora de A e pelo menos um ponto de B deve estar no interior de A.
+  - **Entrada:** Duas geometrias/geografias: A e B.
+  - **Saída:** `BOOLEAN` (`TRUE` ou `FALSE`).
+
+- `ST_Within(A, B)`
+  - **O que faz:** Verifica se a geometria A está completamente dentro da geometria B. É o inverso de `ST_Contains(B, A)`.
+  - **Entrada:** Duas geometrias/geografias: A e B.
+  - **Saída:** `BOOLEAN` (`TRUE` ou `FALSE`).
+
+- `ST_DWithin(A, B, distance)`
+  - **O que faz:** Verifica se a distância entre A e B é menor ou igual à distância especificada.
+  - **Entrada:** Duas geometrias/geografias A e B e uma distância.
+  - **Saída:** `BOOLEAN` (`TRUE` ou `FALSE`).
+  - **Observação:** Com `geography`, a distância é dada em metros. Ex.: `50000` = 50 km.
+
+- `ST_Covers(A, B)`
+  - **O que faz:** Verifica se nenhum ponto de B está fora de A. B pode estar no interior de A ou sobre sua fronteira.
+  - **Entrada:** Duas geometrias/geografias: A e B.
+  - **Saída:** `BOOLEAN` (`TRUE` ou `FALSE`).
+
+- `ST_CoveredBy(A, B)`
+  - **O que faz:** Verifica se A é coberta por B, ou seja, nenhum ponto de A está fora de B. É o inverso de `ST_Covers(B, A)`.
+  - **Entrada:** Duas geometrias/geografias: A e B.
+  - **Saída:** `BOOLEAN` (`TRUE` ou `FALSE`).
+
+- `ST_Touches(A, B)`
+  - **O que faz:** Verifica se A e B se tocam pelas suas fronteiras, mas seus interiores não possuem pontos em comum.
+  - **Entrada:** Duas geometrias/geografias: A e B.
+  - **Saída:** `BOOLEAN` (`TRUE` ou `FALSE`).
+
+- `ST_Equals(A, B)`
+  - **O que faz:** Verifica se A e B representam espacialmente a mesma geometria.
+  - **Entrada:** Duas geometrias/geografias: A e B.
+  - **Saída:** `BOOLEAN` (`TRUE` ou `FALSE`).
+
+- `ST_Overlaps(A, B)`
+  - **O que faz:** Verifica se A e B possuem uma região em comum, possuem a mesma dimensão e nenhuma contém completamente a outra.
+  - **Entrada:** Duas geometrias/geografias: A e B.
+  - **Saída:** `BOOLEAN` (`TRUE` ou `FALSE`).
+
+- `ST_Intersects(A, B)`
+  - **O que faz:** Verifica se A e B possuem pelo menos um ponto em comum.
+  - **Entrada:** Duas geometrias/geografias: A e B.
+  - **Saída:** `BOOLEAN` (`TRUE` ou `FALSE`).
+  - **Observação:** É o contrário de `ST_Disjoint(A, B)`.
+
+- `ST_Disjoint(A, B)`
+  - **O que faz:** Verifica se A e B não possuem nenhum ponto em comum.
+  - **Entrada:** Duas geometrias/geografias: A e B.
+  - **Saída:** `BOOLEAN` (`TRUE` ou `FALSE`).
+  - **Observação:** É o contrário de `ST_Intersects(A, B)`.
+
+- `ST_Distance(A, B)`
+  - **O que faz:** Calcula a menor distância entre A e B.
+  - **Entrada:** Duas geometrias/geografias: A e B.
+  - **Saída:** Um valor numérico representando a distância.
+  - **Observação:** Com `geography`, a distância é retornada em metros. Com `geometry`, a unidade depende do sistema de coordenadas.
+
+- `ST_Area(A)`
+  - **O que faz:** Calcula a área de uma geometria, normalmente um polígono ou multipolígono.
+  - **Entrada:** Uma geometria/geografia A.
+  - **Saída:** Um valor numérico representando a área.
+  - **Observação:** Com `geography`, normalmente o resultado é dado em metros quadrados. Com `geometry`, depende da unidade do sistema de coordenadas.
+
+- `ST_Length(A)`
+  - **O que faz:** Calcula o comprimento de uma geometria linear, como uma rodovia, ferrovia ou rio.
+  - **Entrada:** Uma geometria/geografia A.
+  - **Saída:** Um valor numérico representando o comprimento.
+  - **Observação:** Com `geography`, o comprimento é dado em metros. Com `geometry`, depende da unidade do sistema de coordenadas.
+
+- `ST_Transform(A, novoSRID)`
+  - **O que faz:** Transforma/reprojeta a geometria A de seu sistema de referência atual para outro sistema de referência espacial.
+  - **Entrada:** Uma geometria A e o SRID do sistema de referência de destino.
+  - **Saída:** Uma nova geometria representada no novo sistema de coordenadas.
+  - **Exemplo:** `ST_Transform(A, 4326)`.
+
+- `ST_Buffer(A, distance)`
+  - **O que faz:** Cria uma região ao redor da geometria A a uma determinada distância.
+  - **Entrada:** Uma geometria/geografia A e uma distância.
+  - **Saída:** Uma nova geometria, normalmente um polígono.
+  - **Exemplo:** `ST_Buffer(A::geography, 50000)` cria uma região de 50 km ao redor de A.
+
+- `ST_Union(...)`
+  - **O que faz:** Une duas ou várias geometrias em uma única geometria, eliminando as fronteiras internas das regiões que se sobrepõem.
+  - **Entrada:** Duas geometrias ou um conjunto de geometrias.
+  - **Saída:** Uma nova geometria resultante da união.
+  - **Exemplos:** `ST_Union(A, B)` ou `ST_Union(geom)` para agregar várias geometrias.
+
+- `ST_Intersection(A, B)`
+  - **O que faz:** Calcula a parte espacial que A e B possuem em comum.
+  - **Entrada:** Duas geometrias: A e B.
+  - **Saída:** Uma nova geometria correspondente à interseção entre A e B.
+
+- `ST_Difference(A, B)`
+  - **O que faz:** Calcula a parte de A que não pertence a B. Pode ser entendida como `A - B`.
+  - **Entrada:** Duas geometrias: A e B.
+  - **Saída:** Uma nova geometria correspondente à parte restante de A.
+
+#### **Indices espaciais**
+
+Indices tradicionais, como B-Tree, funcionam muito bem para valores unidimensionais: 10, 15, 20, 25... Uma geometria possui várias dimensões. Por isso, bancos geográficos precisam de métodos de acesso multidimensionais. Sem índice, uma consulta: Quais municípios cruzam esta rodovia? O banco teria que comparar a rodovia com todos os municípios. O índice espacial reduz rapidamente o conjunto de objetos que precisam ser analisados e são praticamente essenciais para bancos geográficos de tamanho razoável.
+
+Analisar um polígono complexo pode ser caro. Por isso o banco primeiro trabalha com uma aproximação muito simples: o Retângulo Envolvente Mínimo (REM). É o menor retângulo, paralelo aos eixos, que contém completamente uma geometria. Primeiro o índice testa os retângulos e isso produz candidatos. Depois o PostGIS realiza o cálculo geométrico exato apenas sobre esses candidatos. 
