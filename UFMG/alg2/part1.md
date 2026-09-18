@@ -656,7 +656,7 @@ O algoritmo é:
 5. Ao remover um segmento, teste os dois vizinhos que ficaram juntos
 6. Se algum teste detectar interseção retorne True
 	​
-A complexidade da abordagem ingenua é quadratica pois precisamos testar interseção de todos os pontos com todos os outros. Essa abordagem, usando uma arvore binária balanceada por exemplo tem complexidade O(nlogn) devido as inserções e remoções em logn.
+A complexidade da abordagem ingenua é O(n^2) pois precisamos testar interseção de todos os pontos com todos os outros. Essa abordagem, usando uma arvore binária balanceada por exemplo tem complexidade O(nlogn) devido as inserções e remoções em logn.
 
 ### **Determinar se um ponto está dentro de um polígono**
 
@@ -666,6 +666,8 @@ A ideia aqui é bem simples:
 - Contamos quantas vezes essa reta cruza uma aresta do poligono:
     - par -> p esta fora
     - impar -> p esta dentro
+
+A complexidade é O(n) pois temos que verificar intersecao com todas as arestas
 	​
 ## **Problema da envoltoria convexa**
 
@@ -673,3 +675,53 @@ Consiste em encontrar o menor polígono (estritamente) convexo (todos os angulos
 
 ### **Varredura de Graham**
 
+Algoritmo assume no minimo 3 pontos nos dados pois é minimo para se construir um poligono convexo e assumo que caso existe 3 ou mais pontos colineares apenas o mais distante é relevante. A ideia é:
+
+1. Escolhemos um ponto ancora (inicial) que com certeza esta dentro da envolvoria, usamos o ponto mais extremo a esquerda e para baixo
+2. Agora tracando uma reta do ancora para todos os outros pontos, ordenados os pontos em relacao ao angulo gerado por essa reta (isso permite passar pelos pontos em sentido antihorario) e se dois pontos têm exatamente o mesmo ângulo (colineares) mantemos o mais distante
+3. Fazemos um scan nos pontos ordenados para descobrir quem pertence ou nao a envoltoria, para isso analisamos os 2 ultimos pontos adicionados na envoltoria (uma pilha) junto com o ponto atual ((p0,p1),p_curr):
+    - Se p_curr esta a esquerda em relacao a p0p1, entao precisamos de p_curr e p1 na envoltoria e adicionamos p_curr na pilha
+    - Se p_curr esta a direta em relacao a p0p1, entao n precisamos de p1 na envoltoria e damos pop() nele e repetimos o processo com os novos ultimos da pilha ate virar esquerda e adicionarmos p_curr
+- Usamos uma pilha geralmente pois ela simula perfeitamente o processo recursivo de verificacao
+
+A complexidade do algoritmo é *O(n)* na varredura mas precisamos ordenar todos os nós pelo angulo entao é dominado por *O(nlogn)*
+
+### **Algoritmo embrulho para presente (gift wrapping)**
+
+Aqui a ideia é nao ordenar e pagar um preco definido pelo tamanho da envoltoria (saida), a ideia é:
+
+1. Escolhe um ponto ancora igual o algoritmo anterior 
+2. Buscamos o ponto mais a direita em relacao ao ultimo nó adicionado dentro da envoltoria e adicionamos na envoltoria. Para isso é necessário 3 pontos ... podemos pegar inicialmente 3 aleatorios e se o mais extremo estiver mais a direita ele vira o novo do meio em relacao ao primeiro (da envoltoria) e assim buscamos o mais a direita.
+3. Repetimos o passo 2 ate encontrar algum ponto que ja esta na envoltoria
+
+A complexidade do algoritmo depende de quantos pontos *h* existem na envoltoria e para cada um deles temos que fazer uma busca linear em todos os *n* pontos do conjunto, ou seja, complexidade total O(h*n).
+
+### **Algoritmo Incremental**
+
+Algoritmos bem simples que comeca com 3 pontos nao colineares do conjunto completo e vai adicionando:
+
+1. Criamos o poligono convexo inicial com 3 pontos nao colineares
+2. Para cada um dos outros n - 3 pontos, fazemos a pergunta: "o ponto esta dentro do poligono convexo atual?"
+    - Se sim, nao precisamos atualizar a envoltoria
+    - Se nao, precisamos atualizar a envoltoria
+        - Para atualizar a envoltoria buscamos as 2 retas tangentes ao poligo atual que passam no novo ponto P a ser adicionado, depois é só conectar P aos 2 pontos da envoltoria que tocam nas tangentes. Mas o problema é como conseguir essas retas tangentes, o custo é O(n^2)
+
+### **Algoritmo incremental (v2)**
+
+A ideia aqui é ao inves de buscar tangentes, ordenamos os pontos por X e agora sempre que chegar um ponto P novo sabemos que ele nao pode estar dentro da envoltoria atual pois o x dele é maior (ordenado). Sabendo disso n precisamos mais fazer a pergunta de pertencimento e podemos executar a varredura de graham novamente nos pontos de cima e de baixo do poligono.
+
+### **Algoritmo dividir e conquistar**
+
+A ideia aqui é usar a estrategia dividir e conquistar para encontrar a envoltoria (hull):
+
+1. Ordenados os pontos por x (isso permite dividir os pontos no espaco)
+2. Dividimos recursivamente o espaco até chegar em conjuntos com no máximo 3 pontos pois achar o convex hull del 1, 2 e 3 pontos é trivial (sao eles mesmos)
+3. Para juntas 2 convex hulls preciamos encontrar 2 retas tangentes a eles (elas representam as arestas que precisamos criar para pegar todos os pontos juntos)
+    - Considerando apenas os pontos do hull, ou seja, sem considerar os internos escolhemos os 2 pontos mais proximos entre os hulls e formamos uma reta
+    - Depois verificamos se essa reta esta acima de todos os nós de ambos os Hulls, se nao estiver temos que subir a reta e para isso apenas trocamos as extremidades delas por nós com y maior nas envoltorias
+    - Quando a reta englobar todos, chegamos a tangente
+    - repetimos o mesmo processo para a tangente de baixo mas com objetivos opostos
+
+O merge tem complexidade de O(n) pois no pior dos casos (ultima recursao) temos que dar merge em algo proximo de n pontos. Temos logn niveis na recursao e consequentemente a complexidade é O(nlogn)
+
+## **Problema da galeria de arte**
