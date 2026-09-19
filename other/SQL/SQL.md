@@ -895,9 +895,9 @@ FROM
   rides
 ```
 
-### **DISTINCT**
+### **DISTINCT e DISTINCT ON (a.col1, b.col2)**
 
-Pode ser usado no SELECT DISTINCT para filtrar linhas completamente iguais (todas as colunas). Ou funções de agregação como COUNT(DISTINCT ...) para contar contar coisas unicas.
+Pode ser usado no SELECT DISTINCT para filtrar linhas completamente iguais (todas as colunas). Ou funções de agregação como COUNT(DISTINCT ...) para contar contar coisas unicas. O DISTINCT ON tira as duplicatas com base nas chaves dentro do ON() pegando sempre a primeira linha de cada (mantendo ordenações).
 
 ### **ROUND(valor, casas decimais)**
 
