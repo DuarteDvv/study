@@ -926,3 +926,104 @@ o padrão em tempo O(n).
     (11) -> (3)
     (12) -> (4)
     (13) -> (5)
+
+5. (Goodrich e Tamassia R-23.5) Compute a função shift do algoritmo de Horspool para o padrão “the quick brown fox jumped over a lazy cat”
+
+    (char) -> (distancia da ultima aparicao char no padrao ate o ultimo indice)
+
+    (a) -> 1
+    (c) -> 2
+    ( ) -> 3
+    (y) -> 4
+    (z) -> 5
+    (l) -> 7
+    (r) -> 11
+    (e) -> 12
+    (v) -> 13
+    (o) -> 14
+    (d) -> 16
+    (p) -> 18
+    (m) -> 19
+    (u) -> 20
+    (j) -> 21
+    (x) -> 23
+    (f) -> 25
+    (n) -> 27
+    (w) -> 28
+    (b) -> 31
+    (k) -> 33
+    (i) -> 35
+    (q) -> 37
+    (h) -> 40
+    (t) -> 41 (Nao consideramos o char do ultimo indice pois se nao vira loop infinito)
+
+    (qualquer outro caractere) -> 42 (padrao todo)
+
+6. (Levitin 7.3-3) Quantas comparações serão realizadas pelo algoritmo de Horspool para encontrar os padrões a
+seguir no texto 0^(1000).
+
+(a) 00001
+
+    aproximadamente 1000 comparacoes, ou seja, linear no texto pois ficara dando saltos de 1 em 1 devido a errar ja sempre na primeira 
+
+(b) 10000
+
+    aproximadamente 1000*5 pois é o pior caso n*m em que casamos quase todo o padrao, erramos no final e deslocamos um indice
+
+(c) 01010
+
+    aproximadamente 1000 pois esta sempre comparando 2 mas pulando 2 também
+
+7. Aponte qual a melhor escolha de algoritmo para casamento de padrões em texto considerando cada situação (entre kmp, horspool, shift-and): 
+
+    - (a) Deseja-se verificar se algum código malicioso contido em uma lista pré-definida ocorre em um arquivo recebido por email. 
+
+    Shift-and aqui nao é uma boa pois esses codigos maliciosos costumam ser longos e isso quebra as vantagens dele. Como esses padroes sao longos e o alfabeto grande o horspool pode ser uma otima ideia pois os pulos sao maiores e o grande alfabeto aumenta chance de erros.
+    
+    - (b) Deseja-se filtrar posts no Twitter que possuam uma palavra-chave definida pelo usuário.
+
+    Palavras chaves sao pequenas, ou seja, o padrao é muito pequeno e isso é um problema para o horspool pois ele se da melhor com padroes grandes (pulos grandes) e alfabetos grandes. Como a palavra é pequena o Shift-and tem vantagem pois é menor que uma palavra do processador e portanto vai ser muito eficiente, além disso ele pode facilmente virar uma busca aproximada sem mudar completamente o algortimo. Essas sao as unicas vantagens dele sobre o KMP nesse cenário.
+
+8. (Goodrich e Tamassia R-23.8) Mostre o resultado da inserção das seguintes palavras numa trie padrão: abab, baba, ccccc, bbaaaa, caa, bbaacc, cbcc, cbca.
+
+    1. root -> abab
+    2. root -> abab
+        |-> baba
+    3. root -> abab
+        |-> baba
+        |-> ccccc
+    4. root -> abab
+        |-> b -> aba
+        |   |-> baaaa
+        |-> ccccc
+    5. root -> abab
+        |-> b -> aba
+        |   |-> baaaa
+        |-> c -> cccc
+        |   |-> aa
+    6. root -> abab
+        |-> b -> aba
+        |   |-> baa -> aa
+        |       |-> cc
+        |  
+        |-> c -> cccc
+        |   |-> aa
+    7. root -> abab
+        |-> b -> aba
+        |   |-> baa -> aa
+        |       |-> cc
+        |  
+        |-> c -> cccc
+        |   |-> aa
+        |   |-> bcc
+    8. root -> abab*
+        |-> b -> aba*
+        |   |-> baa -> aa*
+        |       |-> cc*
+        |  
+        |-> c -> cccc*
+        |   |-> aa*
+        |   |-> bc -> c*
+        |   |   |-> a*
+
+9. (Goodrich e Tamassia R-23.9) Mostre o resultado das inserções das chaves do exercício R-23.8 numa trie compacta (radix tree).
