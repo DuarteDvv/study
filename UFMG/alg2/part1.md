@@ -725,3 +725,204 @@ A ideia aqui é usar a estrategia dividir e conquistar para encontrar a envoltor
 O merge tem complexidade de O(n) pois no pior dos casos (ultima recursao) temos que dar merge em algo proximo de n pontos. Temos logn niveis na recursao e consequentemente a complexidade é O(nlogn)
 
 ## **Problema da galeria de arte**
+
+Uma câmera consegue enxergar todos os pontos que possuem uma linha de visão direta até ela. As paredes bloqueiam essa visão. Se o polígono for convexo, uma única câmera basta, porque de qualquer ponto interno conseguimos enxergar todo o polígono. Já em um polígono não convexo, aparecem “quinas para dentro”, que podem esconder regiões.
+
+O objetivo seria encontrar o menor número possível de câmeras. Só que calcular esse mínimo exatamente é um problema computacionalmente difícil. Por isso, a estratégia apresentada procura uma garantia do tipo: Independentemente do formato do polígono, com no máximo X câmeras certamente conseguimos vigiar tudo.
+
+### **Triangulação de poligonos**
+
+A primeira ideia é observar que um triângulo é muito fácil de vigiar. Uma câmera colocada adequadamente consegue enxergar o triângulo inteiro. Então podemos pegar um polígono complicado e dividi-lo em triângulos e essa divisão é chamada de triangulação.
+
+- **Quantos triangulos ?** Todo polígono simples com n vértices pode ser triangulado em exatamente n − 2 triângulos mas o problema aqui é que saimos de n cameras no pior caso (uma por vértice), para n - 2 cameras, ou seja, um por triangulo... isso é pouco relevante.
+
+- **Uma camera para N triangulos ?** A ideia então é ao invés de uma camera para cada triangulo, podemos  usar uma camera para varios triangulos afinal se o poligono formado por esses triangulos é convexo então uma camera sozinha da conta. Em vez de colocar uma câmera dentro de cada triângulo, colocar câmeras em alguns vértices do polígono. Queremos escolher vértices de maneira que todo triângulo da triangulação tenha pelo menos um vértice contendo câmera mas como fazer isso ? 
+
+#### **Coloração de grafos**
+
+Em uma coloração de grafo, um triangulo pode ter no máximo 3 cores (um para cada vértice), se 2 ou mais triangulos compartilham o mesmo nó então dentro deles não existira outro nó com mesma cor, ou seja, não podemos colocar cameras desnecessárias. A ideia da coloração é:
+
+1. Construimos o grafo G que são os vértices e arestas do poligono e o grafo T(G) que é um grafo que cada nó é um triangulo e ele tem aresta para outro triangulo se eles compartilharem vértices.
+2. Usamos o grafo T para definir a ordem que colorimos o grafo G, usando um DFS no T
+3. Depois de todos os nós de G estarem coloridos, pegamos a cor que tem menos nós coloridos e colocamos nos nós dela as cameras
+
+- No final vamos ter n/3 cameras pois dividimos o grafo em 3 cores, oq é uma vantagem muito maior que n-2
+
+#### **Como triangular os poligonos ?**
+
+Para esse problema existe um algoritmo chamado corte de pontas de orelha, em que orelhas são pontas apontadas para fora que o poligono produz, que funciona assim:
+
+1. Buscamos todas as orelhas do grafo passando de 3 em 3 nós e isso tem custo O(n)
+2. Enquanto o poligono tiver mais que 3 pontos (ultimo triangulo): O(n)
+
+    1. Encontramos uma orelha do poligono atual e salvamos quem são os 3 pontos que fazem parte dela (um triangulo)
+    2. Removemos o ponto que é a ponta da orelha e atualizamos os vizinhos dessa orelha pois podem ter se tornado uma orelha
+
+Algortimo no final tem complexidade o(n^2) mas existem soluções nlogn mais sofisticadas
+
+- **Como indentificar orelhas ?** Verificamos se não tem nenhum outro ponto dentro do triangulo, se não tiver, para cada 3 pontos Pi-1, Pi e Pi+1 verificamaso se Pi+1 esta a esquerda de Pi, se sim então Pi é uma orelha.
+
+## **Range Search** 
+
+O problema consiste em dado um conjunto de pontos multidimensionais (features de dados), quais pontos estão dentro desta região de consulta? Por exemplo, quais dos meus pontos tem idade entre [20,40] e salario [1000,3000].
+
+### **1 Dimensão**
+
+- A solução trivial é passe por todos os pontos e verifique as condições da query, isso tem complexidade linear O(n). 
+- Uma solução mais robusta seria criar uma arvore binária balanceada com os pontos. Depois ao buscar por um intervalo [min,max] especifico temos que olhar todas as folhas maiores que min e menores que max, para isso podemos fazer duas consultas na arvore buscando exatamente os valores da borda e pegar pontos que estão em subarvores de interesse. Nessa arvore geralmente é interessante usar a mediana para fazer divisões balanceadas.
+
+    -  A complexidade é O(logn + k) sendo logn pela busca na arvore balanceada e k o numero de pontos que existe no intervalo buscado
+
+### **K-dimensôes (KD-Tree)**
+
+Em 1D, cada nó separava: menores e maiores 
+
+Agora temos duas coordenadas. Então a kd-tree faz algo simples que é alternar a dimensão usada para dividir os pontos de acordo com o nivel da arvore, ou seja, a cada nivel dividimos o espaço em uma dimensão. 
+
+Em 2D:
+
+nível 0 → divide por x
+nível 1 → divide por y
+nível 2 → divide por x
+nível 3 → divide por y
+
+A ideia da kd-tree é que cada subarvore representa uma região do espaço, quando fazemos uma query estamos também buscando uma região e portanto existem 3 casos durante a busca:
+
+- **Região de consulta é disjunta da região do nó:** não precisamos olhar essa subarvore
+- **Região do nó esta dentro da região da consulta:** não precisamos explorar a arvore pois sabemos que tudo la dentro é importante e portanto só retornamos os pontos
+- **Região do nó tem interseção com a região da consulta:** precisamos explorar a arvore pois nem tudo la é importante
+
+A construição da arvore tem complexidade **O(nlogn)** pois para cada um dos logn niveis da arvore temos que processar todos os pontos n pontos para as novas divisões. A busca tem complexidade **O(root(n) + k)**. Podemos generalizar para qualquer quantidade de dimensões essa ideia pois ela sempre ira separar o espaço k-dimensional
+ 
+
+# **Questões** 
+
+## **Casamento de padões**
+
+1. (Adaptado de Goodrich e Tamassia R-23.1) Seja P = aaabbaaa. 
+
+    - Qual o tamanho do conjunto {k > 0 | Pk ⊐ P }? 
+    
+    k=1 -> "a"
+    k=2 -> "aa"
+    k=3 -> "aaa"
+    k=4 -> ""
+    k=5 -> ""
+    ...
+    k=8 -> "aaabbaaa"
+    Tamanho = 4 que são os possiveis prefixos que são sufixos do padrão
+
+    - Qual o de σ(ccaabbaa)? 
+
+    O maior prefixo do padrão que é sufixo da string tem tamanho 2 e é "aa"
+
+    - Compute a função de transição para do AFD para o casamento desse padrão
+
+    (state, new_char) -> new_state
+
+    Tabela da função sufixo será:
+
+    (0,a) -> 1, (0,b) -> 0, (0, qualquer outro) -> 0
+    (1,a) -> 2, (1,b) -> 0, (1, qualquer outro) -> 0
+    (2,a) -> 3, (2,b) -> 0, (2, qualquer outro) -> 0
+    (3,a) -> 3, (3,b) -> 4, (3, qualquer outro) -> 0
+    (4,a) -> 1, (4,b) -> 5, (4, qualquer outro) -> 0
+    (5,a) -> 6, (5,b) -> 0, (5, qualquer outro) -> 0
+    (6,a) -> 7, (6,b) -> 0, (6, qualquer outro) -> 0
+    (7,a) -> 8, (7,b) -> 0, (7, qualquer outro) -> 0
+    (8,a) -> 3, (8,b) -> 4, (8, qualquer outro) -> 0
+
+2. Construa o autômato que represente o padrão 0110200100 e mostre o funcionamento do algoritmo para casamento de padrões baseado em AFD com o texto 00202320101302001000020232010110200100.
+
+    Automato: 
+    
+    (0,0) -> 1, (0,1) -> 0, (0,2) -> 0, (0,3) -> 0
+    (1,0) -> 1, (1,1) -> 2, (1,2) -> 0, (1,3) -> 0
+    (2,0) -> 1, (2,1) -> 3, (2,2) -> 0, (2,3) -> 0
+    (3,0) -> 4, (3,1) -> 0, (3,2) -> 0, (3,3) -> 0
+    (4,0) -> 1, (4,1) -> 2, (4,2) -> 5, (4,3) -> 0
+    (5,0) -> 6, (5,1) -> 0, (5,2) -> 0, (5,3) -> 0
+    (6,0) -> 7, (6,1) -> 2, (6,2) -> 0, (6,3) -> 0
+    (7,0) -> 1, (7,1) -> 8, (7,2) -> 0, (7,3) -> 0
+    (8,0) -> 9, (8,1) -> 3, (8,2) -> 0, (8,3) -> 0
+    (9,0) -> 10, (9,1) -> 2, (9,2) -> 0, (9,3) -> 0
+    (10,0) -> 1, (10,1) -> 2, (10,2) -> 0, (10,3) -> 0
+
+    Executando no texto: 00202320101302001000020232010110200100
+
+    Começamos no estado 0.
+
+    índice 0:  lê 0 -> (0,0) -> 1
+    índice 1:  lê 0 -> (1,0) -> 1
+    índice 2:  lê 2 -> (1,2) -> 0
+    índice 3:  lê 0 -> (0,0) -> 1
+    índice 4:  lê 2 -> (1,2) -> 0
+    índice 5:  lê 3 -> (0,3) -> 0
+    índice 6:  lê 2 -> (0,2) -> 0
+    índice 7:  lê 0 -> (0,0) -> 1
+    índice 8:  lê 1 -> (1,1) -> 2
+    índice 9:  lê 0 -> (2,0) -> 1
+    índice 10: lê 1 -> (1,1) -> 2
+    índice 11: lê 3 -> (2,3) -> 0
+    índice 12: lê 0 -> (0,0) -> 1
+    índice 13: lê 2 -> (1,2) -> 0
+    índice 14: lê 0 -> (0,0) -> 1
+    índice 15: lê 0 -> (1,0) -> 1
+    índice 16: lê 1 -> (1,1) -> 2
+    índice 17: lê 0 -> (2,0) -> 1
+    índice 18: lê 0 -> (1,0) -> 1
+    índice 19: lê 0 -> (1,0) -> 1
+    índice 20: lê 0 -> (1,0) -> 1
+    índice 21: lê 2 -> (1,2) -> 0
+    índice 22: lê 0 -> (0,0) -> 1
+    índice 23: lê 2 -> (1,2) -> 0
+    índice 24: lê 3 -> (0,3) -> 0
+    índice 25: lê 2 -> (0,2) -> 0
+    índice 26: lê 0 -> (0,0) -> 1
+    índice 27: lê 1 -> (1,1) -> 2
+    índice 28: lê 0 -> (2,0) -> 1
+    índice 29: lê 1 -> (1,1) -> 2
+    índice 30: lê 1 -> (2,1) -> 3
+    índice 31: lê 0 -> (3,0) -> 4
+    índice 32: lê 2 -> (4,2) -> 5
+    índice 33: lê 0 -> (5,0) -> 6
+    índice 34: lê 0 -> (6,0) -> 7
+    índice 35: lê 1 -> (7,1) -> 8
+    índice 36: lê 0 -> (8,0) -> 9
+    índice 37: lê 0 -> (9,0) -> 10
+
+    Ao chegar no estado 10, o padrão foi encontrado.
+
+3. (CLRS 32.3-5) Suponha que seja permitida a utilização de curingas (símbolos que casam com qualquer outro)
+na construção do padrão. Mostre como adaptar o algoritmo baseado em autômatos para continuar a encontrar
+o padrão em tempo O(n).
+
+    Podemos adaptar a função de transição do AFD considerando que o curinga casa com qualquer símbolo do alfabeto. Assim, se estamos no estado q e o próximo símbolo do padrão P[q+1] é um curinga, então, para qualquer caractere c do texto:
+
+    δ(q,c) = q + 1
+
+    Ou seja, independentemente do caractere recebido, avançamos para o
+    próximo estado. Para os demais estados, a função de transição é construída normalmente,
+    procurando o maior prefixo do padrão que casa com um sufixo da sequência
+    processada, levando em consideração que um curinga é compatível com
+    qualquer caractere. Portanto, para um texto de tamanho n, o casamento continua sendo feito
+    em tempo O(n).
+
+4. Compute a função prefixo (π(q)) para o padrão cgtacgttcgtac.
+
+    (tamanho dq ja casei) -> (tamanho do maior prefixo menor dq ja casei que é sufixo dq ja casei)
+
+    (0) -> (0)
+    (1) -> (0)
+    (2) -> (0)
+    (3) -> (0)
+    (4) -> (0)
+    (5) -> (1)
+    (6) -> (2)
+    (7) -> (3)
+    (8) -> (0)
+    (9) -> (1)
+    (10) -> (2)
+    (11) -> (3)
+    (12) -> (4)
+    (13) -> (5)
