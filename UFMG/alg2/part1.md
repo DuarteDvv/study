@@ -987,6 +987,48 @@ seguir no texto 0^(1000).
 8. (Goodrich e Tamassia R-23.8) Mostre o resultado da inserção das seguintes palavras numa trie padrão: abab, baba, ccccc, bbaaaa, caa, bbaacc, cbcc, cbca.
 
     1. root -> abab
+    2. root -> a -> b -> a -> b
+        |-> b -> a - > b -> a
+    3. root -> a -> b -> a -> b
+        |-> baba
+        |-> ccccc
+    4. root -> a -> b -> a -> b
+        |-> b -> aba
+        |   |-> baaaa
+        |-> ccccc
+    5. root -> a -> b -> a -> b
+        |-> b -> aba
+        |   |-> baaaa
+        |-> c -> cccc
+        |   |-> aa
+    6. root -> a -> b -> a -> b
+        |-> b -> aba
+        |   |-> baa -> aa
+        |       |-> cc
+        |  
+        |-> c -> cccc
+        |   |-> aa
+    7. root -> a -> b -> a -> b
+        |-> b -> aba
+        |   |-> baa -> aa
+        |       |-> cc
+        |  
+        |-> c -> cccc
+        |   |-> aa
+        |   |-> bcc
+    8. root -> a -> b -> a -> b*
+        |-> b -> a -> b -> a*
+        |   |-> b -> a -> a -> a -> a*
+        |       |-> c -> c*
+        |  
+        |-> c -> c -> c -> c -> c*
+        |   |-> a -> a*
+        |   |-> b -> c -> c*
+        |   |   |-> a*
+
+9. (Goodrich e Tamassia R-23.9) Mostre o resultado das inserções das chaves do exercício R-23.8 numa trie compacta (radix tree).
+
+    1. root -> abab
     2. root -> abab
         |-> baba
     3. root -> abab
@@ -995,27 +1037,27 @@ seguir no texto 0^(1000).
     4. root -> abab
         |-> b -> aba
         |   |-> baaaa
-        |-> ccccc
-    5. root -> abab
-        |-> b -> aba
-        |   |-> baaaa
-        |-> c -> cccc
-        |   |-> aa
-    6. root -> abab
-        |-> b -> aba
-        |   |-> baa -> aa
-        |       |-> cc
+        |-> ccccc*
+    5. root -> abab*
+        |-> b -> aba*
+        |   |-> baaaa*
+        |-> c -> cccc*
+        |   |-> aa*
+    6. root -> abab*
+        |-> b -> aba*
+        |   |-> baa -> aa*
+        |       |-> cc*
         |  
-        |-> c -> cccc
-        |   |-> aa
-    7. root -> abab
-        |-> b -> aba
-        |   |-> baa -> aa
-        |       |-> cc
+        |-> c -> cccc*
+        |   |-> aa*
+    7. root -> abab*
+        |-> b -> aba*
+        |   |-> baa -> aa*
+        |       |-> cc*
         |  
-        |-> c -> cccc
-        |   |-> aa
-        |   |-> bcc
+        |-> c -> cccc*
+        |   |-> aa*
+        |   |-> bcc*
     8. root -> abab*
         |-> b -> aba*
         |   |-> baa -> aa*
@@ -1025,5 +1067,235 @@ seguir no texto 0^(1000).
         |   |-> aa*
         |   |-> bc -> c*
         |   |   |-> a*
+    
+10. O maior argumento para a utilização da representação compacta em árvores de sufixo (radix tree) é porque o pior caso para tries tradicionais requer espaço O(m2). Dê um exemplo desse pior caso e justifique porque ele requer espaço quadrático.
 
-9. (Goodrich e Tamassia R-23.9) Mostre o resultado das inserções das chaves do exercício R-23.8 numa trie compacta (radix tree).
+    Considere, por exemplo:
+
+    S = abcdef
+
+    Seus sufixos são:
+
+    abcdef
+    bcdef
+    cdef
+    def
+    ef
+    f
+
+    Em uma trie tradicional, cada sufixo precisa armazenar praticamente
+    um caminho próprio, pois eles não possuem prefixos comuns significativos.
+
+    Assim, o número total de caracteres armazenados é:
+
+    m + (m-1) + (m-2) + ... + 1
+
+    Essa soma é:
+
+    m(m+1)/2
+
+    Logo, o espaço utilizado é O(m²).
+    Na radix tree, sequências de nós com apenas um filho são compactadas em uma única aresta, reduzindo o espaço para O(m)
+
+11. como garantir que somente as folhas armazenem sufixos do padrão em uma árvore de sufixos? Justifique.
+
+    um símbolo terminal especial ao final da string, por exemplo `$`, sendo esse símbolo diferente de todos os símbolos do alfabeto.
+
+    Exemplo:
+
+    S = banana
+    S' = banana$
+
+    Como `$` ocorre somente no final da string, nenhum sufixo de `S'` pode ser prefixo de outro sufixo.
+    Dessa forma, cada sufixo termina obrigatoriamente em uma folha distinta da árvore de sufixos e impede que um sufico termine em um nó interno
+
+12. sejam S1 e S2 duas strings arbitrárias. Um problema bastante comum envolvendo duas strings é determinar qual a maior substring compartilhada por ambas. Por exemplo, supondo que S1 = aauladealgoritmosefacil e S2 = osambaeoritmodocarnaval a maior substring compartilhada por ambas é oritmo. Na década de 1970, conjecturou-se que esse problema não possuía solução linear. Posteriormente, com o conhecimento das árvores de sufixo, desenvolveu-se um algoritmo linear (no tamanho total das strings) para encontrar a maior substring comum às duas. Descreva uma solução que resolva tal problema com a complexidade proposta.
+
+    Existem algoritmos de construção linear de árvores de sufixos. Assumindo um deles, sabemos que a maior substring comum entre S1 e S2 pode ser vista como o maior prefixo comum entre algum sufixo de S1 e algum sufixo de S2. Isso ocorre porque toda substring de uma string é prefixo de algum de seus sufixos. Assim, podemos construir uma árvore de sufixos generalizada contendo os sufixos de S1 e S2, utilizando terminadores distintos, como `$` e `#`, para identificar corretamente a origem de cada sufixo.
+    Em seguida, fazemos uma DFS na árvore. Para cada nó, verificamos se sua subárvore contém pelo menos uma folha originada de S1 e pelo menos uma folha originada de S2. O caminho da raiz até um nó com essa propriedade representa uma substring comum às duas strings. Mantemos o nó de maior profundidade que satisfaça essa condição. O caminho da raiz até esse nó corresponde à maior substring comum. A construção da árvore custa O(|S1| + |S2|), e a DFS também custa O(|S1| + |S2|). Portanto, o custo total é O(|S1| + |S2|).
+
+
+13. (Adaptado de Goodrich e Tamassia R-23.11) Construa a árvore de sufixos para cgtacgttcgtacg. Qual a maior substring que se repete no texto?
+
+    1. cgtacgttcgtacg
+    2. root -> cgtacgttcgtacg
+        L-> gtacgttcgtacg
+    3. root -> cgtacgttcgtacg
+        L-> gtacgttcgtacg
+        L-> tacgttcgtacg
+    4. root -> cgtacgttcgtacg
+        L-> gtacgttcgtacg
+        L-> tacgttcgtacg
+        L-> acgttcgtacg
+    5. root -> cgt -> acgttcgtacg
+                L->tcgtacg
+        L-> gtacgttcgtacg
+        L-> tacgttcgtacg
+        L-> acgttcgtacg
+    6. root -> cgt -> acgttcgtacg
+                L->tcgtacg
+        L-> gt -> acgttcgtacg
+            L-> tcgtacg
+        L-> tacgttcgtacg
+        L-> acgttcgtacg
+    7. root -> cgt -> acgttcgtacg
+                L->tcgtacg
+        L-> gt -> acgttcgtacg
+            L-> tcgtacg
+        L-> t -> acgttcgtacg
+            L-> tcgtacg
+        L-> acgttcgtacg
+    8. root -> cgt -> acgttcgtacg
+                L-> tcgtacg
+        L-> gt -> acgttcgtacg
+            L-> tcgtacg
+        L-> t -> acgttcgtacg
+            L-> tcgtacg
+            L-> cgtacg
+        L-> acgttcgtacg
+    9. root -> cgt -> acgttcgtacg
+                L-> tcgtacg
+                L-> acg
+        L-> gt -> acgttcgtacg
+            L-> tcgtacg
+        L-> t -> acgttcgtacg
+            L-> tcgtacg
+            L-> cgtacg
+        L-> acgttcgtacg
+    10. root -> cgt -> acgttcgtacg
+                L-> tcgtacg
+                L-> acg
+        L-> gt -> acgttcgtacg
+            L-> tcgtacg
+            L-> acg
+        L-> t -> acgttcgtacg
+            L-> tcgtacg
+            L-> cgtacg
+        L-> acgttcgtacg
+    11. root -> cgt -> acgttcgtacg
+                L-> tcgtacg
+                L-> acg
+        L-> gt -> acgttcgtacg
+            L-> tcgtacg
+            L-> acg
+        L-> t -> acg -> ttcgtacg
+                  L-> $
+            L-> tcgtacg
+            L-> cgtacg
+        L-> acgttcgtacg
+    12. root -> cgt -> acgttcgtacg
+                L-> tcgtacg
+                L-> acg
+        L-> gt -> acgttcgtacg
+            L-> tcgtacg
+            L-> acg
+        L-> t -> acg -> ttcgtacg
+                  L-> $
+            L-> tcgtacg
+            L-> cgtacg
+        L-> acg -> ttcgtacg
+            L-> $
+    13. root -> cg 
+                L-> $
+                L-> t -> acgttcgtacg
+                    L-> tcgtacg
+                    L-> acg
+        L-> gt -> acgttcgtacg
+            L-> tcgtacg
+            L-> acg
+        L-> t -> acg -> ttcgtacg
+                  L-> $
+            L-> tcgtacg
+            L-> cgtacg
+        L-> acg -> ttcgtacg
+            L-> $
+    14. root
+        ├── cg
+        │   ├── $
+        │   └── t
+        │       ├── acgttcgtacg$
+        │       ├── tcgtacg$
+        │       └── acg$
+        │
+        ├── g
+        │   ├── $
+        │   └── t
+        │       ├── acgttcgtacg$
+        │       ├── tcgtacg$
+        │       └── acg$
+        │
+        ├── t
+        │   ├── acg
+        │   │   ├── $
+        │   │   └── ttcgtacg$
+        │   ├── tcgtacg$
+        │   └── cgtacg$
+        │
+        └── acg
+            ├── $
+            └── ttcgtacg$
+
+## **Geometria Computacional**
+
+1. (Goodrich e Tamassia C-22.1) Descreva um algoritmo inTriangle(p, q, r, s) que teste em tempo O(1) se um ponto p está dentro do triângulo formado pelos pontos (q, r, s), onde q, r, e s são dados em ordem anti-horária.
+
+    Como os pontos q, r e s são dados em ordem anti-horária, o interior do triângulo está à esquerda de todas as arestas orientadas q→r, r→s e s→q. Para cada uma dessas arestas, calculamos a orientação do ponto p usando o produto vetorial (determinante) e 
+    se orient(a,b,p) > 0, p está à esquerda da reta orientada a→b; se for menor que 0, está à direita.
+
+    Assim, p está dentro do triângulo se:
+
+    orient(q,r,p) >= 0,
+    orient(r,s,p) >= 0,
+    orient(s,q,p) >= 0.
+
+    Como são realizados apenas três testes de orientação, cada um em tempo constante, o algoritmo executa em O(1).
+
+2. (Adaptado de Goodrich e Tamassia C-22.2) Usando a função desenvolvida no exercício anterior, descreva um algoritmo que responda em tempo O(log n) se um ponto p está dentro de um polígono convexo com n vértices. Dica: use uma estrutura de dados para apoiar as consultas. O tempo de construção da estrutura não é computado na consulta.
+
+    Escolhemos um vértice fixo v0 do polígono convexo e armazenamos os demais vértices em ordem anti-horária em um vetor. Os segmentos de v0 até os demais vértices dividem o polígono em um conjunto ordenado de triângulos (v0, vi, vi+1). Para consultar um ponto p, fazemos uma busca binária no vetor de vértices. Em cada passo, usamos o teste de orientação entre v0, vi e p para decidir em qual lado angular continuar a busca. Ao final, encontramos dois vértices consecutivos vi e vi+1 tais que p está entre os raios v0→vi e v0→vi+1.
+
+    Então aplicamos a função:
+
+    inTriangle(p, v0, vi, vi+1)
+
+    para verificar em O(1) se p realmente pertence ao triângulo correspondente. A busca binária custa O(log n) e o teste final custa O(1), logo a consulta total custa O(log n). O pré-processamento consiste em armazenar os vértices em ordem angular; caso seja necessário ordená-los, esse passo pode custar O(n log n), mas não é considerado no custo da consulta.
+
+3. Sejam p1 = (x1, y1) e p2 = (x2, y2) dois pontos no plano. Diz-se que o ponto p2 domina o ponto p1 se x1 ≤ x2 e y1 ≤ y2. Dado um conjunto de pontos P = {p1, p2, . . . , pn} no plano, um ponto pi ∈ P é chamado de maximal se ele não for dominado por nenhum outro ponto de P . Prove que, se (xi1 , yi1 ), (xi2 , yi2 ), . . . , (xik , yik ) for uma lista de pontos maximais tais que xiq < xiq+1 para todo q, então yiq > yiq+1 .
+
+    Considere dois pontos consecutivos da lista de maximais, piq e piq+1, tais que xi_q < xi_q+1. Suponha, por contradição, que yi_q <= yi_q+1.
+    Como xi_q < xi_q+1, também temos xi_q <= xi_q+1. Portanto, xi_q <= xi_q+1 e yi_q <= yi_q+1.
+    Pela definição de dominância, isso implica que pi_q+1 domina pi_q. Entretanto, pi_q é maximal e, portanto, não pode ser dominado por nenhum outro ponto de P. Temos uma contradição.
+    Logo, necessariamente: yi_q > yi_q+1.
+
+4. (Adaptado de Jeff Erickson CS498 UIUC) Como professor da disciplina de Alg2, você pediu aos alunos que implementassem um algoritmo de envoltória convexa. Agora que os alunos entregaram os TPs você quer escrever um corretor automático para os trabalhos. A primeira parte consiste em verificar se a saída do programa, uma lista de pares (x, y) representando as coordenadas dos pontos da envoltória, está ordenada no sentido anti-horário. Descreva um algoritmo que faça essa verificação em tempo O(n) (n é o total de pontos na saída). A figura abaixo mostra possíveis saídas de TPs e a resposta do seu programa.
+
+    Percorremos a lista de pontos da envoltória considerando cada trio consecutivo (pi, pi+1, pi+2). Para cada trio, calculamos sua orientação usando o determinante. Como a envoltória deve estar em sentido anti-horário, todo terceiro ponto deve estar à esquerda da reta orientada formada pelos dois anteriores.
+
+    Assim, para todo i, verificamos se: orient(pi, pi+1, pi+2) > 0.
+
+    Os índices são considerados módulo n para também verificar os trios que envolvem o final e o início da lista. Se algum teste resultar em orientação à direita, a lista não está em ordem anti-horária. Caso todos os testes sejam válidos, a ordem está correta. Como realizamos n testes, cada um em O(1), o algoritmo executa em O(n).
+
+5. (CLRS 33.2-4) Descreva um algoritmo O(n log n) que verifique se um polígono é simples (não necessariamente convexo). Assuma que o polígono não possua buracos
+
+    Representamos as n arestas do polígono como segmentos e aplicamos uma varredura vertical da esquerda para a direita. Inicialmente, ordenamos os extremos dos segmentos por coordenada x, o que custa O(n log n).
+    Durante a varredura, mantemos em uma árvore binária balanceada os segmentos que intersectam a reta de varredura, ordenados pela coordenada y.
+
+    Quando um segmento é inserido, verificamos interseção apenas com seus vizinhos imediatamente acima e abaixo. Quando um segmento é removido, verificamos se os dois segmentos que passam a ser vizinhos se intersectam. Caso seja encontrada uma interseção entre duas arestas não adjacentes do polígono, o polígono não é simples. Interseções entre arestas consecutivas em seus vértices comuns são permitidas. Como existem O(n) eventos e cada operação na árvore custa O(log n), o algoritmo executa em O(n log n).
+
+6. (CRLS 33.3-3) Prove que os pontos mais distantes de um conjunto P devem ser vértices da envoltória convexa.
+
+    Sejam p e q os dois pontos mais distantes do conjunto P. Suponha, por contradição, que p não seja um vértice da envoltória convexa. Então p está no interior da envoltória, ou sobre uma aresta entre outros vértices. Considere a reta que passa por q e p. Prolongando essa reta a partir de p na direção oposta a q, encontramos a fronteira da envoltória em algum ponto r.
+
+    Como p está entre q e r, temos: d(q,r) > d(q,p).
+    
+    Isso contradiz a hipótese de que p e q formam o par de pontos mais distantes de P. Portanto, p deve ser um vértice da envoltória convexa. O mesmo argumento vale para q. Logo, os pontos mais distantes de P devem ser vértices da envoltória convexa.
+
+7. Crie um algoritmo O(n) que transforme um polígono não-convexo em convexo.
+
+   Percorremos os vértices do polígono em ordem utilizando uma pilha. Para cada novo vértice p, verificamos a orientação formada pelos dois últimos vértices da pilha e por p. Se os três pontos mantêm a orientação correspondente a uma curva convexa, inserimos p na pilha. Caso formem uma curva para o interior do polígono, ou sejam colineares caso desejemos remover pontos redundantes, removemos o vértice do meio e repetimos o teste com os novos dois últimos vértices da pilha. Assim, vértices que formam reentrâncias são removidos e os vizinhos passam a ser ligados diretamente. Cada vértice é inserido na pilha uma vez e removido no máximo uma vez. Portanto, o custo total é O(n).
+
+
+
+
+
+
