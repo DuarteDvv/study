@@ -1294,8 +1294,37 @@ seguir no texto 0^(1000).
 
    Percorremos os vértices do polígono em ordem utilizando uma pilha. Para cada novo vértice p, verificamos a orientação formada pelos dois últimos vértices da pilha e por p. Se os três pontos mantêm a orientação correspondente a uma curva convexa, inserimos p na pilha. Caso formem uma curva para o interior do polígono, ou sejam colineares caso desejemos remover pontos redundantes, removemos o vértice do meio e repetimos o teste com os novos dois últimos vértices da pilha. Assim, vértices que formam reentrâncias são removidos e os vizinhos passam a ser ligados diretamente. Cada vértice é inserido na pilha uma vez e removido no máximo uma vez. Portanto, o custo total é O(n).
 
+8. Construa a kd usandos os seguintes pontos: P={(2,3),(5,4),(9,6),(4,7),(8,1),(7,2),(1,5),(6,8)} e depois consultas para Q1​=[3,7]×[2,6] e Q2​=[1,5]×[4,8]
 
+    arvore binária kd-tree:
 
+    x ordenado: ((1,5),(2,3),(4,7),(5,4),(6,8),(7,2),(8,1),(9,6)) -> mediana = 5.5
+    nivel 0:        (5.5)
 
+    y's ordenados:  ((2,3),(5,4),(1,5),(4,7)) -> 4.5    ((8,1),(7,2),(9,6),(6,8)) -> 4
+    nivel 1:                (4.5)                                    (4)
+
+    x's ordenados:  ((2,3),(5,4)) -> 3.5  ((1,5),(4,7)) -> 2.5     ((7,2),(8,1)) -> 7.5  ((6,8),(9,6)) -> 7.5
+    nivel 2:              (3.5)                 (2.5)                     (7.5)               (7.5)
+
+    y...:        ((2,3))  ((5,4))       ((1,5))  ((4,7))              ((7,2))  ((8,1))      ((6,8)) ((9,6))
+    nivel 3:   FIM
+
+    Q1​=[3,7]×[2,6]:
+
+    nivel 0: 
+    - 5.5 intercepta [3,7] portanto temos que explorar ambos filhos
+
+    nivel 1: 
+    - 4.5 e 4 interceptam [2,6] portanto temos que explorar os 2 filhos nos 2 nós
+    
+    nivel 2: 
+    - 3,5 está dentro de [3,7] -> explora os dois filhos.
+    - 2.5 < 3 -> a consulta está toda à direita desse corte -> explora só o filho direito.
+    - 7.5 > 7 -> a consulta está toda à esquerda desse corte -> explora só o filho esquerdo.
+    - 7.5 > 7 -> de novo, só o filho esquerdo
+
+    candidatos: (2,3),(5,4),(4,7),(7,2),(6,8) que vieram de regioes que tem intersecao 
+    
 
 
