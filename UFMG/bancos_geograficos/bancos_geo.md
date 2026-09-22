@@ -222,10 +222,6 @@ Essas funções permitem verificar relações espaciais, calcular medidas e gera
   - **Entrada:** Duas geometrias/geografias: A e B.
   - **Saída:** `BOOLEAN` (`TRUE` ou `FALSE`).
 
-- `ST_CoveredBy(A, B)`
-  - **O que faz:** Verifica se A é coberta por B, ou seja, nenhum ponto de A está fora de B. É o inverso de `ST_Covers(B, A)`.
-  - **Entrada:** Duas geometrias/geografias: A e B.
-  - **Saída:** `BOOLEAN` (`TRUE` ou `FALSE`).
 
 - `ST_Touches(A, B)`
   - **O que faz:** Verifica se A e B se tocam pelas suas fronteiras, mas seus interiores não possuem pontos em comum.
