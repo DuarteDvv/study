@@ -1,8 +1,36 @@
 ## **Aquisição dos dados** 
 
+### **Posicionamento geográfico**
 
+A localização é a base da geoinformática, porque permite relacionar informações de bancos de dados diferentes. 
+Há duas formas principais:
 
+- posicionamento relativo: localização em relação a um ponto de referência, endereço, grade etc.;
+- posicionamento absoluto: localização por coordenadas geográficas, medições geodésicas ou GNSS.
 
+### **Fontes de dados geográficos**
+
+Os dados podem ser coletados diretamente em campo, por topografia, GPS/GNSS, medições e marcos geodésicos.
+
+- GNSS é o termo geral para sistemas de navegação por satélite. Entre eles estão GPS (EUA), GLONASS (Rússia), Galileo (UE) e BeiDou (China).
+- No GPS, satélites enviam sinais contendo informação de tempo e órbita. O receptor calcula sua distância aos satélites e combina essas distâncias para determinar sua posição. Normalmente são utilizados pelo menos quatro satélites para obter latitude, longitude, altitude e corrigir o erro do relógio do receptor.
+- Outra fonte importante é o sensoriamento remoto, com sensores instalados em satélites, aviões etc. 
+
+### **Repositórios e outras fontes**
+
+Dados prontos podem ser obtidos em repositórios vetoriais, Infraestruturas de Dados Espaciais (IDEs) e portais governamentais de dados abertos. Metadados são importantes porque descrevem origem, qualidade, sistema de coordenadas e outras características do conjunto de dados. Também existem dados produzidos continuamente, como redes sociais baseadas em localização e trajetórias de objetos móveis. O uso desses dados é limitado, entre outros fatores, por questões de privacidade. Até dados originalmente não geográficos podem ser convertidos em dados espaciais quando contêm endereços, topônimos ou outras referências de lugar, principalmente por meio de geocodificação.
+
+### **Como os dados geográficos são representados**
+
+Dados vetoriais representam objetos discretos por coordenadas:
+
+- POINT -> ponto;
+- LINESTRING -> linha;
+- POLYGON -> área;
+- MULTIPOINT, MULTILINESTRING e MULTIPOLYGON -> conjuntos dessas geometrias;
+- GEOMETRY COLLECTION -> conjunto de geometrias diferentes.
+
+Dados raster representam o espaço como uma matriz regular de células/pixels, cada uma contendo um valor. O sistema de referência usado pelo dado também precisa ser registrado. Isso normalmente é identificado por um SRID, permitindo saber qual sistema de coordenadas/projeção está sendo utilizado e fazer transformações entre sistemas.
 
 ## **Modelagem OMT-G**
 
