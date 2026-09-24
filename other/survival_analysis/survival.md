@@ -75,7 +75,7 @@ $$\hat{H}(t) = \sum_{t_i \le t} \frac{d_i}{n_i}$$
 
 A censura entra da mesma forma que no KM: pelo denominador *nᵢ*.
 
-**Relação com o KM:** a partir do NA também dá para obter a sobrevivência, com S(t) = exp(−H(t)). Como exp(−h) ≈ 1 − h quando h é pequeno, as duas curvas ficam muito próximas; a do NA fica ligeiramente acima.
+**Relação com o KM:** a partir do NA também dá para obter a sobrevivência, com S(t) = exp(−H(t)).
 
 **Características:**
 
@@ -89,11 +89,84 @@ A censura entra da mesma forma que no KM: pelo denominador *nᵢ*.
 
 ![alt text](imgs/na.png)
 
-## **Modelo Cox** 
+## **Modelo Semiparamétrico**
+
+### **Cox**
 
 $$
-h(t | X) = h_0(t) \exp(\beta_1 X_1 + \beta_2 X_2 + \dots + \beta_p X_p)
+H(t \mid X) = H_0(t) \exp(\beta_1 X_1 + \beta_2 X_2 + \dots + \beta_p X_p)
 $$
+
+A fórmula original do Cox é definida em cima do hazard instantâneo, mas como o mesmo fator multiplicativo se aplica ao hazard acumulado, as duas formas geram a mesma curva de sobrevivência. Gerar a curva pelo acumulado é mais fácil, porque é isso que se estima diretamente dos dados (Breslow), sem precisar "desacumular" para achar o instantâneo.
+
+A ideia da fórmula:
+
+- **H₀(t):** o hazard acumulado de um indivíduo de referência (features = 0), comum a toda a base. É basicamente o Nelson-Aalen, e S₀(t) = exp(−H₀(t)) dá uma curva próxima da KM.
+- **exp(β₁X₁ + ...):** o *relative hazard* (risco desse indivíduo em relação à referência), ponderado pelos β aprendidos.
+  - RH < 1 → risco menor que a referência
+  - RH > 1 → risco maior que a referência
+
+A curva H₀(t) é fixa, estimada uma vez com a base inteira. Para gerar a curva de uma nova instância, não se recalcula nada do zero: só se escala H₀(t) pelo RH daquela instância, o que já dá H(t) em todo t.
+
+### **Como encontrar os parâmetros β**
+
+#### **Verossimilhança (likelihood)**
+
+Mede o quão bem parâmetros de um modelo explicam os dados observados, invertendo a lógica da probabilidade:
+
+- Na probabilidade, temos os parâmetros e perguntamos qual a chance de observar tais dados.
+- Na verossimilhança, temos os dados observados e perguntamos para quais parâmetros esses dados são mais prováveis.
+
+A função de verossimilhança L retorna um valor maior para parâmetros mais prováveis. Para maximizar, usam-se métodos baseados em derivadas (gradiente, Newton-Raphson, mais eficiente quando a função é côncava, como aqui, pois usa a curvatura para convergir mais rápido). Geralmente maximiza-se o log de L, porque a derivada fica mais simples e o cálculo é numericamente mais estável.
+
+#### **Como o Cox faz**
+
+O Cox maximiza uma verossimilhança **parcial**: ela não estima H₀ junto com os β, então não depende de nenhuma suposição sobre a forma de H₀.
+
+$$L(\beta) = \prod_{i:\, \text{evento}} \frac{e^{\beta x_i}}{\sum_{j \in R(t_i)} e^{\beta x_j}}$$
+
+- **Numerador:** o relative hazard do indivíduo que teve o evento em t.
+- **Denominador:** a soma dos relative hazard de todos em risco em t (ainda sem evento, ainda não censurados), incluindo o próprio i.
+
+Cada fração é a probabilidade de ter sido justamente o indivíduo i a ter o evento, entre todos os candidatos daquele instante. O produtório é maximizado quando o modelo dá risco relativo mais alto para quem de fato teve o evento em cada t, ou seja, os β são ajustados para que o modelo ordene corretamente quem tinha mais risco no momento certo.
+
+A fórmula original assume que dois eventos não acontecem no mesmo instante. Quando há empates (comum em dados discretizados por dia), usam-se aproximações: **Breslow** ou **Efron**
+
+### **Premissas**
+
+- **Riscos proporcionais:** a razão entre o hazard de dois indivíduos precisa ser constante ao longo do tempo. Se o efeito de uma variável muda de intensidade com t (ex.: proteção que só vale nos primeiros meses), a razão deixa de ser constante, sintoma visível disso são curvas KM que se cruzam, e nenhum HR fixo consegue representar essa mudança.
+- **Independência:** as observações precisam ser independentes entre si. Múltiplas linhas do mesmo indivíduo (ex.: janelas deslizantes) violam isso, os β continuam razoáveis, mas os erros padrão ficam subestimados; corrige-se com erro padrão robusto agrupado por indivíduo.
+- **Censura não informativa:** o motivo da censura não pode estar relacionado ao risco do indivíduo. Se quem sai da observação tem risco sistematicamente diferente de quem continua, a curva de sobrevivência fica enviesada.
+
+![alt text](imgs/cox_linear.png)
+
+### **Cox XGBoost**
+
+Mesma estrutura do Cox linear, $H(t|X) = H_0(t)\exp(f(X))$, mas o termo linear $\beta X$ vira $f(X)$ = soma de previsões de várias árvores (BOOSTING), o que permite capturar não linearidades e interações sem precisar especificar manualmente.
+
+A loss continua sendo a mesma verossimilhança parcial do Cox. O que muda é como ela é maximizada: em vez de resolver os β de uma vez com Newton-Raphson, o XGBoost ajusta uma árvore por vez via **gradient boosting**.
+
+**Como as árvores treinam sem ter o T como rótulo direto:**
+
+Gradient boosting sempre treina cada árvore para prever o **gradiente da loss** em relação à previsão atual, o que no fundo é sempre alguma forma de "rótulo − previsão".
+
+Em Cox, para cada tempo de evento tₖ, a "previsão" do modelo é a mesma fração da verossimilhança parcial menos a probabilidade de ter sido aquele indivíduo entre todos em risco:
+
+$$p_i(t_k) = \frac{e^{f(x_i)}}{\sum_{j \in R(t_k)} e^{f(x_j)}}$$
+
+E o "rótulo" é binário: foi essa linha quem teve o evento em tₖ (1) ou ela só estava em risco, sem vencer (0). O gradiente de cada linha soma essa diferença em **todos os tempos em que ela participou como candidata**:
+
+$$\text{gradiente}_i = [1 - p_i(t_i)] - \sum_{t_k < t_i} p_i(t_k)$$
+
+- No seu próprio tempo de evento: `1 − p` (quanto o modelo ainda subestima o risco dela).
+- Em todo tempo anterior em que ela só era candidata: subtrai `p` (penaliza o modelo por ter dado risco alto demais a quem não venceu ainda).
+
+É assim que censura entra no treino: uma linha censurada nunca contribui com o termo positivo, só com os termos negativos como concorrente, o mesmo papel que ela tem no denominador da verossimilhança parcial do Cox linear.
+
+## **Modelos não paramétricos e AFT**
+
+O cox é semiparamétrico pois ele deixa o H₀(t) livre, sem forma definida, e só estima o efeito das features. Os modelos paramétricos vão além: eles *assumem uma distribuição de probabilidade inteira para T (o tempo até o evento)* como Weibull e exponencial.
+
 
 ## **Metricas** 
 
