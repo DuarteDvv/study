@@ -9,7 +9,7 @@ Análise de sobrevivência é um conjunto métodos estatísticos para analisar d
 
 A maior diferença aqui é que sobrevivencia lida com a censura, sem esse detalhe outros metodos de modelagem de tempo poderiam ser usados como regressão simples ou classificação.
 
-## **Funções (Discretas)** 
+## **Funções (Discretas) e Modelos** 
 
 Quase todos os métodos dentro de analise de sobrevivencia tentam estimar ou modelar uma das seguintes funções. Seja T a variável aleatória do tempo até o evento, assumindo valores t = 1, 2, 3, ..., e seja f(t) = P(T = t) a sua função de probabilidade, isto é, a probabilidade de o evento acontecer exatamente no período t e F(t) a função acumulada. Quase todos os métodos dentro de análise de sobrevivência tentam estimar ou modelar uma das seguintes funções:
 
@@ -163,10 +163,55 @@ $$\text{gradiente}_i = [1 - p_i(t_i)] - \sum_{t_k < t_i} p_i(t_k)$$
 
 É assim que censura entra no treino: uma linha censurada nunca contribui com o termo positivo, só com os termos negativos como concorrente, o mesmo papel que ela tem no denominador da verossimilhança parcial do Cox linear.
 
-## **Modelos não paramétricos e AFT**
+## **Modelos paramétricos e AFT**
 
-O cox é semiparamétrico pois ele deixa o H₀(t) livre, sem forma definida, e só estima o efeito das features. Os modelos paramétricos vão além: eles *assumem uma distribuição de probabilidade inteira para T (o tempo até o evento)* como Weibull e exponencial.
+O Cox é semiparamétrico: deixa o H₀(t) livre, sem forma definida, e só estima o efeito das features. Os modelos **paramétricos** vão além: assumem uma distribuição de probabilidade inteira para T (o tempo até o evento), como Weibull, exponencial ou log-normal.
 
+Assumir uma distribuição fechada tem vantagens: a curva sai suave (sem os degraus do KM/Cox), o modelo consegue **extrapolar** além do maior tempo observado no treino (o Cox só conhece o formato de H₀ até onde há dados), e funciona melhor com poucos dados. O custo é o risco de **má especificação**: se a forma real não é Weibull e você força uma, a curva erra sistematicamente.
+
+Dentro dos paramétricos, existem duas formas diferentes de incluir as features:
+
+### **Proportional Hazards (PH) paramétrico**
+
+$$h(t \mid x) = h_0(t) \cdot e^{\beta x}$$
+
+Mesma lógica do Cox: a feature multiplica o **risco**, mantendo o formato do tempo fixo. A única diferença do Cox é que aqui h₀(t) tem forma fechada (Weibull, exponencial) em vez de livre.
+
+### **Accelerated Failure Time (AFT)**
+
+$$\log T = \mu + \beta x + \sigma \epsilon$$
+
+Aqui a feature não multiplica o risco, multiplica o **tempo**:
+
+$$T_i = T_0 \cdot e^{\beta x_i}$$
+
+onde T₀ é o tempo de um indivíduo de referência. A feature **acelera ou desacelera o relógio**: se e^(βx) = 2, esse indivíduo vive o dobro do tempo em cada fase, a curva inteira estica no eixo do tempo, sem mudar de formato.
+
+### **Coeficiente: Time Ratio (TR)**
+
+No AFT, o parâmetro estimado não é HR, é o **Time Ratio**: TR = e^β.
+
+- TR = 2 → a variável dobra o tempo até o evento
+- TR = 0,5 → a variável reduz à metade o tempo até o evento
+
+### **PH vs. AFT: como escolher**
+
+- Curvas KM que **se cruzam** → PH (Cox) não representa bem; AFT costuma conseguir, porque o cruzamento pode ser só um "esticar/comprimir" do tempo.
+- Efeito multiplica o risco igual em qualquer fase → PH.
+- Efeito muda a **velocidade** do processo todo (ritmo, ciclo) → AFT.
+- Dá para comparar as duas por AIC/verossimilhança, ou checar visualmente se log(T) é mais linear contra as features que log(hazard).
+
+![alt text](imgs/aft.png)
+
+### **Ligação com XGBoost**
+
+O `survival:aft` do XGBoost segue essa mesma estrutura, com árvores no lugar do βx — é a opção mais alinhada a problemas em que clientes têm ritmos (ciclos) diferentes.
+
+## **Modelos não paramétricos** 
+
+### **Random Survival Forest**
+
+## **Buy Till You Die (BTYD)**
 
 ## **Metricas** 
 
