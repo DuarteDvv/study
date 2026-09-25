@@ -140,30 +140,14 @@ A fórmula original assume que dois eventos não acontecem no mesmo instante. Qu
 
 ![alt text](imgs/cox_linear.png)
 
-### **Cox XGBoost**
+### **XGBoost com Cox**
 
 Mesma estrutura do Cox linear, $H(t|X) = H_0(t)\exp(f(X))$, mas o termo linear $\beta X$ vira $f(X)$ = soma de previsões de várias árvores (BOOSTING), o que permite capturar não linearidades e interações sem precisar especificar manualmente.
 
 A loss continua sendo a mesma verossimilhança parcial do Cox. O que muda é como ela é maximizada: em vez de resolver os β de uma vez com Newton-Raphson, o XGBoost ajusta uma árvore por vez via **gradient boosting**.
 
-**Como as árvores treinam sem ter o T como rótulo direto:**
 
-Gradient boosting sempre treina cada árvore para prever o **gradiente da loss** em relação à previsão atual, o que no fundo é sempre alguma forma de "rótulo − previsão".
-
-Em Cox, para cada tempo de evento tₖ, a "previsão" do modelo é a mesma fração da verossimilhança parcial menos a probabilidade de ter sido aquele indivíduo entre todos em risco:
-
-$$p_i(t_k) = \frac{e^{f(x_i)}}{\sum_{j \in R(t_k)} e^{f(x_j)}}$$
-
-E o "rótulo" é binário: foi essa linha quem teve o evento em tₖ (1) ou ela só estava em risco, sem vencer (0). O gradiente de cada linha soma essa diferença em **todos os tempos em que ela participou como candidata**:
-
-$$\text{gradiente}_i = [1 - p_i(t_i)] - \sum_{t_k < t_i} p_i(t_k)$$
-
-- No seu próprio tempo de evento: `1 − p` (quanto o modelo ainda subestima o risco dela).
-- Em todo tempo anterior em que ela só era candidata: subtrai `p` (penaliza o modelo por ter dado risco alto demais a quem não venceu ainda).
-
-É assim que censura entra no treino: uma linha censurada nunca contribui com o termo positivo, só com os termos negativos como concorrente, o mesmo papel que ela tem no denominador da verossimilhança parcial do Cox linear.
-
-## **Modelos paramétricos e AFT**
+## **Modelos paramétricos, AFT e Discretos**
 
 O Cox é semiparamétrico: deixa o H₀(t) livre, sem forma definida, e só estima o efeito das features. Os modelos **paramétricos** vão além: assumem uma distribuição de probabilidade inteira para T (o tempo até o evento), como Weibull, exponencial ou log-normal.
 
@@ -185,7 +169,7 @@ Aqui a feature não multiplica o risco, multiplica o **tempo**:
 
 $$T_i = T_0 \cdot e^{\beta x_i}$$
 
-onde T₀ é o tempo de um indivíduo de referência. A feature **acelera ou desacelera o relógio**: se e^(βx) = 2, esse indivíduo vive o dobro do tempo em cada fase, a curva inteira estica no eixo do tempo, sem mudar de formato.
+onde T₀ é o tempo de um indivíduo de referência, ou seja, a distribuicao basal de referencia como exponencial ou lognormal. A feature **acelera ou desacelera o relógio**: se e^(βx) = 2, esse indivíduo vive o dobro do tempo em cada fase, a curva inteira estica no eixo do tempo, sem mudar de formato.
 
 ### **Coeficiente: Time Ratio (TR)**
 
@@ -194,20 +178,38 @@ No AFT, o parâmetro estimado não é HR, é o **Time Ratio**: TR = e^β.
 - TR = 2 → a variável dobra o tempo até o evento
 - TR = 0,5 → a variável reduz à metade o tempo até o evento
 
-### **PH vs. AFT: como escolher**
+### **XGBoost com AFT**
 
-- Curvas KM que **se cruzam** → PH (Cox) não representa bem; AFT costuma conseguir, porque o cruzamento pode ser só um "esticar/comprimir" do tempo.
-- Efeito multiplica o risco igual em qualquer fase → PH.
-- Efeito muda a **velocidade** do processo todo (ritmo, ciclo) → AFT.
-- Dá para comparar as duas por AIC/verossimilhança, ou checar visualmente se log(T) é mais linear contra as features que log(hazard).
+O `survival:aft` do XGBoost segue essa mesma estrutura, com árvores no lugar do βx e usado log-normal de T0.
+
+
+### **PH vs. AFT**
+
+O Cox e o AFT representam duas formas distintas de incorporar as características dos relacionamentos à dinâmica temporal do evento. O primeiro assume que essas características modificam proporcionalmente o risco de ocorrência ao longo do tempo, enquanto o segundo assume que elas aceleram ou retardam a escala temporal até o evento. A comparação entre ambas as formulações permite avaliar qual dessas representações é mais adequada ao comportamento observado.
 
 ![alt text](imgs/aft.png)
 
-### **Ligação com XGBoost**
 
-O `survival:aft` do XGBoost segue essa mesma estrutura, com árvores no lugar do βx — é a opção mais alinhada a problemas em que clientes têm ritmos (ciclos) diferentes.
+### **Modelos de tempo discreto**
+
+A ideia aqui é discretizar/agrupar as previsoes de Hazard nao para dias especificos mas para intervalos de dias especificos como por exemplo imagine que queremos acompanhar um cliente por 90 dias e dividimos esse período em três intervalos:
+$$
+(0,30],\quad(30,60],\quad(60,90]
+$$
+ Em vez de o modelo tentar prever diretamente “o cliente terá churn em 73 dias”, ele pergunta, sequencialmente:
+“Dado que o cliente chegou até este período sem apresentar o evento, qual a probabilidade de o evento acontecer agora?” Essa probabilidade é o hazard discreto.
+
+### **Sobrevivencia ?**
+
+Isso pode se tornar uma curva de sobrevivencia entretanto o eixo tempo agora nao é mais dias e sim determinado pelos agrupamentos, ou seja, pode ser 1 mes, 2 meses e etc.
+
+### **Ligacao com classificacao**
+
+Vira basicamente um problema de classificacao que pode ser modelado com varios modelos binarios ou um unico com varias saidas.
 
 ## **Modelos não paramétricos** 
+
+
 
 ### **Random Survival Forest**
 
