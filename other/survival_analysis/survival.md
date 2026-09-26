@@ -97,7 +97,7 @@ $$
 H(t \mid X) = H_0(t) \exp(\beta_1 X_1 + \beta_2 X_2 + \dots + \beta_p X_p)
 $$
 
-A fórmula original do Cox é definida em cima do hazard instantâneo, mas como o mesmo fator multiplicativo se aplica ao hazard acumulado, as duas formas geram a mesma curva de sobrevivência. Gerar a curva pelo acumulado é mais fácil, porque é isso que se estima diretamente dos dados (Breslow), sem precisar "desacumular" para achar o instantâneo.
+A fórmula original do Cox é definida em cima do hazard instantâneo, mas como o mesmo fator multiplicativo se aplica ao hazard acumulado, as duas formas geram a mesma curva de sobrevivência. Gerar a curva pelo acumulado é mais fácil, porque é isso que se estima diretamente dos dados (Breslow), sem precisar "desacumular" para achar o instantâneo. (Semi paramétrico pois não assume forma da curva mas ainda tem parametros aprendidos)
 
 A ideia da fórmula:
 
@@ -209,34 +209,287 @@ Vira basicamente um problema de classificacao que pode ser modelado com varios m
 
 ## **Modelos não paramétricos** 
 
-
+Modelos que não tem parametros aprendidos nem assumem nenhuma forma/distribuição paramétrica pre-existente.
 
 ### **Random Survival Forest**
 
+Um método não paramétrico que usa uma lógica parecida com Random Forest, em que geramos uma árvore de decisão para os indivíduos e cada folha contém indivíduos semelhantes com base nas features. Uma vez que esses indivíduos semelhantes estão na mesma folha, geramos uma estimativa da curva de sobrevivência com eles. Agora repetimos esse processo para \(N\) árvores aleatórias diferentes e combinamos as saídas por bagging.
+
+- A principal vantagem é não precisar assumir uma relação linear entre as features e o risco, nem uma distribuição específica para o tempo até o evento. Assim, o modelo consegue capturar relações não lineares e interações entre variáveis.
+
+- O principal problema é ser caro pois envolve muitas árvores e cálculos de sobrevivência dentro de cada nó/folha
+
 ## **Buy Till You Die (BTYD)**
 
-## **Metricas** 
+Os modelos BTYD foram desenvolvidos para contextos não contratuais, nos quais não observamos explicitamente quando o cliente deixa de se relacionar com a empresa.
+
+A ideia é assumir que cada cliente possui dois processos latentes principais:
+
+1. um processo que determina a frequência com que ele realiza compras enquanto está ativo;
+2. um processo que representa a possibilidade de ele deixar de comprar definitivamente.
+
+Como não observamos diretamente o momento em que o cliente deixa de estar ativo, o modelo infere esse estado a partir do histórico de compras.
+
+As principais informações utilizadas são:
+
+- $x_i$: número de recompras realizadas pelo cliente;
+- $t_{x,i}$: tempo entre a primeira e a última compra;
+- $T_i$: tempo entre a primeira compra e a data de observação.
+
+A partir dessas informações, o modelo consegue estimar, por exemplo:
+
+$$
+P(\text{alive}_i)
+$$
+
+que representa a probabilidade estimada de o cliente ainda estar ativo, e
+
+$$
+E[N_i(h)]
+$$
+
+que representa o número esperado de compras em um horizonte futuro $h$.
+
+Também é possível obter:
+
+$$
+P(N_i(h)\geq 1)
+$$
+
+ou seja, a probabilidade de ocorrer pelo menos uma compra dentro do horizonte $h$.
+
+É importante notar que:
+
+$$
+P(\text{alive})
+\neq
+P(\text{compra em }h)
+$$
+
+Um cliente pode estar ativo segundo o modelo, mas ainda assim não realizar nenhuma compra dentro de um horizonte curto.
+
+
+### **BG/NBD**
+
+O BG/NBD (*Beta Geometric / Negative Binomial Distribution*) é um dos modelos BTYD mais utilizados.
+
+Ele assume que, enquanto o cliente está ativo, as compras seguem um processo probabilístico com uma taxa de compra própria de cada indivíduo. Clientes diferentes podem possuir diferentes frequências de compra.
+
+De forma simplificada:
+
+$$
+\text{cliente ativo}
+\rightarrow
+\text{compras ocorrendo com determinada frequência}
+$$
+
+Após uma compra, existe também uma probabilidade de o cliente deixar de estar ativo:
+
+$$
+\text{compra}
+\rightarrow
+\begin{cases}
+\text{continua ativo} \\
+\text{abandona o relacionamento}
+\end{cases}
+$$
+
+Essa probabilidade de abandono também varia entre os clientes.
+
+O modelo utiliza o histórico observado para inferir simultaneamente:
+
+- quão frequentemente cada cliente tende a comprar;
+- quão provável é que ele ainda esteja ativo.
+
+Por isso, clientes com a mesma recência podem receber estimativas diferentes caso apresentem históricos de frequência muito distintos.
+
+
+## **Métricas**
 
 ### **C-index (Harrell e Uno)**
 
-Para todos os pares comparaveis, ou seja, todos os pares não censurados em que conseguimos ter acesso ao evento (proxima compra por exemplo) mede a capacidade do modelo de ordenar corretamente os tempos até o evento, não a probabilidade em si. Pergunta: "entre dois clientes, o modelo prevê tempo menor para quem realmente comprou primeiro?"
+Para os pares comparáveis, mede a capacidade do modelo de ordenar corretamente os tempos até o evento, e não necessariamente a qualidade das probabilidades previstas.
 
+A pergunta principal é:
 
-$$
-C_{\text{Harrell}} = \frac{\displaystyle\sum_{i,j} \mathbb{1}\left[T_i < T_j\right] \cdot \mathbb{1}\left[\hat{\eta}_i > \hat{\eta}_j\right] \cdot \delta_i}{\displaystyle\sum_{i,j} \mathbb{1}\left[T_i < T_j\right] \cdot \delta_i}
-$$
-
-O problema do C-index de Harrell é que, quando há muita censura, ele fica enviesado, pares envolvendo indivíduos censurados cedo são simplesmente descartados, e isso distorce a estimativa se a censura não for uniforme ao longo do tempo.
+> Entre dois clientes, o modelo atribui maior risco para aquele que realmente apresentou o evento primeiro?
 
 $$
-C_{\text{Uno}} = \frac{\displaystyle\sum_{i,j} \mathbb{1}\left[T_i < T_j\right] \cdot \mathbb{1}\left[\hat{\eta}_i > \hat{\eta}_j\right] \cdot \delta_i \cdot \dfrac{1}{\hat{G}(T_i)^2}}{\displaystyle\sum_{i,j} \mathbb{1}\left[T_i < T_j\right] \cdot \delta_i \cdot \dfrac{1}{\hat{G}(T_i)^2}}
+C_{\text{Harrell}}
+=
+\frac{
+\displaystyle
+\sum_{i,j}
+\mathbb{1}[T_i < T_j]
+\mathbb{1}[\hat{\eta}_i > \hat{\eta}_j]
+\delta_i
+}{
+\displaystyle
+\sum_{i,j}
+\mathbb{1}[T_i < T_j]
+\delta_i
+}
 $$
 
-- $T_i, T_j$: tempos observados (evento ou censura)
-- $\delta_i$: indicador de evento ($1$ = evento observado, $0$ = censurado)
-- $\hat{\eta}_i$: score de risco previsto pelo modelo
-- $\hat{G}(t)$: estimativa Kaplan--Meier da distribuição de censura (probabilidade de não estar censurado até $t$)
+Onde:
 
+- $T_i,T_j$: tempos observados;
+- $\delta_i$: indicador de evento;
+- $\hat{\eta}_i$: score de risco previsto.
+
+A interpretação é:
+
+$$
+C = 0.5
+$$
+
+equivale aproximadamente a uma ordenação aleatória, enquanto:
+
+$$
+C = 1
+$$
+
+representa ordenação perfeita. O problema do C-index de Harrell é que, quando existe muita censura, diversos pares deixam de ser comparáveis. Isso pode introduzir viés na avaliação. O C-index de Uno procura corrigir esse problema utilizando ponderação pela distribuição de censura:
+
+$$
+C_{\text{Uno}}
+=
+\frac{
+\displaystyle
+\sum_{i,j}
+\mathbb{1}[T_i < T_j]
+\mathbb{1}[\hat{\eta}_i > \hat{\eta}_j]
+\delta_i
+\frac{1}{\hat{G}(T_i)^2}
+}{
+\displaystyle
+\sum_{i,j}
+\mathbb{1}[T_i < T_j]
+\delta_i
+\frac{1}{\hat{G}(T_i)^2}
+}
+$$
+
+onde:
+
+- $\hat{G}(t)$: probabilidade estimada de continuar não censurado até $t$.
+
+Assim, o Uno tende a ser mais apropriado quando a censura é elevada.
+
+
+### **Brier Score**
+
+O Brier Score mede o erro entre a probabilidade de sobrevivência prevista pelo modelo e o que efetivamente foi observado em um determinado instante $t$.
+
+Sem censura, a ideia seria:
+
+$$
+BS(t)
+=
+\frac{1}{n}
+\sum_{i=1}^{n}
+\left(
+\mathbb{1}[T_i > t] - \hat{S}_i(t)
+\right)^2
+$$
+
+onde:
+
+- $\hat{S}_i(t)$: probabilidade prevista de o indivíduo permanecer sem evento além de $t$;
+- $\mathbb{1}[T_i > t]$: indica se o indivíduo efetivamente permaneceu sem evento até esse instante.
+
+Portanto, o Brier Score avalia a qualidade da probabilidade prevista, não apenas a ordenação dos clientes. Quanto menor melhor.Além disso, um modelo pode possuir C-index alto e ainda ter Brier Score ruim, caso consiga ordenar corretamente os indivíduos, mas produza probabilidades mal calibradas.
 
 ### **IBS (Integrated Brier Score)**
+
+O IBS resume o Brier Score ao longo de vários instantes de tempo.
+
+Em vez de avaliar apenas:
+
+$$
+BS(30)
+$$
+
+ou:
+
+$$
+BS(60)
+$$
+
+ele integra o erro em todo um intervalo temporal:
+
+$$
+IBS
+=
+\frac{1}{\tau}
+\int_0^{\tau}
+BS(t)\,dt
+$$
+
+onde $\tau$ representa o horizonte máximo de avaliação. Portanto, o IBS responde aproximadamente:
+
+> Quão próximas as curvas de sobrevivência previstas estão do comportamento realmente observado ao longo de todo o período?
+
+Quanto menor o IBS melhor. O IBS é particularmente útil porque resume a qualidade das previsões probabilísticas ao longo de todo o intervalo temporal considerado.
+
+### **AUC dinâmica**
+
+A AUC dinâmica avalia a capacidade do modelo de separar indivíduos com maior e menor risco em um determinado horizonte temporal.
+
+Por exemplo, para $t=60$:
+
+$$
+AUC(60)
+$$
+
+avalia se o modelo consegue atribuir maior risco aos clientes que apresentaram o evento antes de 60 dias em comparação com aqueles que permaneceram sem o evento até esse horizonte. Diferentemente do C-index, que resume a ordenação global, a AUC dinâmica permite analisar o desempenho em horizontes específicos:
+
+$$
+AUC(30),\quad
+AUC(60),\quad
+AUC(90)
+$$
+
+Quanto maior melhor. com aproximadamente:
+
+$$
+AUC = 0.5
+$$
+
+indicando discriminação aleatória e:
+
+$$
+AUC = 1
+$$
+
+indicando discriminação perfeita.
+
+### **Calibração**
+
+A calibração verifica se as probabilidades previstas correspondem às frequências realmente observadas.
+
+Por exemplo, se o modelo atribui:
+
+$$
+P(\text{compra até 60 dias}) = 0.70
+$$
+
+para um conjunto de clientes semelhantes, idealmente aproximadamente 70% deles deveriam realizar uma compra nesse período. Um modelo pode apresentar boa discriminação e má calibração.
+
+Por exemplo, ele pode ordenar perfeitamente os clientes:
+
+$$
+A > B > C > D
+$$
+
+em termos de risco, mas produzir probabilidades sistematicamente exageradas.
+
+Por isso:
+
+$$
+\text{discriminação} \neq \text{calibração}
+$$
+
+C-index e AUC avaliam principalmente discriminação, enquanto Brier Score, IBS e gráficos de calibração ajudam a avaliar a qualidade das probabilidades.
+
 
