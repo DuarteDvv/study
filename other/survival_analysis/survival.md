@@ -221,57 +221,39 @@ Um método não paramétrico que usa uma lógica parecida com Random Forest, em 
 
 ## **Buy Till You Die (BTYD)**
 
-Os modelos BTYD foram desenvolvidos para contextos não contratuais, nos quais não observamos explicitamente quando o cliente deixa de se relacionar com a empresa.
+### **Conceitos importantes**
 
-A ideia é assumir que cada cliente possui dois processos latentes principais:
+#### **Variavel Aleatória**
 
-1. um processo que determina a frequência com que ele realiza compras enquanto está ativo;
-2. um processo que representa a possibilidade de ele deixar de comprar definitivamente.
+É uma funcao que mapeia do espaco amostral de um experimento aleatório em um numero real, ou seja, mapeia os possiveis resultados de um experimento (espaco amostral) para um numero. Com esses numeros geramos frequencia e distribuicoes de probabilidade no espaco amostral.
 
-Como não observamos diretamente o momento em que o cliente deixa de estar ativo, o modelo infere esse estado a partir do histórico de compras.
+#### **Processo Estocastico**
 
-As principais informações utilizadas são:
+Imagine a distribuicao de probabilidade de uma variavel aleatória no dia t, agora imagine no dia t+1 e depois para qualquer t >= 0. Isso gera uma especie de terceira dimensao na distribuicao de probabilidade que é o tempo e cada dia temos uma variavel aleatoria diferente para aquele dia mesmo que ela modele um espaco amostral parecido. Devido a isso processo é definido como um conjunto de variaveis aleatorias que evoluem com o tempo e elas nao sao independentes entre si.
 
-- $x_i$: número de recompras realizadas pelo cliente;
-- $t_{x,i}$: tempo entre a primeira e a última compra;
-- $T_i$: tempo entre a primeira compra e a data de observação.
+#### **Variavel latente**
 
-A partir dessas informações, o modelo consegue estimar, por exemplo:
+Variaveis nao observadas (nao temos acesso) que geram dados observados, usamos os dados observados para estimar essa variavel latente. Um exemplo disso é a inteligencia que nao observamos mas usamos dados gerados por ela como notas para estimar.
 
-$$
-P(\text{alive}_i)
-$$
+![alt text](imgs/conceitos.png)
 
-que representa a probabilidade estimada de o cliente ainda estar ativo, e
+### **Os modelos**
 
-$$
-E[N_i(h)]
-$$
+Os modelos BTYD foram desenvolvidos para contextos não contratuais, nos quais não observamos explicitamente quando o cliente deixa de se relacionar com a empresa. A ideia é assumir que cada cliente possui dois processos latentes principais que sao individualizados para cada cliente, ou seja, o mesmo processo mas com parametros especificos de clientes. Na maioria dos modelos classicos a ideia é manter os seguintes:
 
-que representa o número esperado de compras em um horizonte futuro $h$.
+1. *Processo de compra:*
+    - um processo que determina a frequência com que ele realiza compras enquanto está ativo/vivo
+    - Esse processo N(t) processo modela o numero de compras do cliente ate o tempo t
+    - Para isso se assume uma Poisson com lambda definido por uma taxa de compra por unidade de tempo do cliente enquanto ele estiver vivo
+    - Como também desconhecemos essa taxa de compra dos clientes assumimos que ela se comporta como uma distribuicao Gamma
+2. *Processo de abandono:*
+    - um processo que representa a possibilidade de ele deixar de comprar definitivamente 
+    - Esse processo Z(t) modela o estado latente do cliente estar ativo/vivo no tempo t
+    - Isso é inferido pelos dados de entrada
 
-Também é possível obter:
+Usando esses dois processos ele infere o P(Alive) e o numero de compras, ambos no tempo t
 
-$$
-P(N_i(h)\geq 1)
-$$
-
-ou seja, a probabilidade de ocorrer pelo menos uma compra dentro do horizonte $h$.
-
-É importante notar que:
-
-$$
-P(\text{alive})
-\neq
-P(\text{compra em }h)
-$$
-
-Um cliente pode estar ativo segundo o modelo, mas ainda assim não realizar nenhuma compra dentro de um horizonte curto.
-
-
-### **BG/NBD**
-
-O BG/NBD (*Beta Geometric / Negative Binomial Distribution*) é um dos modelos BTYD mais utilizados.
+#### **BG/NBD**
 
 Ele assume que, enquanto o cliente está ativo, as compras seguem um processo probabilístico com uma taxa de compra própria de cada indivíduo. Clientes diferentes podem possuir diferentes frequências de compra.
 
@@ -301,12 +283,120 @@ O modelo utiliza o histórico observado para inferir simultaneamente:
 - quão frequentemente cada cliente tende a comprar;
 - quão provável é que ele ainda esteja ativo.
 
-Por isso, clientes com a mesma recência podem receber estimativas diferentes caso apresentem históricos de frequência muito distintos.
+Por isso, clientes com a mesma recência podem receber estimativas diferentes caso apresentem históricos de frequência muito distintos. Para realizar essa inferência, o BG/NBD resume o histórico transacional de cada cliente principalmente por três variáveis:
 
+$$
+(x,t_x,T)
+$$
+
+onde:
+
+$$
+x=\text{número de compras repetidas}
+$$
+
+$$
+t_x=\text{tempo entre a primeira e a última compra}
+$$
+
+$$
+T=\text{tempo total entre a primeira compra e o final da observação}
+$$
+
+Por exemplo, suponha que um cliente tenha realizado sua primeira compra no dia 0 e depois tenha comprado novamente nos dias 10, 20 e 40. Se ele for observado até o dia 60, teremos:
+
+$$
+x=3,\qquad t_x=40,\qquad T=60
+$$
+
+A partir dessas informações, o modelo combina dois componentes probabilísticos. No processo de compra, cada cliente possui uma taxa individual:
+
+$$
+\lambda_i
+$$
+
+que representa sua intensidade de compra enquanto está ativo. O BG/NBD assume que as taxas de compra variam entre os clientes segundo uma distribuição Gamma:
+
+$$
+\lambda_i\sim Gamma(r,\alpha)
+$$
+
+Assim, $r$ e $\alpha$ são parâmetros populacionais que descrevem como as taxas de compra estão distribuídas entre os clientes. No processo de abandono, cada cliente possui uma probabilidade individual:
+
+$$
+p_i
+$$
+
+de abandonar o relacionamento imediatamente após uma compra. O modelo assume que essa probabilidade varia entre clientes segundo uma distribuição Beta:
+
+$$
+p_i\sim Beta(a,b)
+$$
+
+Portanto, os quatro parâmetros populacionais do BG/NBD são:
+
+$$
+(r,\alpha,a,b)
+$$
+
+Esses parâmetros são estimados utilizando o histórico transacional de todos os clientes da base. Depois de estimados, o modelo combina:
+
+$$
+(x,t_x,T)
+$$
+
+com
+
+$$
+(r,\alpha,a,b)
+$$
+
+para gerar inferências individuais. Uma das principais saídas é:
+
+$$
+P(\text{alive}\mid x,t_x,T)
+$$
+
+que representa a probabilidade de o cliente ainda estar ativo dado o seu histórico observado. O modelo também pode estimar o número esperado de compras futuras em um horizonte $h$:
+
+$$
+E[N(T,T+h)\mid x,t_x,T]
+$$
+
+Ou seja, o fluxo pode ser resumido como:
+
+$$
+\text{histórico transacional}
+\rightarrow
+(x,t_x,T)
+\rightarrow
+\text{BG/NBD}
+\rightarrow
+\begin{cases}
+P(\text{alive}) \\
+E[\text{compras futuras}]
+\end{cases}
+$$
+
+A lógica central é comparar duas possíveis explicações para o período sem compras após a última transação:
+
+$$
+\text{cliente continua ativo, mas ainda não realizou nova compra}
+$$
+
+ou
+
+$$
+\text{cliente abandonou após a última compra}
+$$
+
+O BG/NBD atribui probabilidades a essas hipóteses com base no padrão histórico de frequência e recência do cliente.
 
 ## **Métricas**
 
-### **C-index (Harrell e Uno)**
+### **Sobrevivencia**
+
+#### **C-index (Harrell e Uno)**
 
 Para os pares comparáveis, mede a capacidade do modelo de ordenar corretamente os tempos até o evento, e não necessariamente a qualidade das probabilidades previstas.
 
@@ -377,7 +467,7 @@ onde:
 Assim, o Uno tende a ser mais apropriado quando a censura é elevada.
 
 
-### **Brier Score**
+#### **Brier Score**
 
 O Brier Score mede o erro entre a probabilidade de sobrevivência prevista pelo modelo e o que efetivamente foi observado em um determinado instante $t$.
 
@@ -400,7 +490,7 @@ onde:
 
 Portanto, o Brier Score avalia a qualidade da probabilidade prevista, não apenas a ordenação dos clientes. Quanto menor melhor.Além disso, um modelo pode possuir C-index alto e ainda ter Brier Score ruim, caso consiga ordenar corretamente os indivíduos, mas produza probabilidades mal calibradas.
 
-### **IBS (Integrated Brier Score)**
+#### **IBS (Integrated Brier Score)**
 
 O IBS resume o Brier Score ao longo de vários instantes de tempo.
 
@@ -432,7 +522,7 @@ onde $\tau$ representa o horizonte máximo de avaliação. Portanto, o IBS respo
 
 Quanto menor o IBS melhor. O IBS é particularmente útil porque resume a qualidade das previsões probabilísticas ao longo de todo o intervalo temporal considerado.
 
-### **AUC dinâmica**
+#### **AUC dinâmica**
 
 A AUC dinâmica avalia a capacidade do modelo de separar indivíduos com maior e menor risco em um determinado horizonte temporal.
 
@@ -464,7 +554,7 @@ $$
 
 indicando discriminação perfeita.
 
-### **Calibração**
+#### **Calibração**
 
 A calibração verifica se as probabilidades previstas correspondem às frequências realmente observadas.
 
@@ -493,3 +583,79 @@ $$
 C-index e AUC avaliam principalmente discriminação, enquanto Brier Score, IBS e gráficos de calibração ajudam a avaliar a qualidade das probabilidades.
 
 
+### **BTYD**
+
+#### **Log-Likelihood**
+
+A Log-Likelihood mede o quanto os dados observados são compatíveis com os parâmetros estimados pelo modelo.
+
+De forma simplificada:
+
+$$
+\log L(\theta)
+=
+\sum_{i=1}^{n}
+\log P(D_i\mid\theta)
+$$
+
+onde:
+
+$$
+\theta=(r,\alpha,a,b)
+$$
+
+representa os parâmetros populacionais do BG/NBD e $D_i$ representa o histórico observado do cliente $i$. Quanto maior a Log-Likelihood, melhor o modelo consegue explicar os dados utilizados no ajuste. Ela é principalmente útil para comparar diferentes especificações de modelos ajustadas sobre os mesmos dados.
+
+#### **MAE**
+
+O MAE (*Mean Absolute Error*) pode ser utilizado para avaliar o erro na previsão do número de compras futuras.
+
+Se:
+
+$$
+y_i
+$$
+
+é o número de compras realmente realizadas pelo cliente no período de holdout e:
+
+$$
+\hat y_i
+$$
+
+é o número esperado de compras previsto pelo modelo, então:
+
+$$
+MAE=
+\frac{1}{n}
+\sum_{i=1}^{n}
+|y_i-\hat y_i|
+$$
+
+Quanto menor, melhor.
+
+#### **RMSE**
+
+O RMSE (*Root Mean Squared Error*) também mede o erro na previsão de compras futuras:
+
+$$
+RMSE=
+\sqrt{
+\frac{1}{n}
+\sum_{i=1}^{n}
+(y_i-\hat y_i)^2
+}
+$$
+
+Quanto menor, melhor. Como os erros são elevados ao quadrado, o RMSE penaliza mais fortemente previsões muito distantes dos valores observados.
+
+#### **Compras acumuladas previstas vs. observadas**
+
+Também é possível comparar, ao longo do período de holdout, a quantidade acumulada de compras prevista pelo modelo com a quantidade realmente observada:
+
+$$
+\hat N(t)
+\quad \text{vs.} \quad
+N(t)
+$$
+
+Um bom modelo deve produzir uma trajetória prevista próxima da trajetória real. Essa análise permite identificar se o modelo começa a superestimar ou subestimar compras à medida que o horizonte temporal aumenta.
