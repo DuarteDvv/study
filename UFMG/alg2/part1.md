@@ -32,7 +32,7 @@ Mesma estrutura, mas a função de transição pode levar um estado x1, ao ler u
 
 ### **Algoritmo**
 
-Algortimo pode ser definido como uma sequência finita e bem definida de passos que resolve um problema ou também como uma maquina de turing que para em toda entrada.
+Algortimo pode ser definido como uma sequência finita e bem definida de passos que resolve um problema ou também como uma maquina de turing que para em toda entrada tem uma saida.
 
 ### **Computabilidade**
 
