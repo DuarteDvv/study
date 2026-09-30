@@ -295,11 +295,13 @@ $$
 \lambda_i
 $$
 
-que representa sua intensidade de compra enquanto está ativo (por exemplo 1 compra por dia). O BG/NBD assume que as taxas de compra variam entre os clientes segundo uma distribuição Gamma:
+que representa sua intensidade de compra enquanto está ativo (por exemplo 1 compra por dia, ou 10 compras por mes). O BG/NBD assume que as taxas de compra variam entre os clientes segundo uma distribuição Gamma (Que geralmente é usada para modelar distribuições assimétricas a direita e positivas):
 
 $$
 \lambda_i\sim Gamma(r,\alpha)
 $$
+
+![alt text](imgs/gamma.png)
 
 Assim, $r$ e $\alpha$ são parâmetros populacionais que descrevem como as taxas de compra estão distribuídas entre os clientes. No processo de abandono, cada cliente possui uma probabilidade individual:
 
@@ -307,11 +309,13 @@ $$
 p_i
 $$
 
-de abandonar o relacionamento imediatamente após uma compra. O modelo assume que essa probabilidade varia entre clientes segundo uma distribuição Beta:
+de abandonar o relacionamento imediatamente após uma compra. O modelo assume que essa probabilidade varia entre clientes segundo uma distribuição Beta (Usada para modelar probabilidade de proporções, ou seja, varia de 0 a 1 igual probabilidade):
 
 $$
 p_i\sim Beta(a,b)
 $$
+
+![alt text](imgs/beta.png)
 
 Portanto, os quatro parâmetros populacionais do BG/NBD são:
 
@@ -345,7 +349,7 @@ $$
 \text{cliente continua ativo, mas ainda não realizou uma nova compra}
 $$
 
-Se o cliente continua ativo, o processo de Poisson (Processo de compra) permite calcular a probabilidade de observar zero compras nesse intervalo:
+Se o cliente continua ativo, o processo de Poisson (simula o processo de compra) estima probabilidade de um número determinado de eventos ocorrer em um intervalo contínuo de tempo ou espaço (dado uma taxa média de ocorrências no intervalo (ex: média de 5 chamadas por hora).) e portanto permite calcular a probabilidade de observar zero compras nesse intervalo:
 
 $$
 N_i(t)\mid \lambda_i \sim \text{Poisson}(\lambda_i t)
@@ -357,7 +361,7 @@ P(\text{0 compras}\mid \lambda_i)
 e^{-\lambda_i(T_i-t_{x_i})}
 $$
 
-Ao mesmo tempo, o processo de abandono considera a probabilidade $p_i$ de o cliente ter abandonado imediatamente após a última compra.
+Ao mesmo tempo, o processo de abandono considera a probabilidade $p_i$ de o cliente ter abandonado imediatamente após a última compra. Usamos a geométrica pois ela estima a probabilidade ocorrer o primeiro sucesso (abandono) após uma série de k fracassos consecutivos em tentativas independente.
 
 $$
 K_i\mid p_i \sim \text{Geométrica}(p_i)
