@@ -248,35 +248,15 @@ Os modelos BTYD foram desenvolvidos para contextos não contratuais, nos quais n
     - Como também desconhecemos essa taxa de compra dos clientes assumimos que ela se comporta como uma distribuicao Gamma
 2. *Processo de abandono:*
     - um processo que representa a possibilidade de ele deixar de comprar definitivamente 
-    - Esse processo Z(t) modela o estado latente do cliente estar ativo/vivo no tempo t
+    - Esse processo Z(t) modela o estado latente do cliente estar ativo/vivo no evento/tempo t 
     - Isso é inferido pelos dados de entrada
 
 Usando esses dois processos ele infere o P(Alive) e o numero de compras, ambos no tempo t
 
-#### **BG/NBD**
+#### **BG/NBD (Beta-Geometric/Negative Binomial Distribution)**
 
 Ele assume que, enquanto o cliente está ativo, as compras seguem um processo probabilístico com uma taxa de compra própria de cada indivíduo. Clientes diferentes podem possuir diferentes frequências de compra.
 
-De forma simplificada:
-
-$$
-\text{cliente ativo}
-\rightarrow
-\text{compras ocorrendo com determinada frequência}
-$$
-
-Após uma compra, existe também uma probabilidade de o cliente deixar de estar ativo:
-
-$$
-\text{compra}
-\rightarrow
-\begin{cases}
-\text{continua ativo} \\
-\text{abandona o relacionamento}
-\end{cases}
-$$
-
-Essa probabilidade de abandono também varia entre os clientes.
 
 O modelo utiliza o histórico observado para inferir simultaneamente:
 
@@ -292,7 +272,7 @@ $$
 onde:
 
 $$
-x=\text{número de compras repetidas}
+x=\text{número de compras desde a primeira compra (não conta a primeira)}
 $$
 
 $$
@@ -315,7 +295,7 @@ $$
 \lambda_i
 $$
 
-que representa sua intensidade de compra enquanto está ativo. O BG/NBD assume que as taxas de compra variam entre os clientes segundo uma distribuição Gamma:
+que representa sua intensidade de compra enquanto está ativo (por exemplo 1 compra por dia). O BG/NBD assume que as taxas de compra variam entre os clientes segundo uma distribuição Gamma:
 
 $$
 \lambda_i\sim Gamma(r,\alpha)
@@ -339,58 +319,107 @@ $$
 (r,\alpha,a,b)
 $$
 
-Esses parâmetros são estimados utilizando o histórico transacional de todos os clientes da base. Depois de estimados, o modelo combina:
+Esses parâmetros são estimados utilizando o histórico transacional de todos os clientes da base maximizando Likelihood (distribuições populacionais, ou seja, para qualquer cliente). Uma vez estimados o modelo passa a combinar esses parâmetros com o histórico individual de cada cliente:
 
 $$
-(x,t_x,T)
+(x_i,t_{x_i},T_i)
 $$
 
-com
+A partir daí, o modelo usa o histórico individual para avaliar quais valores de $\lambda_i$ e $p_i$ são mais compatíveis com aquele cliente. Isso gera uma inferência individual sobre a taxa de compra e a probabilidade de abandono do cliente.
+
+O ponto principal aparece depois da última compra. Entre $t_{x_i}$ e $T_i$, o cliente ficou sem comprar por:
 
 $$
-(r,\alpha,a,b)
+T_i-t_{x_i}
 $$
 
-para gerar inferências individuais. Uma das principais saídas é:
-
-$$
-P(\text{alive}\mid x,t_x,T)
-$$
-
-que representa a probabilidade de o cliente ainda estar ativo dado o seu histórico observado. O modelo também pode estimar o número esperado de compras futuras em um horizonte $h$:
-
-$$
-E[N(T,T+h)\mid x,t_x,T]
-$$
-
-Ou seja, o fluxo pode ser resumido como:
-
-$$
-\text{histórico transacional}
-\rightarrow
-(x,t_x,T)
-\rightarrow
-\text{BG/NBD}
-\rightarrow
-\begin{cases}
-P(\text{alive}) \\
-E[\text{compras futuras}]
-\end{cases}
-$$
-
-A lógica central é comparar duas possíveis explicações para o período sem compras após a última transação:
-
-$$
-\text{cliente continua ativo, mas ainda não realizou nova compra}
-$$
-
-ou
+Esse silêncio pode ser explicado de duas formas:
 
 $$
 \text{cliente abandonou após a última compra}
 $$
 
-O BG/NBD atribui probabilidades a essas hipóteses com base no padrão histórico de frequência e recência do cliente.
+ou:
+
+$$
+\text{cliente continua ativo, mas ainda não realizou uma nova compra}
+$$
+
+Se o cliente continua ativo, o processo de Poisson (Processo de compra) permite calcular a probabilidade de observar zero compras nesse intervalo:
+
+$$
+N_i(t)\mid \lambda_i \sim \text{Poisson}(\lambda_i t)
+$$
+
+$$
+P(\text{0 compras}\mid \lambda_i)
+=
+e^{-\lambda_i(T_i-t_{x_i})}
+$$
+
+Ao mesmo tempo, o processo de abandono considera a probabilidade $p_i$ de o cliente ter abandonado imediatamente após a última compra.
+
+$$
+K_i\mid p_i \sim \text{Geométrica}(p_i)
+$$
+
+Se ele continua ativo, duas coisas precisam ter acontecido:
+
+1. ele não abandonou após a última compra, o que ocorre com probabilidade:
+
+$$
+1-p_i
+$$
+
+2. mesmo permanecendo ativo, ele não realizou nenhuma nova compra durante o intervalo:
+
+$$
+T_i-t_{x_i}
+$$
+
+o que, pelo processo de Poisson, possui probabilidade:
+
+$$
+e^{-\lambda_i(T_i-t_{x_i})}
+$$
+
+Portanto, para valores conhecidos de $\lambda_i$ e $p_i$, a evidência de que o cliente está ativo e apenas permaneceu em silêncio é proporcional a:
+
+$$
+(1-p_i)e^{-\lambda_i(T_i-t_{x_i})}
+$$
+
+enquanto a evidência de abandono é associada a:
+
+$$
+p_i
+$$
+
+O BG/NBD compara essas duas explicações:
+
+$$
+\underbrace{p_i}_{\text{abandono}}
+\qquad
+\text{vs.}
+\qquad
+\underbrace{(1-p_i)e^{-\lambda_i(T_i-t_{x_i})}}_{\text{ativo, mas em silêncio}}
+$$
+
+Entretanto, como $\lambda_i$ e $p_i$ não são conhecidos exatamente, o modelo considera todos os valores plausíveis desses parâmetros de acordo com o histórico do cliente e com as distribuições populacionais Gamma e Beta.
+
+P(Alive) para um conjunto de parametros provaveis lambda e p:
+
+$$
+P(\text{Alive}\mid \lambda_i,p_i,\text{histórico})
+=
+\frac{
+(1-p_i)e^{-\lambda_i(T_i-t_{x_i})}
+}{
+p_i+(1-p_i)e^{-\lambda_i(T_i-t_{x_i})}
+}
+$$
+
+Como esses parametros são estimados pegamos varios conjuntos plausiveis, calculamos P(Alive) com todos e fazemos uma média ponderada pela plausibilidade dos parametros.
 
 ## **Métricas**
 
