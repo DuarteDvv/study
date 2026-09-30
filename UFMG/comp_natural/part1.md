@@ -1,4 +1,4 @@
-# **Conceitos Gerais**
+# **Computação Natural**
 
 Computação Natural -> Algortimos, Simulações de ambientes naturais e biologia aplicada na computação. 
 - Trabalha com modelos que são abstrações aproximadas do mundo real.
@@ -26,6 +26,27 @@ Computação Natural -> Algortimos, Simulações de ambientes naturais e biologi
 - **Complexidade**: Um sistema complexo possui muitos componentes ou interações cujo comportamento coletivo não pode ser facilmente explicado apenas analisando cada componente isoladamente.
 - **Emergencia:** Surgimento de propriedades ou comportamentos no nível global do sistema que resultam das interações entre componentes locais. (Uma formiga não tem comportamente de achar algo mas um conjunto de formigas tem)
 
+## **Computação Evolucionária**
+
+### **Problemas de otimização**
+
+- *Espaço de busca S:* São todas as possiveis soluções que o método pode retornar (por exemplo em uma regressão são todos as infinitas combinações de pesos). Esse espaço costumar se gigante ou infinito sendo necessário formas inteligentes de explorar.
+- *Função Objetivo f:* mede o quão boa ou ruim uma solução candidata é
+- *Região de restrições/factivel R:* Uma subregião contida em S que limita as soluções validas 
+- *Representação da solução:* O jeito que uma solução é representada muda completamente seu espaço de busca, se temos um vetor binário o espaço terá combinações diferentes que um vetor continuo.
+
+### **Paisagem de aptidão/fitness** 
+
+È uma visualização do espaço de busca em que conseguimos ver a vizinhança e suas respectivas qualidades em relação a função objetivo. Essa paisagem pode deixar evidente diversos otimos locais e globais e certas caracteristicas podem tornar ainda mais dificil explorar ele:
+
+- Rugosidade do espaço: Muitos maximos locais que dificultam encontrar o maximo global
+- Plato no espaço: Região com fitness igual para varias soluções que dificulta explorar vizinhança
+- Engano: Um otimo local na direção oposta do global
+- Epistasia: Varias variaveis tem correlação entre si e otimizar elas separadas não é possivel
+
+### **Algoritmos Evolucionários**
+
+Algortimos inspirados na evolução biológica e dentro desse conjunto existem existem familias como Algoritmos Genéticos, Programação Genética e PG com gramaticas
 
 
 
