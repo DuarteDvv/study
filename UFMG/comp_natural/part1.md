@@ -1,17 +1,16 @@
-# **Computação Natural**
 
-Computação Natural -> Algortimos, Simulações de ambientes naturais e biologia aplicada na computação. 
-- Trabalha com modelos que são abstrações aproximadas do mundo real.
+# **Conceitos**
 
-**Heuristicas x Meta heuristicas x hyper heuristicas** 
+Computação Natural -> Algortimos, Simulações de ambientes naturais e biologia aplicada na computação. Trabalha com modelos que são abstrações aproximadas do mundo real.
 
-- *Heuristica* é uma estratégia especifica para resolver um problema que usa conhecimento do dominio e não garante o a solução ótima.
+- **Heuristicas x Meta heuristicas x hyper heuristicas** 
 
-- *Meta Heuristica (Algoritmos geneticos estão aqui)* estratégias genéricas que orientam como explorar o espaço independente do dominio (framework de epxloração) -> Meta-heurística normalmente explora o espaço de soluções;
+    - *Heuristica* é uma estratégia especifica para resolver um problema que usa conhecimento do dominio e não garante o a solução ótima.
 
-- *Hiper Heuristica* automatiza a escolha, combinação ou criação de heurísticas mais simples para resolver problemas complexos de otimização -> Hiper-heurística normalmente explora o espaço de heurísticas.
+    - *Meta Heuristica (Algoritmos geneticos estão aqui)* estratégias genéricas que orientam como explorar o espaço independente do dominio (framework de epxloração) -> Meta-heurística normalmente explora o espaço de soluções;
 
-## **Conceitos**
+    - *Hiper Heuristica* automatiza a escolha, combinação ou criação de heurísticas mais simples para resolver problemas complexos de otimização -> Hiper-heurística normalmente explora o espaço de heurísticas.
+
 
 - **Coletividade e agentes**: Maioria dos métodos é composto por um conjunto (coletividade) de agentes que interagem entre si e com o ambiente.
 - **Paralelismo e distribuição:** Agentes, populações trabalham em paralelo
@@ -26,16 +25,16 @@ Computação Natural -> Algortimos, Simulações de ambientes naturais e biologi
 - **Complexidade**: Um sistema complexo possui muitos componentes ou interações cujo comportamento coletivo não pode ser facilmente explicado apenas analisando cada componente isoladamente.
 - **Emergencia:** Surgimento de propriedades ou comportamentos no nível global do sistema que resultam das interações entre componentes locais. (Uma formiga não tem comportamente de achar algo mas um conjunto de formigas tem)
 
-## **Computação Evolucionária**
+# **Computação Evolucionária**
 
-### **Problemas de otimização**
+## **Problemas de otimização**
 
 - *Espaço de busca S:* São todas as possiveis soluções que o método pode retornar (por exemplo em uma regressão são todos as infinitas combinações de pesos). Esse espaço costumar se gigante ou infinito sendo necessário formas inteligentes de explorar.
 - *Função Objetivo f:* mede o quão boa ou ruim uma solução candidata é
 - *Região de restrições/factivel R:* Uma subregião contida em S que limita as soluções validas 
 - *Representação da solução:* O jeito que uma solução é representada muda completamente seu espaço de busca, se temos um vetor binário o espaço terá combinações diferentes que um vetor continuo.
 
-### **Paisagem de aptidão/fitness** 
+## **Fitness Landscape** 
 
 È uma visualização do espaço de busca em que conseguimos ver a vizinhança e suas respectivas qualidades em relação a função objetivo. Essa paisagem pode deixar evidente diversos otimos locais e globais e certas caracteristicas podem tornar ainda mais dificil explorar ele:
 
@@ -44,11 +43,108 @@ Computação Natural -> Algortimos, Simulações de ambientes naturais e biologi
 - Engano: Um otimo local na direção oposta do global
 - Epistasia: Varias variaveis tem correlação entre si e otimizar elas separadas não é possivel
 
-### **Algoritmos Evolucionários**
+## **Algoritmos Evolucionários**
 
-Algortimos inspirados na evolução biológica e dentro desse conjunto existem existem familias como Algoritmos Genéticos, Programação Genética e PG com gramaticas
+Algortimos inspirados na evolução biológica e dentro desse conjunto existem existem familias como Algoritmos Genéticos, Programação Genética e PG com gramaticas. O funcionamento básico de um AE é, então:
+
+$$
+\text{população inicial}
+\rightarrow
+\text{avaliação}
+\rightarrow
+\text{seleção}
+\rightarrow
+\text{cruzamento/mutação}
+\rightarrow
+\text{nova população}
+$$
+
+Esse ciclo se repete por várias gerações. A cada geração, os indivíduos são avaliados por uma função de fitness; os melhores têm maior chance de participar da reprodução; operadores genéticos geram novos indivíduos; esses novos indivíduos são avaliados novamente.
+
+### **Algoritmos Genéticos**
+
+Algoritmos Genéticos (GAs) é uma das técnicas mais conhecidas de Computação Evolucionária. A lógica geral é: representar soluções como indivíduos, avaliar sua qualidade, selecionar os melhores, gerar descendentes por cruzamento e mutação e repetir o processo. A intenção é que, geração após geração a qualidade média da população vai aumentar e que eventualmente apareça uma solução suficientemente boa.
+
+*Genótipo (Gene) x Fenótipo (Caracteristica)*
+
+- Genótipo é a representacao que escolhemos para algum individuo/solucao, por exemplo, podemos representar um grafo como uma matriz binária de presenca ou nao de um nó.
+- Fenótipo é a estrutura real que o fenótipo codifica que seria um grafo real
+
+O GA navega no espaco de solucoes buscando boas fitness usando 3 operacoes principais: 
+
+- *Selecao:* Aqui a busca é direcionada para regioes mais promissoras da regiao atual (explora vizinhanca)
+- *Cruzamento:* Aqui informacoes que ja existem sao combinadas para descobrir combinacoes melhores
+- *Mutacao:* Aqui novas informacoes sao geradas e quem sabe descobrir coisas novas boas
+
+Uma busca muito concentrada na vizinhança pode parar em um máximo local e nunca descobrir o global. Daí surge a diferença entre busca local e global. 
+
+- *Busca local:* explora a vizinhança da solução atual. Uma mutacao fraca ou cruzamento de individuos proximos pode gerar novos individuos da vizinhanca.
+- *Busca global:* pode explorar regiões muito diferentes do espaço. Uma mutacao forte ou um cruzamento de individuos diferentes pode gerar individuos totalmente novos.
+
+Um GA tenta ter características de busca global justamente porque mantém uma população e usa crossover e mutação, em vez de seguir apenas uma única trajetória. Um ponto central é o equilíbrio entre exploração e explotação:
+
+- *Exploração:* significa experimentar regiões novas do espaço de busca. Se houver exploração demais, o algoritmo se comporta quase aleatoriamente.
+- *Explotação:* significa aproveitar regiões que já sabemos que possuem boas soluções. Se houver explotação demais, ele pode convergir cedo demais para um máximo local.
+
+*Pressão seletiva:* Quanto mais preferirmos os melhores indivíduos (explotation), maior a pressão seletiva e mais rapidamente a população tende a se concentrar nas melhores soluções atuais. Isso acelera a evolução, mas pode reduzir a diversidade muito cedo gerando um otimo local.
+
+#### **Fluxo**
+
+O fluxograma do GA pode ser entendido assim:
+
+$$
+\text{criar população}
+\rightarrow
+\text{avaliar fitness}
+\rightarrow
+\text{selecionar pais}
+\rightarrow
+\text{crossover/mutação}
+\rightarrow
+\text{gerar filhos}
+\rightarrow
+\text{substituir população}
+$$
+Depois verificamos o critério de parada. Se ele não foi satisfeito, repetimos tudo. Caso tenha sido satisfeito, retornamos o melhor indivíduo.
+
+#### **Operadores de selecao**
+
+A primeira tarefa é dado um conjunto de solucoes escolher quem deve reproduzir 
+
+- *Roleta:* Nesse modelo damos probabilidades para os individuos da populacao baseado nas suas fitness, ou seja, fitness é a proporcao da fitness total de todos os individuos que aquele individuo tem. Se a soma de todos as fitness é 10 e um só tem 5 de fitness sua probabilidade é 50%. É bom notar que o individuo com maior probabilidade nao é obrigatoriamente escolhido mas tem maior chance.
+    - Se inicialmente um elemento tem fitness absurdamente maior que os outros tal que cause que a probabilidade seja proxima de 1, vamos escolher o mesmo individuo varias vezes para a reproducao fazendo com que ele domine a proxima geracao
+    - Depois de algumas geracoes e a fitness da populacao estabilizar todo mundo vai ter fitness proxima e a escolha vai ser praticamente aleatória e nao sabemos mais quem é promissor ali.
+
+- *Torneio:* Nessa forma escolhemos k individuos aleatoriamente e pegamos o melhor dos k para reproduzir. Repetimos essa escolha ate formarmos todos os pares de reproducao. 
+    - O parametro k controla a pressao seletiva, ou seja, maior k -> maior pressao -> maior probabilidade do melhor da populacao aparecer no torneio e ganhar de todos. Uma vez que o melhor aparece mais vamos ter menor diversidade e consequentemente concentrar a busca em um possivel otimo local. Dessa forma podemos controlar facilmente a pressao seletiva.
+
+#### **Operadores de crossover**
+
+Dado que 2 pais foram selecionados precisamos de uma forma de cruzar eles. Esse crossover é controlado por uma probabilidade de pc em que depois de escolhermos os pais olhamos para probabilidade e decidimos se cruzamos eles ou nao.
+
+- *Corte de um ponto:* Escolhemos aleatoriamente um ponto na representacao, cortamos naquele ponto e trocamos as pontas entre os pais gerando 2 filhos. Ex: AB CD -> A B C D -> AC BD
+- *Uniforme:* Cada gene/posicao do filho tem probabilidade de p de vir do pai A e 1 - p de vir do pai B
+
+#### **Operadores de mutacao**
+
+A mutacao acontece em um unico individuo da nova populacao por vez em que dado uma probabilidade pm (que costuma ser baixa) mutamos ou nao aquele individuo.
+
+- *Um ponto:* Escolhemos aleatoriamente um ponto para inverter/trocar
+- *Uniforme:* Para cada gene temos uma probabilidade p de inverter ou nao 
+
+Sem mutação, o GA só poderia reorganizar informação genética que já está presente na população. Se certo gene necessário à solução ótima desaparecer completamente, o crossover sozinho não consegue recriá-lo. A mutação permite que essa informação volte a aparecer.
+
+#### **GA Geracional x Steady state**
+
+- **Geracional:** é quando todos os filhos gerados substituem os pais geradores 
+- **Steady state:** não ocorre uma substituição completa. Apenas alguns indivíduos são trocados de cada vez. Um exemplo disso é considerar os pais e filhos juntos e pegar os 2 melhores.
+
+#### **Elitismo**
+
+Um parametro k em que decidimos o top k melhores da populacao atual que vao para proxima populacao de qualquer jeito. Isso evita perder otimas solucoes para operacoes aleatórias mas se o k for muito alto a pressao seletiva aumenta muito levando a convergencia rapida.
 
 
 
 
 
+ 
