@@ -167,9 +167,39 @@ O mesmo do GA porém com diferentes crossover e mutações
 
 #### **Criando população inicial**
 
-- *Grow*:
-- *Full*:
-- *Half-and-Half:*
+- *Grow*: Aqui criamos arvores que nao necessáriamente sao balanceadas pois sempre que vamos escolher um nó aleatório ele *pode ser um terminal ou uma funcao*. Entao os ramos podem acabar antes de atingir a profundidade maxima caso o nó escolhido seja terminal.
+- *Full*: Aqui criamos arvores necessáriamente balanceadas em que todos os nós antes da profundidade máxima sao funcoes e apenas os do ultimo nivel sao terminais
+- *Half-and-Half:* Aqui intercalamos as duas formas anteriores
+
+#### **Crossover**
+
+Aqui ao inves de trocar metade de um vetor/string trocamos subarvores entre 2 pais.
+
+#### **Mutacao**
+
+Aqui mutacoes podem ser feitas:
+
+- *Um ponto:* trocar alguma funcao ou terminal
+- *Expensa:* trocar uma subarvore por uma maior 
+- *Reducao:* trocar uma subarvore por uma menor
+
+#### **Quais funcoes sao validas para o conjunto F?**
+
+Essas funcoes tem que respeitar alguns criterios:
+1. *Suficiencia:* Elas tem que ser suficientes para resolver o problema
+2. *Closure:* A saida dela tem que ser valida como entrada de qualquer outra (Ou seja, n pode dar indefinido ou infinito)
+3. *Parcimonia:* Queremos o conjunto minimo suficiente
+
+#### **Introns**
+
+Sao partes do expressao/equacao que nao alteram em nada a saida, ou seja, a presenca dela n faz diferenca. Um exemplo é (X + 0) x 1 + y - y em que no final o resultado será X de qualquer maneira. Intros leva a um fenomeno chamado *BLOAT* em que arvores continuam crescendo durante as geracoes mas possuem exatamente a mesma fitness já que o resultado é o mesmo, isso leva a maior consumo de memória devido aos nós e maior lentidao no calculo de fitness. A solucao mais trivial é:
+
+- Penalizar na fitness a complexidade da expressao, ou seja, teriamos algo como $fitness= erro + \lambda\cdot\text{tamanho da árvore}$ em que o primeiro termo recompensa precisão. O segundo penaliza complexidade. O parâmetro lambda controla o quanto nos importamos com árvores menores. 
+
+### **Programacao genética com gramática**
+
+
+
 
 
 
