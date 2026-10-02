@@ -93,7 +93,7 @@ Um GA tenta ter características de busca global justamente porque mantém uma p
 O fluxograma do GA pode ser entendido assim:
 
 $$
-\text{criar população}
+\text{criar população (Pop. inicial)}
 \rightarrow
 \text{avaliar fitness}
 \rightarrow
@@ -120,7 +120,7 @@ A primeira tarefa é dado um conjunto de solucoes escolher quem deve reproduzir
 
 #### **Operadores de crossover**
 
-Dado que 2 pais foram selecionados precisamos de uma forma de cruzar eles. Esse crossover é controlado por uma probabilidade de pc em que depois de escolhermos os pais olhamos para probabilidade e decidimos se cruzamos eles ou nao.
+Dado que 2 pais foram selecionados precisamos de uma forma de cruzar eles. Esse crossover é controlado por uma probabilidade de pc (Geralmente alta) em que depois de escolhermos os pais olhamos para probabilidade e decidimos se cruzamos eles ou nao.
 
 - *Corte de um ponto:* Escolhemos aleatoriamente um ponto na representacao, cortamos naquele ponto e trocamos as pontas entre os pais gerando 2 filhos. Ex: AB CD -> A B C D -> AC BD
 - *Uniforme:* Cada gene/posicao do filho tem probabilidade de p de vir do pai A e 1 - p de vir do pai B
@@ -142,6 +142,37 @@ Sem mutação, o GA só poderia reorganizar informação genética que já está
 #### **Elitismo**
 
 Um parametro k em que decidimos o top k melhores da populacao atual que vao para proxima populacao de qualquer jeito. Isso evita perder otimas solucoes para operacoes aleatórias mas se o k for muito alto a pressao seletiva aumenta muito levando a convergencia rapida.
+
+### **Programação Genética**
+
+No GA o individuo representa uma possivel solução para o problema. Na GP, o objetivo é evoluir um programa/equação, capaz de resolver um tipo de problema. Por isso, um indivíduo contém não apenas dados, mas também funções e operadores, e pode ter tamanho e formato variáveis. Um exemplo seria imagine uma equação: 
+
+$$
+f(x)=\sin(x)-0{,}1x+2.
+$$
+
+- Em GA estamos interessados em encontrar um individuo que é valor de X que maximize F. 
+- Em GP, poderiamos não ter a função e sim dados gerados por ela (x, f(x)) e estamos interessando em encontrar um individuo que é uma função/equação (regressão simbolica) que se aproxime de F usando os dados.
+
+#### **Representação**
+
+A representação mais comum é o formato de arvore em que existem 2 tipos de valores para os nós:
+
+- *Terminais:* Variaveis e constantes que são colocadas nas folhas da arvore (como 1 e x)
+- *Função:* Operadores que combinam os nós terminais (como soma e multiplicação) e que são os nós internos
+
+#### **Fluxo**
+
+O mesmo do GA porém com diferentes crossover e mutações
+
+#### **Criando população inicial**
+
+- *Grow*:
+- *Full*:
+- *Half-and-Half:*
+
+
+
 
 
 
