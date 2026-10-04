@@ -198,8 +198,87 @@ Sao partes do expressao/equacao que nao alteram em nada a saida, ou seja, a pres
 
 ### **Programacao genética com gramática**
 
+O problema da programacao genetica anterior é que muitas das operacoes eram aleatórias e isso permitia a construcao de coisas invalidas usando as funcoes e terminais disponiveis. Um exemplo disso é a funcao AND(a,b) que espera 2 valores booleanos mas se usarmos algo 100% aleatório podemos cair em algo como AND(3,3.4) e isso é invalido.
 
+#### **Solucao trivial**
 
+A solucao mais simples para esse problema é restringir o dominio de terminais de cada funcao, ou seja, AND/OR -> Booleanos, +/- -> Reais. 
+
+#### **Gramatica**
+
+A ideia de GP baseada em gramática vai além. Em vez de definir apenas funções e terminais, você define uma gramática completa, com terminais, não-terminais, símbolo inicial e regras de produção. Isso garante fechamento e permite incorporar conhecimento do domínio diretamente no espaço de busca pois com a gramatica podemos definiir por exemplo que nossas estruturas vao sempre ser compostas por uma soma de 2 coisas, ou seja, temos maior controle na evolucao.
+
+Um exemplo simples de gramática seria:
+$$
+\langle expr\rangle ::= \langle expr\rangle + \langle expr\rangle
+\mid
+\langle var\rangle
+\mid
+\langle num\rangle
+$$
+$$
+\langle var\rangle ::= x \mid y
+$$
+$$
+\langle num\rangle ::= 2 \mid 4.
+$$
+
+Aqui, $\langle expr\rangle$, $\langle var\rangle$ e $\langle num\rangle$ são não-terminais. Já +, x, y, 2 e 4 são terminais. Em geral a gramatica restringe o espaco de busca em apenas solucoes validas.
+
+#### **Tipos**
+
+Dois tipos de GP baseada em gramáticas:
+
+- *Tipo 1:* A gramática produz indivíduos válidos, e crossover e mutação precisam respeitar as regras da gramatica e consequentemente eles deixam de ser destrutivos.
+
+- *Tipo 2:* Aqui separamos a gramatica da evolucao, o individuo nao é mais a expressao em si mas sim um vetor de bits. Depois esses bits sao lidos em blocos para formar um inteiro, por exemplo bloco 0011 vira 3, e depois dividimos esse numero pelo MOD da quantidade de opcoes na gramatica para decidir qual pegar, por exemplo para gramatica de tamanho 2, $\langle expr\rangle$ | $\langle num \rangle$ dividimos 3 mod 2 que da 1 e pegamos o de indice 1 que é o $\langle num \rangle$.
+
+    Então o processo inteiro pode ser pensado como:
+    $$
+    \text{bits (genotipo)}
+    \rightarrow
+    \text{códons}
+    \rightarrow
+    \text{inteiros}
+    \rightarrow
+    \text{regras}
+    \rightarrow
+    \text{programa (fenotipo)}
+    $$
+
+    - Se os bits acabarem e nao temos uma expressao completa ainda, ou seja, falta terminais, voltamos ao inicio dos bits e reutilizamos os blocos (codons) e isso se chama *wrapping*.
+    - Outro ponto é a degeneracao do codigo genetico devido ao fato de que diferentes vetores de bits podem levar a mesma solucao, ou seja, podem existir mutacoes e crossovers nulos.
+
+#### **Localidade**
+
+Localidade mede se pequenas mudanças no genótipo produzem pequenas mudanças no fenótipo:
+
+- *Se temos alta localidade:* genótipos próximos tem fenótipos próximos
+- *Se temos baixa localidade:* pequena mudança no genótipo tem grande mudança no fenótipo
+
+Imagine que encontramos um programa muito bom. Fazemos uma pequena mutação esperando testar uma solução ligeiramente diferente e acabamos com algo totalmente diferente e muito inferior. Isso significa que a busca fica muito mais instavel pois nao temos mais uma nocao de melhoria local.
+
+#### **Structured Grammatical Evolution**
+
+Esse é uma tentativa de usar uma representação mais estruturada. Ate agora o genotipo do GE é algo parecido com um vetor de numeros (depois de transformar os bits em numeros).
+$$
+[43,118,144,17,\ldots]
+$$
+
+sem que cada posição seja explicitamente “o gene do $\langle expr\rangle$” ou “o gene do $\langle op\rangle$”, ou seja, qualquer numero ai pode acabar sendo convertido para qualquer tipo de operador. Na SGE, a representação é mais estruturada:
+
+$$
+
+\begin{array}{c}
+\langle start\rangle \rightarrow [\ldots]\\
+\langle expr\rangle \rightarrow [\ldots]\\
+\langle term\rangle \rightarrow [\ldots]\\
+\langle op\rangle \rightarrow [\ldots]
+\end{array}
+$$
+Cada parte do vetor/genótipo fica associada a uma categoria da gramática. Por isso crossover e mutação podem operar de maneira mais estruturada e com maior localidade pois o cruzamento troca partes correspondentes da representação, e os fenótipos filhos continuam respeitando a estrutura da gramática.
+
+## **Diversidade e Co-evolucao**
 
 
 
