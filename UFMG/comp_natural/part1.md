@@ -280,6 +280,46 @@ Cada parte do vetor/genótipo fica associada a uma categoria da gramática. Por 
 
 ## **Diversidade e Co-evolucao**
 
+### **Diversidade**
+
+O problema de algoritmos evolucionários padrões é que eles perdem muita diversidade depois algumas gerações, ou seja, todas as soluções se concentram em um unico pedaço promissor do espaço e a população começa a ficar quase uniforme (cheia de copias). Dai vem o conceito de niching, que vem de nicho ecológico, em que queremos manter grupos diferentes em regiões boas diferentes do espaço e o tamanho do grupo ser proporcional a qualidade da região.Então no geral o objetivo do niching é:
+
+- Reduzir convergencia prematura em otimos locais
+- Encontrar varias soluções boas ao invés de uma
+
+#### **Fitness Sharing**
+
+Dado que a fitness original de cada individuo é Fi, a fitness compartilhada é definida pela *divisão Fi / NCi* em que NCi é a soma da similiaridade de i com todos os outros individuos. Ou seja, se ele é igual a muita gente (pouca diversidade) a soma da um valor alto e consequentemente a fitness compartilhada fica baixa, o caso contrário faz ela ser alta. Geralmente existe um parametro especifico theta que diz o raio considerado na vizinhança, ou seja, o raio de individuos que vão compartilhar a mesma feature, todos fora desse raio (distancia > raio, essa distancia pode ser de fenotipo ou genotipo) recebem similiaridade 0.
+
+- Essencialmente queremos privilegiar soluções boas em espaços pouco explorados
+- Caro pois no pior caso temos que calcular distancia de todos contra todos que é N^2
+- Raio Theta é dificil de escolher 
+
+#### **Crowding** 
+
+Essa funciona de forma diferente, ao invés de modificar a fitness nos evitamos replicação por trocas de individuos semelhantes da população. A ideia é durante a de um filho C com pais A e B, nós medimos a proximidade de C com A e B, escolhemos o pai com maior similiaridade com C. Depois se C é melhor que A trocamos A por C na população, caso contrário mantemos A e descartamos C.
+
+#### **Problema de nichos**
+
+O problema de nichos é que cruzar soluções de nichos/picos diferentes pode gerar soluções muito ruins e devido a isso o proposto foi permitir cruzamento apenas com individuos do mesmo nicho
+
+### **Co-Evolução**
+
+Aqui os individuos não são avaliados individualmente por uma fitness F(i) e sim em conjunto em relação a toda a populaçao F(i,j,k...), ou seja, a fitness é relativa ao ambiente evolutivo e qualidade global da populaçao. Um exemplo disso é pensar na fitness de um individuo A que é melhor que todo mundo, agora se surgir na população uma solução melhor, a fitness de A muda sem ele mudar.
+
+#### **Competitiva**
+
+Temos 2 ou mais populações evoluindo juntas para um mesmo objetivo e tentando sempre superar as outras, isso faz com que elas evoluam juntas para sempre serem o melhor possivel. A avaliação pode ser feita de diferentes formas como um contra todos, todos contra o melhor ou um contra k aleatorios.
+
+#### **Cooperativa**
+
+A ideia aqui é dividir um grande problema modularizavel em subproblemas e cada população evolui um subproblema mas elas são avaliadas em conjunto durante a evolução. Entretanto, existe um problema que é o fato da fitness ser relativa ao resto, então se A é melhor que B em t1 e depois ambos A e B pioram mas A continua melhor, a fitness permanecera a mesma.
+
+## **Otimização Multiobjetivo**
+
+
+
+
 
 
 
