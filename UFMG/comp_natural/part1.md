@@ -321,6 +321,45 @@ A ideia aqui é dividir um grande problema modularizavel em subproblemas e cada 
 
 
 
+## **Experimentação de algortimos genéticos**
+
+O desempenho desses algoritmos pode mudar muito de acordo com a seed usada mesmo com hyperparametros iguais, uma vez que todas as operações da evolução envolvem aleatóriedade. Isso leva ao primeiro ponto importante:
+
+- Sempre *executar o algortimo várias vezes e com seeds diferentes para ter uma estimativa da varianca dos resultados*. Um intervalo de confiança pode gerado também para quantificar essa incerteza em um intervalo. Além disso, essas sementes do experimento devem ser armazenadas para tornar o experimento reprodutivel.
+
+O segundo ponto é:
+
+- Antes de qualquer coisa precisamos *comparar com a solução aleatória*, se o algoritmo sofisticado não supera o aleatório então existe algum problema na representação, fitness ou algortimo.
+
+O terceiro ponto é a busca de hyperparametros:
+
+- Se a busca de hyperparametros estiver sendo feita a mão, sempre variar apenas um enquanto mantem os outros fixos. Se isso não for feito qualquer alteração positiva ou negativa dos resultados podera ter sido causada por qualquer uma das alterações e não saberemos qual. Idealmente podemos usar metodos de otimização bayesiana para buscar os hyperparametros como por exemplo Optuna.
+
+O quarto ponto é nunca olhar apenas para melhor individuo da população:
+
+- Durante as gerações temos que analisar a diversidade da população, fitness e os efeitos do crossover/mutação na qualidade da geração. Um exemplo seria monitorar o max fitness, min fitness, alguns quartis e variancia para ter uma noção de como esta a distribuição desses individuos. 
+  - Se todos estiverem muito parecidos as linhas do grafico (max,min,median fitness) vão sempre muito proximas e isso é sinal de convergencia prematura e falta de diversidade. Nesses casos pode ser interessante:
+    - diminuir pressão seletiva através de parametros como o k do torneio
+      - mutações mais fortes ou mais comuns (maior P_mut)
+      - introduzir especies (nichos que evoluem de forma independentes)
+      - usar fitness sharing ou crowding
+    - Se temos uma variancia muito grande significa que existem individuos na população que são muito diferentes, ou seja, de uma região no espaço totalmente diferente que ainda não foi muito explorada na população.
+    - A diversidade é muito importante mas quando existe mais que deveria ela faz com que o algoritmo não chegue a convergir e nenhum resultado bom aparece (explotation x exploration).
+
+O ultimo ponto é:
+
+- Ao executar e mudar muitos hyperparametros e nada dar certo talvez o problema na verdade seja a representação ou a fitness.
+
+
+
+- 
+
+
+
+
+
+
+
 
 
 
