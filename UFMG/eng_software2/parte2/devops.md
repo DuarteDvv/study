@@ -1,14 +1,14 @@
-## Devops
+## **Devops**
 
-### Antes
+### **Antes**
 
 Antigamente equipe de operações (Infra/rede) era dividida da equipe de desenvolvimento (software). Isso gerava problemas de comunicação entre as equipes devido a requisitos e consequentemente atrasos no deploy.
 
-### Agora com DevOps
+### **Agora com DevOps**
 
 Uma forma de unificar o desenvolvimento e e operações e conseguir fazer deploy mais rapido antecipando os problemas. (Não necessáriamente um cargo novo e sim uma aproximação para evitar isolamento das equipes, ou seja, são pessoas que ficam na interseção entre as equipes). Grande parte do trabalho do devops é automatização do deploy, testes e CI e CD.
 
-### Principios
+### **Principios**
 
 - **Processo repetivel e confiavel:** Tornar simples o deploy para um desenvolvedor
 
@@ -22,7 +22,7 @@ Uma forma de unificar o desenvolvimento e e operações e conseguir fazer deploy
 
 - **Deploy é responsabilidade de todos:** Não pode ter isolamento entre equipes
 
-### Continuos Deployment
+### **Continuos Deployment**
 
 No CI geralmente o deploy não é feito automaticamente a cada integração continua dos desenvolvedores. Varias integrações podem ser acumuladas antes de um deploy. No CD sempre que um commit chega na branch main do repositorio principal e passa com sucesso pelo servidor de CI (testes), o commit entre imediatamente em produção. Vantagens:
 
@@ -30,7 +30,7 @@ No CI geralmente o deploy não é feito automaticamente a cada integração cont
 
 - Favorece experimentação e feedback rapido
 
-### Continuos Delivery
+### **Continuos Delivery**
 
 Deployment continuo não faz sentido para alguns tipos de aplicações como desktop e celular pois vc teria que atualizar toda hora seu aplicativo. Ai entra a entrega continua em que todo commit pode entrar em produção imediatamente mas não necessáriamente vai acontecer isso. Alguém ira tomar a decisão do melhor momento. Então meio que apenas entregamos o codido para o repositorio de forma contiua mas não fazemos deploy... dai vem a diferença de Continuos Deployment em que entregamos e o deploy é feito na hora.
 
