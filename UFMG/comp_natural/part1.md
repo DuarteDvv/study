@@ -299,6 +299,10 @@ Dado que a fitness original de cada individuo é Fi, a fitness compartilhada é 
 
 Essa funciona de forma diferente, ao invés de modificar a fitness nos evitamos replicação por trocas de individuos semelhantes da população. A ideia é durante a de um filho C com pais A e B, nós medimos a proximidade de C com A e B, escolhemos o pai com maior similiaridade com C. Depois se C é melhor que A trocamos A por C na população, caso contrário mantemos A e descartamos C.
 
+#### **MAP-Elites**
+
+Armazenamos o melhor para cada nicho ao invés de global para ter certeza de diversidade
+
 #### **Problema de nichos**
 
 O problema de nichos é que cruzar soluções de nichos/picos diferentes pode gerar soluções muito ruins e devido a isso o proposto foi permitir cruzamento apenas com individuos do mesmo nicho
@@ -361,9 +365,93 @@ Em geral esses algoritmos tentam garantir 3 coisas durante a evolução:
 
 #### **NSGA-ii**
 
+Esse algoritmo classifica as soluções em frentes/ranks de não-dominancia: 
+
+- Frente/Rank 1 são todos os individuos não dominados, removemos eles 
+- Frente/Rank 2 são todos os individuos não dominados do que sobrou, removemos eles
+- Frente/Rank k continua a mesma lógica ate todos acabarem
+
+O elitismo nesse algoritmo funciona permitindo os melhores pais passem para proxima geração, da seguinte maneira:
+
+- Dado um conjunto de pais P de tamanho N e um conjunto de filhos F gerados pelos pais usando crossover/mutação também de tamanho N. Fazemos uma união desses conjuntos (P U F), depois fazemos o rankeamento por frente dessa união dos conjuntos. Selecionamos N desses 2*N individuos, em que começamos a seleção pelos ranks mais altos, ou seja, pegamos todos da primeira frente, depois todos da segunda frente e repetimos esse processo ate escolher N individuos para a nova geração. Caso, falte 10 para totalizar N e a frente atual tem 20, escolhemos dessa frente os 10 individuos com maior *crowding distance* para manter diversidade.
+
+    - *Crowding Distance:* Distancia de um individuo para os grupos ao redor, ou seja, mede o quão isolado um individuo esta no espaço. Um valor alto significa que a distancia dele maioria é alta e portanto esta em uma região mais vazia. Se é baixa ele esta proximo da maioria e portanto região já bem povoada.
+
+Fluxo:
+
+$$
+\text{População atual}
+\rightarrow
+\text{Seleção/Crossover/Mutação}
+\rightarrow
+\text{Junção filhos com pais}
+\rightarrow
+\text{Geração do ranking}
+\rightarrow
+\text{Seleção para proxima geração}
+\rightarrow
+\text{Nova população}
+$$
+
+#### **SPEA2**
+
+Aqui existem duas estruturas de armazenamento:
+
+- *População atual:* individuos da geração atual
+- *Arquivo:* Basicamente uma *memória elitista* de tamanho K que mantemos individuos unicos não dominados por ninguém
+
+A fitness é calculada para todos os individuos da população e arquivo e é definida como:
+
+$$
+F(i) = R(i) +  D(i)
+$$
+
+em que R(i) representa a proximidade de i em relação a fronteira de pareto, ou seja, o quão não dominado ele é. D(i) representa diversidade/densidade de pontos proximo de i, ou seja, ele esta em um lugar denso ou não.No fim queremos minimizar essa soma.
 
 
+#### **O que eles tem em comum ?**
 
+Ambos tentam:
+
+- *Se aproximar da fronteira:* um através de ranks com elitismo e outro através da Fitness de proximidade da fronteira com arquivo
+- *Explorar lugares do espaço:* Um pelo crowding distance e o outro pela densidade
+
+## **Adicionando LLMs em algortimos evolutivos**
+
+A ideia aqui é usar a versatilidade e adaptação ao contexto da LLM para tomar decisões.
+
+### **LLM como operador de crossover/mutação**
+
+Nos algortimos classicos mutação e crossover são cegos para o que estão gerando e para certas coisas como vetores binários tudo bem. O problema é quando queremos evoluir algo como linguagem e codigo em que alterações aleatórias podem não fazer sentido algum.
+
+Exemplos:
+
+- LMX em que *cruzamos 2 pais dizendo para o LLM identificar o padrão em comum e criar um terceiro baseado neles*. Repare que a mutação pode acabar acontecendo junto com o crossover e a temperatura serve como controle da intensidade da mutação.
+
+- ELM aqui usa mais para *mutação pedindo alterações no codigo seguindo algum objetivo textual especifico*. Mandamos o codigo e um prompt do tipo "reduza o tempo de execução", ou seja, uma mutação mais direcionada.
+
+- EvoPrompt evolui o prompt usando LLMs no crossover e mutação e avaliando no objetivo final do prompt.
+
+### **LLM como search engine**
+
+Aqui a LLM não é só um componente/operador, na verdade ela faz toda a parte de busca e exploração do espaço de soluções, ou seja, seleção, crossover e mutações acontecem internamente no modelo e apenas a avaliação permanece fora.
+
+Exemplos:
+- OPRO manda um prompt com varias soluções ja testadas e seus resultados e o modelo é instruido a propor uma nova solução com base nelas que seja melhor. Isso não possui nenhuma população nem operadores e portanto talvez nem considerado EA seja.
+
+- LMEA aqui o modelo é instruido no prompt a fazer as operações explicitamente antes do resultado.
+
+### **LLM evoluindo programas**
+
+Ao invés de evoluir prompts evoluir programas/codigo e a fitness ser o desempenho do codigo. Isso permite transformar ate mesmo alucinação em evolução pois ela é descartada.
+
+Exemplos:
+
+- FunSearch mantém um banco de programas, seleciona alguns deles, coloca-os no prompt e pede ao LLM para produzir uma nova versão. O código é executado e, se funcionar bem, entra no banco. Não pede ao LLM para escrever tudo. Existe um esqueleto fixo e apenas uma função específica é evoluída. Também usa ilhas e clusters para manter diversidade. Programas que se comportam de forma semelhante são agrupados, e diferentes ilhas exploram abordagens diferentes.
+
+- EoH, Evolution of Heuristics usa uma lógica parecida com o FunSearch mas mantem uma tupla (codigo, pensamento em texto descrevendo a ideia do codigo).
+
+- AlphaEvolve amplia essa ideia para bases de código maiores. Em vez de gerar um arquivo inteiro, o LLM produz diffs localizados. O sistema usa banco evolutivo, MAP-Elites, ilhas, múltiplos modelos e avaliadores em cascata.
 
 
 ## **Experimentação de algortimos genéticos**
@@ -394,10 +482,6 @@ O quarto ponto é nunca olhar apenas para melhor individuo da população:
 O ultimo ponto é:
 
 - Ao executar e mudar muitos hyperparametros e nada dar certo talvez o problema na verdade seja a representação ou a fitness.
-
-
-
-- 
 
 
 
