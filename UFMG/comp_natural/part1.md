@@ -317,6 +317,51 @@ A ideia aqui é dividir um grande problema modularizavel em subproblemas e cada 
 
 ## **Otimização Multiobjetivo**
 
+Muitos problemas não tem um unico objetivo de otimização que pode ser exclusivamente ser expresso na fitness, por exemplo, podemos querer maximizar o conforto do carro enquanto minimizamos o preço dele. Uma solução simples para esse problema é *criar uma fitness unica que é uma ponderação das outras* fitness então teriamos algo como:
+
+$$
+Fitness=\frac{2}{3}Objetivo_1+\frac{1}{3}Objetivo_2.
+$$
+
+O problema disso é que isso supoe que sabamos o peso de cada uma de antemão e se não soubermos temos que descobrir. Além disso, também supoe que as escalas de ambos sejam comparaveis e não irão se dominar.
+
+Outra desvantagem dessa abordagem é que recebemos uma unica solução como resposta e não necessáriamente queremos uma unica e sim várias em que cada uma representa um trade-off diferente que deverá ser analisado e decidido. Essa é motivação para os algortimos multiobjetivo usando dominancia de pareto.
+
+### **Dominância de Pareto**
+
+A ideia central da dominância de Pareto é que não existe uma melhor solução, existe um conjunto de soluções que necessáriamente ao melhorar um objetivo piora o outro. Ela funciona:
+
+- A domina B apenas se duas coisas forem verdade:  
+  - A não é pior que B em nenhum objetivo
+  - A é melhor que B em pelo menos um objetivo
+
+O conjunto de soluções que não são dominadas por nenhuma outra é chamado de Frente de Pareto. 
+
+Exemplo: A(12,10), B(11,12), C(5,8) -> maximizando ambos os critérios
+
+- A e B dominam C pois não são piores nem nada e são melhores que C em pelo menos 1 critério
+- A não domina B pois é pior que B no segundo critério mesmo sendo melhor em pelo menos 1 critério
+- B não domina A pois é pior que A no primeiro critério mesmo sendo melhor em pelo menos 1 critério
+- Logo, frente de pareto é [A,B]
+
+### **Escolhendo solução**
+
+No mono objetivo é facil ordenar todas as soluções e simplesmente pegar a melhor mas no multiobjetivo muitas são incomparaveis e não é possivel ordenar. Ao final da execução ainda é necessário o passo de escolher uma das soluções da frente de pareto de acordo com os trade-off aceitaveis do contexto do problema:
+
+- *Apriori:* escolhemos antes de ver a frente de pareto dando pesos para os critérios 
+- *Posteriori:* Olhamos para a frente e decidimos
+
+### **MOEAs (Multi Objective Evolutionary Algorithms)**
+
+Em geral esses algoritmos tentam garantir 3 coisas durante a evolução:
+
+- Encontrar a Fronteira de Pareto (fitness)
+- Manter a diversidade ao longo da fronteira, ou seja, não deixar soluções muito concentradas em uma parte da fronteira (Diversidade)
+- Não perder boas soluções (elitismo)
+
+#### **NSGA-ii**
+
+
 
 
 
