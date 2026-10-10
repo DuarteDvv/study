@@ -424,7 +424,7 @@ Assim alguns componentes de $c$ podem acabar representando propriedades como rot
 
 *Logica Geral:*
 
-A ideia geral de GANs é ter um modelo *gerador* e um modelo *discriminador*, a tarefa do gerador é dado a uma amostra z vinda de uma distribuicao N(0, I) (igual VAE), gera novos dados aproximados x', já a tarefa do discriminador é dado um conjuntos de dados X ele deve classificar os dados entre falso/aproximado (x') e real (x) e conforme sao otimizados conjuntamente eles impulsionam um ao outro a melhorar. A InfoGAN altera a GAN da seguinte forma, ao inves de apenas z, sao amostrados (z,c) e o modelo gera o x' usando ambos (z,c)... 
+A ideia geral de GANs é ter um modelo *gerador* e um modelo *discriminador*, a tarefa do gerador é dado a uma amostra z vinda de uma distribuicao N(0, I) (igual VAE), gera novos dados aproximados x', já a tarefa do discriminador é dado um conjuntos de dados X ele deve classificar os dados entre falso/aproximado (x') e real (x) e conforme sao otimizados conjuntamente eles impulsionam um ao outro a melhorar. A InfoGAN altera a GAN da seguinte forma, ao inves de apenas z, sao amostrados (z,c) e o modelo gera o x' usando ambos (z,c) depois temos um terceiro modelo que tenta construir c' com base em x' que tenta ser igual c. O modelo então é pressionado a fazer com que c controle propriedades/fatores observáveis da saída para ser possivel reconstruir. Também é dimension-wise e assume independencia dos fatores.
 
 #### **Diffusion-Based**
 
@@ -455,6 +455,11 @@ $$
 \text{direção/subespaço específico}.
 $$
 O survey usa diffusion models para mostrar que DRL é uma estratégia geral, não uma propriedade exclusiva de VAEs.
+
+*Logica Geral:*
+
+Difussion funciona começando pelo dado original x e adicionando um erro gaussiano ou de outra distribuição iterativamente, depois que T iterações temos um x' quase irreconhecivel. O modelo então é treinado para fazer o processo inverso de denoising em que a rede estima o ruido e ajuda e remove-lo. Para DRL, no paper DisDiff usamos N encoders para criarem N representações de x0, cada uma focada em um fator diferente (minimizando as informação mutua entre as representações). Uma vez que temos as representações e o processo de noising ja aconteceu, duranto o processo inverso condicionamos o denoising nas direções dos fatores dos encoders e é como se esses fatores estivessem guiando o denoising a desentrelaçar esses fatores.
+
 
 ### **Como representar os fatores ?**
 
@@ -519,3 +524,174 @@ $$
 Z=[Z_1,Z_2,Z_3]
 $$
 sem relação entre eles, poderíamos ter uma estrutura hierárquica.
+
+### **Supervisionado ?**
+
+O survey separa métodos em:
+$$
+\text{unsupervised},
+\quad
+\text{supervised},
+\quad
+\text{weakly supervised}.
+$$
+No sonho original do DRL, você teria somente:
+$$
+x_1,x_2,\dots,x_n
+$$
+e o modelo descobriria sozinho:
+$$
+\text{cor},
+\text{forma},
+\text{posição},\ldots
+$$
+O survey mostra que VAE, InfoGAN e várias abordagens antigas seguem essa linha não supervisionada mas aí aparece um problema enorme.
+
+#### **Identificabilidade**
+Esse é talvez o problema teórico mais importante de todo o survey. Imagine que existe uma representação “correta”:
+$$
+z=
+[z_{\text{cor}},z_{\text{forma}}].
+$$
+Mas também podemos construir uma transformação invertível:
+$$
+\tilde z=f(z)
+$$
+que mistura as duas informações e continua produzindo exatamente a mesma distribuição observável:
+$$
+p(x).
+$$
+Se só observamos $x$, como distinguir qual espaço latente é o “verdadeiro”?
+Esse é o problema da identificabilidade.
+O survey resume o resultado de Locatello: não podemos garantir disentanglement não supervisionado sem introduzir algum tipo de inductive bias ou supervisão. 
+Então:
+$$
+p(x)
+\text{sozinho não determina necessariamente os fatores que queremos}
+$$
+como o modelo sabe que queremos [sentimento, tom] e não [formalidade, tom]? Em geral ele não sabe sozinho e precisamos colocar alguma informação adicional.
+
+#### **Supervision e weak supervision**
+Daí surge:
+$$
+\text{supervised DRL}.
+$$
+Se possuímos rótulos:
+$$
+y_{\text{sentimento}},
+y_{\text{formalidade}},
+\dots
+$$
+podemos orientar o modelo.
+O survey observa que trabalhos posteriores passaram a considerar supervisão porque o disentanglement não emerge naturalmente de forma identificável apenas a partir dos dados observados. 
+Weak supervision tenta ficar no meio:
+$$
+\text{não rotular tudo}
+$$
+mas fornecer informação suficiente para quebrar ambiguidades.
+Por exemplo:
+- pares de dados que diferem apenas em um fator;
+- parte dos fatores rotulados;
+- intervenções;
+- agrupamentos;
+- relações entre amostras.
+
+### **Independent vs Causal**
+O DRL tradicional costuma assumir:
+$$
+p(z)
+=
+\prod_i p(z_i).
+$$
+Ou seja:
+$$
+z_i\perp z_j.
+$$
+Mas fatores reais podem ter relações:
+$$
+Z_1\rightarrow Z_2.
+$$
+Por exemplo:
+$$
+\text{posição da luz}
+\rightarrow
+\text{posição da sombra}.
+$$
+Então surgem abordagens causais que usam SCMs.
+Nesse caso o objetivo deixa de ser tornar tudo independente e passa a ser modelar:
+$$
+z_i=f_i(Pa_i,\epsilon_i),
+$$
+onde $Pa_i$ são os pais causais de $z_i$.
+É justamente essa mudança que o survey apresenta: quando fatores não são independentes, causal disentanglement pode ser mais adequado.
+
+## **Como avaliar ?**
+
+O artigo revisa várias métricas.
+Uma das mais conhecidas é MIG:
+$$
+\text{Mutual Information Gap}.
+$$
+Para cada fator verdadeiro $v_k$, verificamos quais dimensões latentes possuem mais informação sobre ele.
+Idealmente:
+$$
+I(z_i;v_k)\gg I(z_j;v_k)
+$$
+para $j\neq i$.
+Isso significaria que um fator está concentrado principalmente em uma dimensão. Existe MIG para fatores explicitos também.
+Outra abordagem é o DCI, que separa três propriedades:
+$$
+D=\text{Disentanglement}
+$$
+$$
+C=\text{Completeness}
+$$
+$$
+I=\text{Informativeness}.
+$$
+
+Disentanglement pergunta:
+- uma dimensão codifica quantos fatores?
+
+Completeness pergunta:
+- um fator está espalhado em quantas dimensões?
+
+Informativeness pergunta:
+- conseguimos recuperar o fator a partir da representação?
+
+O survey apresenta exatamente essa decomposição. 
+Isso gera um problema para texto: muitas dessas métricas precisam saber antecipadamente quais são os ground-truth factors.
+Se não sabemos quais são todos os fatores linguísticos, a avaliação fica muito mais complicada.
+
+## **NLP** 
+
+O artigo mostra aplicações de DRL em:
+$$
+\text{text generation},
+$$
+$$
+\text{style transfer},
+$$
+$$
+\text{semantic understanding}.
+$$
+Existem trabalhos tentando separar, por exemplo:
+$$
+z=
+[z_{\text{conteúdo}},z_{\text{estilo}}],
+$$
+ou propriedades complementares dentro de representações de linguagem.
+O survey também cita trabalhos que procuram encontrar representações disentangled dentro de modelos pré-treinados como BERT, além de métodos que separam sinais relevantes para uma tarefa de outras informações presentes na representação. 
+
+# **Algumas aplicações**
+
+## **Text Attribute Control via Closed-Loop Disentanglement**
+
+Fonte (2024): https://arxiv.org/abs/2312.00277 
+
+Esse artigo é um exemplo de aplicação em que
+
+## 
+
+## 
+
