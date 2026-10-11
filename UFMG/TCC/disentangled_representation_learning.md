@@ -82,7 +82,7 @@ $$
 
 A ideia é que essas transformações representam diferentes maneiras independentes pelas quais o estado do mundo pode variar.
 
-### Estado do mundo, observação e representação
+### **Estado do mundo, observação e representação**
 
 O artigo separa três espaços:
 $$
@@ -257,7 +257,7 @@ A taxonomia do artigo divide os metodos em 4 perguntas:
 
 ### **Qual tipo de modelo é usado ?**
 
-O paper divide em 3 tipos principais
+O paper divide em 3 tipos principais a literatura atual não é limitada a apenas eles e muitas vezes usa pedaços dessas ideais.
 
 #### **VAE-Based**
 
@@ -689,9 +689,245 @@ O survey também cita trabalhos que procuram encontrar representações disentan
 
 Fonte (2024): https://arxiv.org/abs/2312.00277 
 
-Esse artigo é um exemplo de aplicação em que
+Esse artigo é um exemplo de aplicação de DRL para **controle de atributos em geração de texto**. A ideia é separar a representação latente de uma sentença em dois componentes:
 
-## 
+$$
+X \rightarrow [s,c]
+$$
 
-## 
+- $s$: representação de um **atributo** do texto, como sentimento, tempo verbal ou emoção;
+- $c$: representação do **conteúdo**, que idealmente deve permanecer inalterado quando o atributo é modificado.
 
+O método utiliza **disentanglement explícito**, ou seja, os atributos possuem rótulos durante o treinamento. Assim, o modelo é orientado sobre qual informação deve estar no espaço $s$.
+
+### **Closed-Loop Disentanglement**
+
+O diferencial do artigo é codificar novamente o texto após sua reconstrução ou alteração:
+
+$$
+X \rightarrow [s,c] \rightarrow X' \rightarrow [s',c']
+$$
+
+Se nenhum atributo foi alterado, espera-se:
+
+$$
+s' \approx s,\qquad c' \approx c
+$$
+
+Se o atributo é alterado de $s$ para $\tilde{s}$:
+
+$$
+[\tilde{s},c] \rightarrow \tilde X \rightarrow [\tilde{s}',\tilde{c}']
+$$
+
+espera-se que:
+
+$$
+\tilde{s}' \approx \tilde{s}
+$$
+
+e
+
+$$
+\tilde{c}' \approx c.
+$$
+
+Ou seja, **o atributo desejado deve mudar enquanto o conteúdo deve permanecer estável**.
+
+Para impor essa separação, os autores utilizam **contrastive learning**, aproximando representações que deveriam corresponder ao mesmo atributo/conteúdo e afastando representações diferentes. Isso é usado como alternativa a métodos adversariais e à minimização direta de informação mútua.
+
+O disentanglement é avaliado, entre outras formas, usando uma adaptação da métrica **MIG**, buscando alta informação sobre o atributo em $s$ e baixa informação desse mesmo atributo em $c$. 
+
+## **Retrieval-based Disentangled Representation Learning with Natural Language Supervision (VDR)**
+
+Fonte (2024): https://arxiv.org/pdf/2212.07699
+
+Esse artigo é um exemplo de aplicação de DRL em **Information Retrieval**, incluindo busca texto-texto e recuperação multimodal.
+
+A principal dificuldade apontada pelos autores é que, em dados reais, não existe um conjunto universal e facilmente enumerável de fatores de variação. Como alternativa, o trabalho utiliza a própria **linguagem natural como supervisão**, tratando conceitos presentes no vocabulário como proxies para esses fatores.
+
+### **Representação**
+
+Em dense retrieval tradicional, o encoder gera uma representação densa:
+
+$$
+E_{\text{dense}}(x) \in \mathbb{R}^{d}
+$$
+
+em que as dimensões não possuem, em geral, um significado individual explícito.
+
+O método proposto, chamado **Vocabulary Disentangled Retrieval (VDR)**, representa cada entrada em um espaço associado ao vocabulário:
+
+$$
+E(x) \in \mathbb{R}^{|V|}
+$$
+
+Cada dimensão corresponde a um token do vocabulário, e seu valor representa a relevância semântica daquele conceito para a entrada.
+
+Conceitualmente:
+
+$$
+E(x) =
+[
+z_{\text{cat}},
+z_{\text{book}},
+z_{\text{reading}},
+\ldots
+]
+$$
+
+O modelo utiliza um encoder baseado em BERT e um **Disentanglement Head (DST)**, responsável por projetar as representações internas do Transformer para esse espaço lexical.
+
+### **Disentanglement**
+
+O disentanglement é feito de maneira **dimension-wise**: diferentes dimensões da representação são incentivadas a capturar diferentes conceitos linguísticos.
+
+O modelo é treinado como um **bi-encoder**, aproximando representações de queries e documentos relevantes e afastando pares irrelevantes.
+
+A similaridade pode ser decomposta como:
+
+$$
+sim(q,p)
+=
+\sum_i
+V_q(q)[i]
+\cdot
+V_p(p)[i]
+\cdot
+\alpha_i(q,p)
+$$
+
+onde cada dimensão ativada pode contribuir individualmente para o score de retrieval.
+
+Dessa forma, a própria linguagem natural fornece uma forma de supervisão para o disentanglement, sem ser necessário definir previamente um pequeno conjunto fixo de fatores como "sentimento", "estilo" ou "conteúdo".
+
+### **Interpretabilidade**
+
+Como as dimensões possuem correspondência com tokens do vocabulário, é possível analisar:
+
+$$
+E(q) \odot E(p)
+$$
+
+e observar quais conceitos contribuíram mais para a similaridade entre uma query e um resultado.
+
+Assim, além de aplicar DRL diretamente em **Information Retrieval**, o método busca tornar o processo de recuperação mais interpretável, permitindo identificar quais conceitos contribuíram para um determinado resultado.
+
+
+## **DEAR: Disentangled Event-Agnostic Representation Learning for Early Fake News Detection**
+
+Fonte (2025): https://aclanthology.org/2025.tacl-1.16/
+
+Esse artigo é um exemplo de aplicação de DRL em **detecção de fake news**, com foco em generalização para eventos que não estavam presentes durante o treinamento.
+
+O problema é que representações textuais podem misturar informações realmente úteis para identificar fake news com características específicas do evento discutido. Os autores assumem que uma notícia contém dois tipos principais de informação latente:
+
+$$
+\text{representação}
+\rightarrow
+[
+\text{autenticidade},
+\text{evento}
+]
+$$
+
+- $c$: representação **authenticity-related**, contendo informações úteis para distinguir notícias reais de falsas;
+- $e$: representação **event-specific**, contendo características particulares do evento abordado.
+
+### **Representação**
+
+Inicialmente, o texto é processado por um encoder baseado em **BERT**, que combina informações em diferentes níveis de granularidade para produzir uma representação textual:
+
+$$
+x \rightarrow E_t(x) = o
+$$
+
+A representação $o$ é então enviada para dois geradores diferentes:
+
+$$
+c = G_c(o)
+$$
+
+$$
+e = G_e(o)
+$$
+
+onde $G_c$ tenta extrair informações relacionadas à autenticidade e $G_e$ tenta extrair informações específicas do evento. O treinamento utiliza tanto os rótulos **real/fake** quanto os rótulos dos **eventos**, fornecendo supervisão para determinar o papel de cada representação.
+
+### **Disentanglement**
+
+O objetivo é fazer com que:
+
+$$
+c \approx \text{informação de autenticidade}
+$$
+
+e
+
+$$
+e \approx \text{informação específica do evento}.
+$$
+
+A motivação é que o componente $c$ possa ser utilizado mesmo quando o modelo encontra um evento completamente novo.
+
+Assim, idealmente:
+
+$$
+c \perp \text{evento}
+$$
+
+enquanto:
+
+$$
+e \rightarrow \text{identificação do evento}.
+$$
+
+### **Cross-Perturbation**
+
+Para aumentar a separação entre os dois fatores, os autores introduzem um mecanismo chamado **Cross-Perturbation (CP)**.
+
+Durante o treinamento, informação específica de evento é utilizada para perturbar a representação de autenticidade:
+
+$$
+c \rightarrow \tilde{c}
+$$
+
+e informação de autenticidade é utilizada para perturbar a representação de evento:
+
+$$
+e \rightarrow \tilde{e}.
+$$
+
+Mesmo após essa perturbação, o discriminador de autenticidade deve continuar conseguindo identificar:
+
+$$
+\tilde{c} \rightarrow \text{Real/Fake}
+$$
+
+enquanto o discriminador de eventos deve continuar identificando:
+
+$$
+\tilde{e} \rightarrow \text{Evento}.
+$$
+
+Isso força cada representação a depender principalmente da informação correspondente ao seu próprio fator.
+
+### **Refinement Learning**
+
+O modelo ainda realiza uma segunda etapa de treinamento para reduzir o vazamento de informação entre os dois espaços.
+
+A representação de autenticidade \(c\) é apresentada ao discriminador de eventos, mas o objetivo é impedir que ele consiga identificar corretamente o evento.
+
+Da mesma forma, a representação de evento \(e\) é apresentada ao discriminador de autenticidade, buscando impedir que informações de autenticidade permaneçam nesse espaço.
+
+Conceitualmente:
+
+$$
+I(c;\text{evento}) \rightarrow \text{baixo}
+$$
+
+$$
+I(e;\text{autenticidade}) \rightarrow \text{baixo}.
+$$
+
+Dessa forma, o método tenta produzir uma representação de autenticidade **event-agnostic**, isto é, menos dependente do evento específico presente no texto.
