@@ -472,6 +472,8 @@ Dentro de cada celula:
 
 Exploramos as celulas e se encontrarmos um melhor na celula que é melhor que é o atual. Diversidade por causa das celulas e qualidade pq pegamos o melhor de cada celula.
 
+- Nao precisa de arquivo pois as proprias celulas servem de arquivo
+
 
 ## **Adicionando LLMs em algortimos evolutivos**
 
