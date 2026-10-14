@@ -416,6 +416,63 @@ Ambos tentam:
 - *Se aproximar da fronteira:* um através de ranks com elitismo e outro através da Fitness de proximidade da fronteira com arquivo
 - *Explorar lugares do espaço:* Um pelo crowding distance e o outro pela densidade
 
+## **Qualidade-Diversidade**
+
+O problema aqui veio quando perceberam que nem sempre a melhor fitness é suficiente para levar diretamente ao melhor caminho para solução. Imagine um labirinto guiado pela distancia euclidiana ate a saida, se existe uma parede entre a saida e o agente, a fitness vai ser boa mas a direção não. E ai vem a diferenciação de novelty search pois ao invés de ver quão bem estamos olhamos quão diferente do restante estamos.
+
+A ideia é recompensar comportamentos diferentes mesmo que eles não sejam melhores por agora mas talvez no futuro ele seja intermediario de uma solução otima. No labirinto por exemplo pode permitir que atravessemos uma parede que antes nos impedia de chegar ao objetivo final.
+
+### **Como medir ?**
+
+Novidade não é medida pela qualidade do genotipo do individuo mas sim pelo comportamento dele, então dois individuos totalmente diferentes podem ter novidade parecida. Ela é medida pela esparsidade:
+
+- Esparsidade = Distancia media ate os k vizinhos mais proximos. Ou seja, se o individuo é diferente e isolado então sua esparsidade é alta.
+
+### **Archive**
+
+Suponha que a população visitou certa região na geração 10 e depois saiu dela. Na geração 100, aquela região não está mais na população. Sem memória, ela pareceria “nova” novamente. Portanto, precisamos de um arquivo para manter esses pontos mais diversos.
+
+- Depois a esparsidade de um individuo é calculada com base na população atual e o arquvio atual. Se novos individuos são mais esparsos que o minimo do arquivo, trocamos eles.
+
+### **Ciclo**
+
+$$
+\text{população inicial} 
+\rightarrow 
+\text{simular indivíduos}
+\rightarrow 
+\text{calcular }b(x)(ação)
+\rightarrow 
+\text{calcular }\rho(x) (esparsidade)
+\rightarrow 
+\text{selecionar pelos mais novos}
+\rightarrow 
+\text{crossover/mutação}
+\rightarrow 
+\text{nova geração}.
+$$
+
+### **Problema**
+
+Uma solução pode ser extremamente diferente e totalmente inútil, ou seja, novo não significa bom. Isso motivou a ideia de combinar novidade com qualidade e isso levou a ideia de Quality-Diversity que ao invés de retornar uma unica solução retorna varias soluções diferentes e boas.
+
+*Objetivo único:* “qual é a melhor solução?”
+*Multiobjetivo:* “quais são os melhores trade-offs entre objetivos?”
+*Quality-Diversity:* “qual é a melhor solução em cada tipo de comportamento?”
+
+### **MAP-Elites**
+
+È o principal algoritmo de Quality-Diversity, ele discretiza o espaço em de comportamento em grids (quadrados)
+
+- Por exemplo, se temos as dimensões (velocidade, altura), dividimos em quadrados na dimensão.
+
+Dentro de cada celula:
+
+- Guardamos o melhor individuo chamado de Elite da celula
+
+Exploramos as celulas e se encontrarmos um melhor na celula que é melhor que é o atual. Diversidade por causa das celulas e qualidade pq pegamos o melhor de cada celula.
+
+
 ## **Adicionando LLMs em algortimos evolutivos**
 
 A ideia aqui é usar a versatilidade e adaptação ao contexto da LLM para tomar decisões.
