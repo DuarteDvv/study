@@ -98,6 +98,7 @@ Isso porque um algoritmo que executa em tempo polinomial não pode acessar mais 
 Da mesma forma que definimos os problemas NP-completos, podemos definir os problemas PSPACE-completos. Para um problema B ser PSPACE-completo, precisamos mostrar duas condições:
 1. $B\in PSPACE$, ou seja, existe um algoritmo determinístico que resolve o problema utilizando espaço polinomial.
 2. Para todo problema $A\in PSPACE$, existe uma redução polinomial de A para B. Isso significa que B é PSPACE-difícil.
+
 Portanto:
 $$
 PSPACE\text{-completo}=PSPACE\cap PSPACE\text{-difícil}
@@ -110,8 +111,75 @@ Consequentemente, se quisermos provar que outro problema \(B\) é PSPACE-complet
 Isso funciona porque QSAT já é PSPACE-completo, portanto todos os problemas em PSPACE podem ser reduzidos a ele.
 
 
+## **Exemplo de reduções**
 
+Para demonstrar que um problema B é NP-completo, podemos reduzir um problema A já conhecido como NP-completo para B. A seguir estão alguns exemplos de reduções polinomiais.
 
+### **1. Clique → Vertex Cover**
 
+**Vertex Cover** consiste em descobrir se existe um conjunto de no máximo k vértices que cobre todas as arestas de um grafo, ou seja, toda aresta possui pelo menos uma extremidade nesse conjunto.
 
+**Redução:** dado um grafo G = (V, E) e um valor k do problema Clique, construímos seu grafo complementar G', mantendo os vértices e invertendo as arestas (onde existia aresta, removemos; onde não existia, adicionamos).
+
+A nova instância será (G', |V| - k).
+
+- **Ida:** se G possui uma clique de tamanho k, seus vértices não possuem arestas entre si em G'. Portanto, os outros |V| - k vértices cobrem todas as arestas de G'.
+- **Volta:** se G' possui um Vertex Cover de tamanho |V| - k, os k vértices restantes não podem possuir arestas entre si em G', logo formam uma clique em G.
+
+A transformação é polinomial, e Vertex Cover pertence a NP, pois podemos verificar se todas as arestas estão cobertas em tempo polinomial.
+
+**Conclusão:** Clique ≤p Vertex Cover.
+
+### **2. Vertex Cover → Dominating Set**
+
+**Dominating Set** consiste em descobrir se existe um conjunto de no máximo k vértices tal que todos os vértices do grafo pertencem a esse conjunto ou são adjacentes a algum vértice dele.
+
+**Redução:** dado um grafo G = (V, E) de Vertex Cover, construímos G' mantendo os vértices e arestas originais, mas adicionando um novo vértice para cada aresta (u, v), conectado às suas duas extremidades.
+
+Mantemos o mesmo k.
+
+- **Ida:** se existe um Vertex Cover de tamanho k em G, seus vértices dominam todos os novos vértices, pois cada aresta original possui pelo menos uma extremidade selecionada. Também dominam os vértices originais não isolados.
+- **Volta:** se existe um Dominating Set de tamanho k em G', podemos substituir qualquer vértice novo selecionado por uma de suas extremidades. Assim, todos os novos vértices continuam dominados, significando que todas as arestas originais estão cobertas.
+
+A construção é polinomial, e Dominating Set pertence a NP, pois podemos verificar se todos os vértices estão dominados em tempo polinomial.
+
+**Observação:** essa construção pressupõe que o grafo original não possui vértices isolados. Podemos removê-los antes da redução, pois não influenciam Vertex Cover.
+
+**Conclusão:** Vertex Cover ≤p Dominating Set.
+
+### **3. 3SAT → 3-Coloração**
+
+**3-Coloração** consiste em descobrir se conseguimos colorir os vértices de um grafo utilizando no máximo três cores, de modo que vértices adjacentes tenham cores diferentes.
+
+**Redução:** dada uma expressão 3SAT, construímos um grafo utilizando três cores representadas por T (verdadeiro), F (falso) e A (auxiliar).
+
+A construção acontece em etapas:
+
+1. Criamos um triângulo com vértices T, F, A, garantindo três cores diferentes.
+2. Para cada variável x, criamos dois vértices x e ¬x, conectados entre si e ao vértice A. Assim, obrigatoriamente um será verdadeiro e o outro falso.
+3. Para cada cláusula, criamos uma estrutura de vértices externos e um triângulo interno. Essa estrutura só permite uma 3-coloração se pelo menos um literal da cláusula for verdadeiro.
+
+- **Ida:** se 3SAT é satisfazível, podemos colorir os vértices das variáveis conforme seus valores e completar a coloração das cláusulas, pois cada cláusula possui pelo menos um literal verdadeiro.
+- **Volta:** se o grafo admite uma 3-coloração, cada cláusula precisa possuir pelo menos um literal colorido com T. Logo, os valores associados às variáveis satisfazem a expressão original.
+
+Como a construção é polinomial e podemos verificar uma coloração examinando todas as arestas, 3-Coloração pertence a NP.
+
+**Conclusão:** 3SAT ≤p 3-Coloração.
+
+### **4. Vertex Cover → Set Cover**
+
+**Set Cover** consiste em descobrir se podemos escolher no máximo k conjuntos de uma família de conjuntos de modo que sua união contenha todos os elementos do universo.
+
+**Redução:** dado um grafo G = (V, E) de Vertex Cover, construímos uma instância de Set Cover da seguinte maneira:
+
+- Cada aresta do grafo representa um elemento do universo.
+- Para cada vértice v, criamos um conjunto S_v contendo todas as arestas incidentes em v.
+- Mantemos o mesmo valor k.
+
+- **Ida:** se existe um Vertex Cover de tamanho k, os conjuntos associados aos vértices escolhidos contêm todas as arestas. Portanto, formam um Set Cover.
+- **Volta:** se existem k conjuntos que cobrem todas as arestas, os vértices associados a esses conjuntos formam um Vertex Cover, pois cada aresta possui pelo menos uma extremidade selecionada.
+
+A transformação é polinomial, e Set Cover pertence a NP, pois conseguimos verificar em tempo polinomial se a união dos conjuntos escolhidos cobre todo o universo.
+
+**Conclusão:** Vertex Cover ≤p Set Cover.
 
