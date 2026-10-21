@@ -63,7 +63,7 @@ Alguns parametros padrão de testes:
 - *MDE(Minimum Detectable Effect/Lift):* ?
 - *Tamanho da amostra estimada:* ? Ex: 4.638 com MDE=1%
 
-- *Teste usado:* z-test para proporções 
+- *Teste usado:* z-test para proporções ou algum não paramétrico
 
 ## **Design do Experimento**
 
