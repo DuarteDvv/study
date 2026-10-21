@@ -24,3 +24,61 @@ Como é um problema temporal as instancias de treino/teste sao construidas em ci
 
 ## **Split Treino/Teste**
 
+...
+
+
+# **Teste A/B** 
+
+## **Problema**
+
+### **Contexto**
+
+Queremos medir o sucesso de estratégias de retenção de clientes (clientes das distribuidoras) dos nossos clientes (distribuidoras). O objetivo é perder menos dos clientes das distribuidoras (reduzir churn) e os afetados são:
+
+- *Clientes das distribuidoras:* Recebem incentivo/intervenção das distribuidoras 
+- *Distribuidoras:* Devem gastar e intervir nos seus clientes
+
+### **Possiveis métricas**
+
+- *Primária:* Taxa de Churn (Churn Rate) -> quanto % dos clientes das distribuidoras dentro do grupo teve churn. Menor é melhor, ou seja, queremos reduzir essa taxa.
+- *Secundária:* Receita retida -> quanto deixamos de perder por recuperar os clientes
+- *Terciária:* Custo de retenção -> quanto gastamos para reter os clientes
+
+## **Hipotese e parametros do teste**
+
+### **Tipo e hipotese**
+
+Como nos interessa saber apenas se o churn rate do grupo novo B é pior que o controle A podemos usar um one-tail test com as seguintes hipoteses:
+
+- *Hipotese Nula (H0):* Os 2 grupos são equivalentes -> B >= A
+- *Hipotese Alternativa (H1):* Nosso metodo reduz o churn rate -> B < A
+
+### **Parametros**
+
+Alguns parametros padrão de testes:
+
+- *Alpha:* 0.05 (5%) 
+- *Power(1 - Beta):* 0.80 (80%)
+- *Variabilidade histórica da métrica:* ? 
+- *MDE(Minimum Detectable Effect/Lift):* ?
+- *Tamanho da amostra estimada:* ? Ex: 4.638 com MDE=1%
+
+- *Teste usado:* z-test para proporções 
+
+## **Design do Experimento**
+
+
+
+### **Unidade de randomização**
+
+Estratificação por distribuidora ? 
+
+
+
+
+
+
+
+
+
+
