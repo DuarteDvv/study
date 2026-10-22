@@ -38,11 +38,21 @@ Queremos medir o sucesso de estratégias de retenção de clientes (clientes das
 - *Clientes das distribuidoras:* Recebem incentivo/intervenção das distribuidoras 
 - *Distribuidoras:* Devem gastar e intervir nos seus clientes
 
+### **Definição de churn** 
+
+Nossa abordagem evita definir churn o evento fixo e portanto não existe essa definição
+
 ### **Possiveis métricas**
 
-- *Primária:* Taxa de Churn (Churn Rate) -> quanto % dos clientes das distribuidoras dentro do grupo teve churn. Menor é melhor, ou seja, queremos reduzir essa taxa.
-- *Secundária:* Receita retida -> quanto deixamos de perder por recuperar os clientes
-- *Terciária:* Custo de retenção -> quanto gastamos para reter os clientes
+- *Primária:* Taxa de não compra em 60 dias -> proporção de clientes randomizados que não realizaram compras durante os 60 dias de acompanhamento. Quanto menor, melhor.
+- *Secundária:* Receita por cliente -> receita total gerada durante o experimento dividida pelo número de clientes randomizados, incluindo aqueles sem compras
+- *Terciária:* Custo de intervenção -> quanto gastamos para abordar os clientes
+
+### **Intervenção**
+
+Mensagem no WPP ou ligação (todas as distribuidoras tem que ter a mesma intervenção). Custo pode ser avaliado como a soma dos seguintes fatores:
+- Custo da ligação de acordo com o valor/hora da operadora
+- Custo do tempo gasto do funcionário/BOT de acordo com salário/preço
 
 ## **Hipotese e parametros do teste**
 
@@ -61,17 +71,19 @@ Alguns parametros padrão de testes:
 - *Power(1 - Beta):* 0.80 (80%)
 - *Variabilidade histórica da métrica:* ? 
 - *MDE(Minimum Detectable Effect/Lift):* ?
-- *Tamanho da amostra estimada:* ? Ex: 4.638 com MDE=1%
+- *Tamanho da amostra estimada:* ?
 
 - *Teste usado:* z-test para proporções ou algum não paramétrico
 
 ## **Design do Experimento**
 
-
-
 ### **Unidade de randomização**
 
-Estratificação por distribuidora ? 
+A unidade poderia ser distribuidoras porém isso teria alguns problemas como por exemplo uma distribuidora ter maior taxa de não compra ou muito mais clientes. A malhor unidade é o cliente final das distribuidoras e pode ser feito de algumas maneiras:
+
+- *Clientes independentes da distribuidora:* Junta todos os clientes sem levar em consideração a distribuidora e separa o grupo controle e tratamento.
+- *Clientes estratificados por distribuidora:* Para cada distribuidora separamos 50/50 dos seus clientes para cada grupo
+
 
 
 
