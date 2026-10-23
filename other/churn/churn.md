@@ -79,11 +79,21 @@ Alguns parametros padrão de testes:
 
 ### **Unidade de randomização**
 
-A unidade poderia ser distribuidoras porém isso teria alguns problemas como por exemplo uma distribuidora ter maior taxa de não compra ou muito mais clientes. A malhor unidade é o cliente final das distribuidoras e pode ser feito de algumas maneiras:
+A unidade poderia ser distribuidoras porém isso teria alguns problemas como por exemplo uma distribuidora ter maior taxa de não compra ou muito mais clientes. A malhor unidade é o cliente final das distribuidoras.
 
-- *Clientes independentes da distribuidora:* Junta todos os clientes sem levar em consideração a distribuidora e separa o grupo controle e tratamento.
-- *Clientes estratificados por distribuidora:* Para cada distribuidora separamos 50/50 dos seus clientes para cada grupo
+### **Randomização**
 
+- *Clientes independentes da distribuidora:* Junta todos os clientes sem levar em consideração a distribuidora e separa o grupo controle e tratamento. O problema aqui é que distribuidoras diferentes podem ter taxas diferentes, se um grupo der sorte de pegar mais elementos de uma distribuidora com maior taxa, estará enviesado.
+
+- *Clientes estratificados por distribuidora:* Para cada distribuidora escolhemos aleatoriamente X dos seus clientes 
+
+### **Tamanho do grupo**
+
+50/50 se possivel, mas devido ao custo de intervenção nos clientes pode ser que o grupo B tratamento seja menor levandoa 80/20
+
+### **Duração**
+
+2 meses (60 dias) de experimento
 
 
 
