@@ -58,10 +58,10 @@ Mensagem no WPP ou ligação (todas as distribuidoras tem que ter a mesma interv
 
 ### **Tipo e hipotese**
 
-Como nos interessa saber apenas se o churn rate do grupo novo B é pior que o controle A podemos usar um one-tail test com as seguintes hipoteses:
+Como nos interessa saber apenas se a métrica do grupo novo B é melhor que o controle A podemos usar um one-tail test com as seguintes hipoteses:
 
-- *Hipotese Nula (H0):* Os 2 grupos são equivalentes -> B >= A
-- *Hipotese Alternativa (H1):* Nosso metodo reduz o churn rate -> B < A
+- *Hipotese Nula (H0):* Os B é pior ou igual a A -> B >= A
+- *Hipotese Alternativa (H1):* B é melhor que A -> B < A
 
 ### **Parametros**
 
@@ -71,6 +71,7 @@ Alguns parametros padrão de testes:
 - *Power(1 - Beta):* 0.80 (80%)
 - *Variabilidade histórica da métrica:* ? 
 - *MDE(Minimum Detectable Effect/Lift):* ?
+- *Tamanho do grupo:* 50/50 se possivel, mas devido ao custo de intervenção nos clientes pode ser que o grupo B tratamento seja menor levandoa 80/20
 - *Tamanho da amostra estimada:* ?
 
 - *Teste usado:* z-test para proporções ou algum não paramétrico
@@ -79,21 +80,24 @@ Alguns parametros padrão de testes:
 
 ### **Unidade de randomização**
 
-A unidade poderia ser distribuidoras porém isso teria alguns problemas como por exemplo uma distribuidora ter maior taxa de não compra ou muito mais clientes. A malhor unidade é o cliente final das distribuidoras.
+A unidade poderia ser distribuidoras porém isso teria alguns problemas como por exemplo uma distribuidora ter maior taxa de não compra ou muito mais clientes e além disso temos poucas distribuidoras. A melhor unidade é o cliente final das distribuidoras e provavelmente pegar uma porcentagem dos clientes com maior risco de acordo com o score para intervir.
 
 ### **Randomização**
 
-- *Clientes independentes da distribuidora:* Junta todos os clientes sem levar em consideração a distribuidora e separa o grupo controle e tratamento. O problema aqui é que distribuidoras diferentes podem ter taxas diferentes, se um grupo der sorte de pegar mais elementos de uma distribuidora com maior taxa, estará enviesado.
+- *Clientes independentes da distribuidora:* Junta todos os clientes sem levar em consideração a distribuidora e separa o grupo controle e tratamento. O problema aqui é que distribuidoras diferentes podem ter tipos muito diferentes de clientes e isso pode aumentar a variabilidade nos grupos se pegarmos mais de uma distribuidora que outra.
 
 - *Clientes estratificados por distribuidora:* Para cada distribuidora escolhemos aleatoriamente X dos seus clientes 
 
-### **Tamanho do grupo**
-
-50/50 se possivel, mas devido ao custo de intervenção nos clientes pode ser que o grupo B tratamento seja menor levandoa 80/20
-
 ### **Duração**
 
-2 meses (60 dias) de experimento
+2-3 meses de experimento
+
+### **Controle e tratamento**
+
+- *Tratamento:* A ideia é o tratamento utilizar nossos scores gerados no comeco do experimento para um horizonte de 60 dias, interpretalos como sinal de risco e intervir nos clientes. A ideia é que clientes que iriam sair deixem de sair com essa intervercao e a taxa de nao compra reduza.
+- *Controle:* Duas possibilidades:
+    - Na ausencia de um metodo atual, esse grupo será apenas observado e ao final a taxa calculada. 
+    - Se já existe algum metodo, a intervencao (do mesmo tipod do tratamento) deve ser feita usando ele para ao final compararmos as métricas.
 
 
 
