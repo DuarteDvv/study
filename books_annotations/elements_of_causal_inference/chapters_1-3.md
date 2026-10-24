@@ -5,6 +5,8 @@
 Em probabilidade já conhecemos o processo gerador, ou seja, a distribuicao verdadeira e queremos analisar os seus possiveis resultados através de experimentos com diversos parametros para gerar dados.
 
 - Entretanto, em estatística o processo é contrário, nos temos os resultados e queremos afirmar coisas sobre o processo/distribuicao geradora em que geralmente temos tuplas ((x1,y1)...) chamadas de observacoes/linhas em que assumimos que cada uma delas sao i.i.d, ou seja, independentes e vieram da mesma distribuicao multivariada de origem chamada Pxy. O maior problema na estatistica é que desconhecemos a distribuicao real/original dos dados.
+- *Joint Distribution Pxy* descreve a probabilidade de duas ou mais variáveis aleatórias ocorrerem simultaneamente dentro de intervalos ou conjuntos específicos de valores e possuem uma função de probabilidade conjunta p(x, y) = P(X = x, Y = y). Isso é equivalente a P(x intersect y) e todas as operacoes como bayes.
+- *Conditional Distribution* é probabilidade de uma variável assumir um valor sabendo que a outra já assumiu um valor específico ($P(Y=y \vert{} X=x) = \frac{p(x,y)}{p_X(x)}$).
 
 ## **Learning Theory**
 
@@ -60,3 +62,82 @@ Imagine agora 2 modelos causais para um problema de atividade genetica:
 
 Os dois casos podem apresentar distribuições observacionais idênticas, embora as intervenções tenham consequências diferentes.
   
+
+![alt text](imgs/genes_intervention.png)
+
+# **Causal Assumptions**
+
+## **Principio de Mecanismos Independentes** 
+
+Considere um exemplo com 2 variaveis: T -> temperatura e A -> altitude. Temos 2 possiveis hipoteses de causalidade:
+
+1. A -> T, altitude causa temperatura e portanto a distribuicao conjunta P(a,t) pode ser decomposta em P(t|a) * P(a)
+2. T -> A, temperatura causa altitude e portanto a distribuicao conjunta P(a,t) pode ser decomposta em P(a|t) * P(t)
+
+È intuitivo perceber que se uma intervencao na causa for feita em ambos os modelos: No primeiro estamos mudando a altitude e devido a fatores fisicos a temperatura também vai mudar. No segundo estamos mudando a temperatura de uma cidade... isso ira fazer com que a cidade comece a voar ? ou entre debaixo da terra ? Claramente o primeiro modelo é mais representativo e isso esta ligado ao mecanismo fisico de interacao entre altitude e temperatura.
+
+### **Premissas**
+
+$$ 
+p(a,t)=\underbrace{p(t\mid a)}_{\text{mecanismo causal   }}\underbrace{p(a)}_{\text{    distribuição da causa}}
+$$
+
+Ambos os termos sao distribuicoes de probabilidade em que uma é condicional e outra nao, essas distribuicoes sao responsaveis pela geracao dos dados das variaveis e sao chamadas de mecanismos. O primeiro termo é o mecanismo/regra de geracao do efeito (distribuição do efeito T condicionada à causa A. Sob a hipótese causal A -> T) entre causa X e outras variaveis Y que essa causa afeta. O segundo termo é o mecanismo/regra que gerou a causa, ou seja, como essa causa é gerada ou varia. Dito isso, temos algumas premissas:
+
+- *Autonomia/Invariancia entre mecanismos:* O mecanismo do efeito e o mecanismo que gerou a causa sao autonomos, ou seja, podemos modificar um mecanismo sem necessariamente modificar o funcionamento dos demais. Portanto, podemos mudar a regra de geracao da causa (mudar a cidade e consequentemente as altitudes) sem isso afetar em nada o mecanismo do efeito (mesmas regras fisicas de temperatura).
+
+- *Independência entre causa e mecanismo:* O mecanismo que gera a causa não fornece informações sobre o mecanismo que produz o efeito. Por exemplo, saber que 80% das cidades tem altitude maior que x nao te diz como essa altitude vai afetar a temperatura e nem se apenas ela vai afetar a temperatura.
+
+- *Erros independente:* No modelo causal estrutural a temperatura é gerada através de um mecanismo de interacao f, com parametros A e Nt, ou seja, f(A, Nt) em que A é a altitude e Nt sao outros fatores que afetam a temperatura. A é gerado através de fatores f(Na). Idealmente Na e Nt sao independentes pois caso contrário quebra a premissa de autonomia.
+
+    - $N_A$ e $N_T$ são variáveis de ruído (noise), também chamadas de variáveis exógenas. Elas representam fatores que influenciam uma variável, mas que não estão explicitamente modelados como suas causas.
+
+## **Modelos Causais e processos fisicos**
+
+### **Tempo**
+
+O tempo fornece uma assimetria natural: causas não podem influenciar acontecimentos no passado. Entretanto, a ordem temporal não é suficiente para estabelecer causalidade. Por exemplo, mesmo que X aconteça antes de Y, isso não prova que X causa Y.
+
+### **Ciclos**
+
+Até aqui, consideramos principalmente estruturas causais sem ciclos:
+$$
+X\longrightarrow Y
+$$
+
+Entretanto, alguns sistemas apresentam retroalimentação (feedback):
+$$
+X\longrightarrow Y\longrightarrow X
+$$
+
+Isso pode ser representado pelas equações estruturais:
+$$
+X:=f_X(Y,N_X)
+$$
+$$
+Y:=f_Y(X,N_Y)
+$$
+
+Nesse sistema, X depende de Y, enquanto Y também depende de X. O problema é que não podemos simplesmente calcular uma variável antes da outra.
+
+Uma possibilidade é procurar um ponto de equilíbrio por iteração:
+1. Escolhemos um valor inicial para Y.
+2. Calculamos X a partir desse valor.
+3. Utilizamos o novo X para calcular Y.
+4. Repetimos o procedimento até que os valores parem de mudar.
+
+Entretanto, a convergência não é garantida pois o sistema pode não possuir equilíbrio, possuir múltiplos equilíbrios ou não convergir pelo método iterativo.
+
+### **Intervencoes possiveis**
+
+O princípio dos mecanismos independentes pressupõe que podemos intervir em um mecanismo sem necessariamente modificar os demais. Na prática, algumas intervenções afetam vários mecanismos simultaneamente. Por exemplo, aumentar a temperatura de um sistema físico pode alterar também sua pressão e outras propriedades. Para determinar quais intervenções são realmente independentes, muitas vezes precisamos conhecer a estrutura causal do sistema. Porém, essa estrutura é justamente aquilo que estamos tentando descobrir. Assim, compreender os mecanismos físicos pode ser necessário para justificar nossas hipóteses causais.
+
+# **Cause-Effect Models**
+
+Conceitos basicos para o caso em que o modelo tem apenas duas variaveis
+
+## **Structural Causal Models**
+
+
+
+
