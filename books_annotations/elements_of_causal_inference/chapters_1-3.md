@@ -138,6 +138,176 @@ Conceitos basicos para o caso em que o modelo tem apenas duas variaveis
 
 ## **Structural Causal Models**
 
+Um SCM com duas variáveis é definido por:
+
+$$
+\begin{aligned}
+C&:=N_C\\
+E&:=f_E(C,N_E)
+\end{aligned}
+$$
+
+Em que C é a causa, E é o efeito, Nc e Ne sao as variaveis exogenas que influenciam essas variaveis (ruido) e f é o mecanismo/funcao que transforma a causa em efeito. No grafo causal vamos ter 2 vértices (C, E) e uma aresta direcionada de C para E. 
+
+- O SCM descreve como as variáveis são geradas, e não apenas como estão estatisticamente relacionadas. Para gerar dados com esse modelo causal comecamos gerando C usando uma amostragem de Nc, depois condicionado em C e no ruido Ne geramos E para no fim termos uma distribuicao de probabilidade P(C,E). 
+
+- Temos dois tipos de variáveis:
+    - Endógenas C: são determinadas pelas equações estruturais. Podemos observá-las total ou parcialmente.
+    - Exógenas $N_C,N_E$: representam fatores externos ao modelo, cujos valores individuais geralmente desconhecemos e chamamos de ruido
+
+## **Interventions (Intervenções)**
+
+Uma intervenção consiste em modificar externamente o mecanismo que gera uma variável, mantendo os demais mecanismos inalterados, no caso de uma intervenção ideal e localizada. Eis um exemplo de modelo causal em que definimos os mecanismos de como as variaveis sao geradas:
+
+$$
+C:=N_C
+$$
+
+$$
+E:=4C+N_E
+$$
+
+onde:
+$$
+N_C,N_E\overset{iid}{\sim}\mathcal N(0,1)
+$$
+
+### **Distribuição antes da intervenção**
+
+Como $C=N_C$:
+
+$$
+C\sim\mathcal N(0,1)
+$$
+
+E, como $E=4C+N_E$, temos:
+$$
+E\sim\mathcal N(0,17)
+$$
+
+Por quê? Usando a independência dos ruídos e o fato de $Var(c*X)=c^2 * Var(X)$:  $ \operatorname{Var}(E)=16\operatorname{Var}(C)+\operatorname{Var}(N_E) =16+1=17 $
+
+Portanto, a distribuição original do efeito é $E\sim\mathcal N(0,17)$.
+
+### **Intervenção sobre a causa**
+Agora fazemos:
+$
+do(C:=2)
+$
+
+Substituímos o mecanismo original $C:=N_C$ por $C:=2$.
+
+O mecanismo de $E$ permanece inalterado:
+$
+E=4(2)+N_E=8+N_E
+$
+
+Logo:
+$
+E\mid do(C:=2)\sim\mathcal N(8,1)
+$
+
+A intervenção na causa modificou a distribuição do efeito. 
+
+### **Intervenção sobre o efeito**
+Agora fazemos:
+$
+do(E:=2)
+$
+
+Substituímos a equação $E:=4C+N_E$ por $E:=2$.
+
+Mas a equação da causa permanece:
+$
+C:=N_C
+$
+
+Portanto:
+$C\mid do(E:=2)\sim\mathcal N(0,1)$
+
+Intervir na causa altera o efeito, mas intervir no efeito não altera a causa.
+
+### **Intervenção versus observação**
+Uma das distinções mais importantes do capítulo é:
+$$
+P(C\mid E=2)\neq P(C\mid do(E:=2))
+$$
+
+Observar $E=2$ fornece informações sobre $C$, porque $E$ depende de $C$. Entretanto, forçar $E=2$ não modifica $C$, pois estamos substituindo o mecanismo responsável por gerar E com base nas causas C, ou seja, nao podemos mais dizer nada sobre C pois o mecanismo que gerou E foi nossa intervencao. Essa diferença explica por que condicionamento estatístico e intervenção causal não são equivalentes.
+
+### **Hard e Soft Interventions**
+
+- *Hard intervention:* Substitui a equação estrutural por um valor fixo, como $E:=4$.
+- *Soft intervention:* Modifica o mecanismo, mas pode preservar a dependência em relação às causas. Por exemplo trocar $E:=4C+N_E$ por: $E:=2C+\widetilde N_E$.
+
+## **Counterfactuals**
+
+Um contrafactual consiste em determinar o que teria acontecido com uma unidade específica (instancia como paciente), sobre a qual já possuímos informações, caso uma intervenção diferente tivesse sido realizada.
+
+- O que teria acontecido com esta mesma unidade se tivéssemos tomado uma decisão diferente?
+
+### **Exemplo**
+
+- 99% melhoram com o tratamento e pioram sem ele.
+- 1% apresentam o comportamento oposto.
+O modelo é:
+
+$$
+T:=N_T
+$$
+$$
+B:=TN_B+(1-T)(1-N_B)
+$$
+
+Onde:
+- T=1: paciente recebe tratamento.
+- T=0: paciente não recebe tratamento.
+- B=1: perda da visão.
+- B=0: recuperação.
+- N_B=1: paciente pertence ao grupo raro de 1%.
+
+### **Observamos um paciente específico**
+
+Suponha que um paciente recebeu tratamento e perdeu a visão: $ T=1, B=1 $
+
+Substituindo na equação:
+$
+1=1\cdot N_B+0\cdot(1-N_B)
+$
+
+Logo: $ N_B=1$
+
+Descobrimos que ele pertence ao grupo raro.
+
+### **Fazemos a pergunta contrafactual**
+
+O que teria acontecido se esse mesmo paciente não tivesse recebido tratamento?
+
+Agora fazemos: $ do(T:=0) $
+
+Mas mantemos a informação obtida sobre o paciente: $ N_B=1 $
+
+Substituindo: $ B=0\cdot 1+(1-0)(1-1) = 0$
+
+Portanto, o modelo conclui que esse paciente teria se recuperado sem o tratamento.
+
+### **Observacao, intervenção e contrafactual**
+
+Um contrafactual também envolve uma intervenção, mas acrescenta uma etapa anterior que é usar as evidências observadas para inferir informações sobre a unidade. Logo:
+
+- *Intervenção:* modificamos o mecanismo causal e estudamos suas consequências na distribuicao dos efeitos, ou seja, o resultado aqui é a distribuição do efeito sob a intervenção 
+    - $\underbrace{P(Y\mid do(X=3))}_{\text{Intervenção}}$
+
+- *Contrafactual:* primeiro utilizamos observações para atualizar nosso conhecimento sobre um individuo depois modificamos hipoteticamente o mecanismo e calculamos o resultado alternativo.
+    - $\underbrace{P(Y_3\mid X=2,Y=7)}_{\text{Contrafactual}}$
+
+    - O procedimento contrafactual consiste em três etapas:
+        1. *Abdução:* usar as observações para atualizar as distribuições dos ruídos, ou seja, usamos dados para estimar a variavel exogena que nao observamos (permite preservar as características ocultas do mesmo indivíduo) 
+        2. *Ação:* modificar a equação estrutural por meio de uma intervenção 
+        3. *Predição:* calcular o resultado no cenário alternativo. 
+
+- *Condicionamento observacional:* simplesmente olhar a distribuicao atual, ou seja, não alteramos nenhuma equação estrutural e somente selecionamos observações em que X=3
+    - $ \underbrace{P(Y\mid X=3)}_{\text{Observação}}$
 
 
-
+## **Representacao canonica de SCMs**
