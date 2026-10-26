@@ -8,6 +8,36 @@ Em probabilidade já conhecemos o processo gerador, ou seja, a distribuicao verd
 - *Joint Distribution Pxy* descreve a probabilidade de duas ou mais variáveis aleatórias ocorrerem simultaneamente dentro de intervalos ou conjuntos específicos de valores e possuem uma função de probabilidade conjunta p(x, y) = P(X = x, Y = y). Isso é equivalente a P(x intersect y) e todas as operacoes como bayes.
 - *Conditional Distribution* é probabilidade de uma variável assumir um valor sabendo que a outra já assumiu um valor específico ($P(Y=y \vert{} X=x) = \frac{p(x,y)}{p_X(x)}$).
 
+### **Revisao operacoes com variavel aleatórias**
+
+#### **Com constante**
+
+- *Média:* 
+    - $E(X \pm c) = E(X) \pm c$ (A média desloca-se pelo valor da constante).
+    - $E(cX) = c \cdot E(X)$
+
+- *Variância:* 
+    - $Var(X \pm c) = Var(X)$ (Somar uma constante não muda a dispersão dos dados).
+    - $Var(cX) = c^2 \cdot Var(X)$ (A constante sai da variância elevada ao quadrado).
+
+#### **Com outra variavel**
+
+
+- *Média (Sempre Linear):* A média da soma ou subtração é sempre a soma ou subtração das médias, independentemente de haver independência ou não:
+    - $E(X + Y) = E(X) + E(Y)$
+    - $E(X - Y) = E(X) - E(Y)$
+
+- Variância (Depende da relação entre elas)
+
+    - Se X e Y forem INDEPENDENTES:
+	    - $Var(X + Y) = Var(X) + Var(Y)$
+	    - $Var(X - Y) = Var(X) + Var(Y)$ 
+        (Nota: O sinal continua positivo porque a variância mede dispersão, e subtrair duas V.A.s independentes aumenta a incerteza total).
+    - Se X e Y forem DEPENDENTES:
+        - $Var(X + Y) = Var(X) + Var(Y) + 2 \cdot Cov(X,Y)$
+        - $Var(X - Y) = Var(X) + Var(Y) - 2 \cdot Cov(X,Y)$
+
+
 ## **Learning Theory**
 
 Investiga quando um modelo treinado/adaptado com dados empiricos (amostras) consegue se sair bem na inferencia em dados novos. Para isso ele precisa de:
@@ -155,6 +185,10 @@ Em que C é a causa, E é o efeito, Nc e Ne sao as variaveis exogenas que influe
     - Endógenas C: são determinadas pelas equações estruturais. Podemos observá-las total ou parcialmente.
     - Exógenas $N_C,N_E$: representam fatores externos ao modelo, cujos valores individuais geralmente desconhecemos e chamamos de ruido
 
+- Repare que SCMs nao é o grafo isoladamente mas a soma do grafo + todas as relacoes/equacoes causais definidas, ou seja, 2 SCMs com equacao E:=... diferentes e mesmo grafo ainda sao diferentes.
+
+
+
 ## **Interventions (Intervenções)**
 
 Uma intervenção consiste em modificar externamente o mecanismo que gera uma variável, mantendo os demais mecanismos inalterados, no caso de uma intervenção ideal e localizada. Eis um exemplo de modelo causal em que definimos os mecanismos de como as variaveis sao geradas:
@@ -295,19 +329,124 @@ Portanto, o modelo conclui que esse paciente teria se recuperado sem o tratament
 
 Um contrafactual também envolve uma intervenção, mas acrescenta uma etapa anterior que é usar as evidências observadas para inferir informações sobre a unidade. Logo:
 
-- *Intervenção:* modificamos o mecanismo causal e estudamos suas consequências na distribuicao dos efeitos, ou seja, o resultado aqui é a distribuição do efeito sob a intervenção 
+- *Intervenção:* modificamos o mecanismo causal e estudamos suas consequências na distribuicao dos efeitos, ou seja, o resultado aqui é a distribuição do efeito sob a intervenção. O resultado aqui é uma distribuicao pois aqui usamos distribuicoes do ruido e nao valores exatos de individuos.
     - $\underbrace{P(Y\mid do(X=3))}_{\text{Intervenção}}$
 
 - *Contrafactual:* primeiro utilizamos observações para atualizar nosso conhecimento sobre um individuo depois modificamos hipoteticamente o mecanismo e calculamos o resultado alternativo.
     - $\underbrace{P(Y_3\mid X=2,Y=7)}_{\text{Contrafactual}}$
 
     - O procedimento contrafactual consiste em três etapas:
-        1. *Abdução:* usar as observações para atualizar as distribuições dos ruídos, ou seja, usamos dados para estimar a variavel exogena que nao observamos (permite preservar as características ocultas do mesmo indivíduo) 
-        2. *Ação:* modificar a equação estrutural por meio de uma intervenção 
-        3. *Predição:* calcular o resultado no cenário alternativo. 
+        1. *Abdução:* usar as observações para atualizar as distribuições dos ruídos, ou seja, usamos dados para estimar a variavel exogena (ruido) que nao observamos (permite preservar as características ocultas do mesmo indivíduo). Essa estimacao pode ser um unico valor ou uma distribuicao também.
+        2. *Ação:* modificar a equação estrutural por meio de uma intervenção em causas
+        3. *Predição:* calcular o resultado no cenário alternativo na variavel efeito
 
 - *Condicionamento observacional:* simplesmente olhar a distribuicao atual, ou seja, não alteramos nenhuma equação estrutural e somente selecionamos observações em que X=3
     - $ \underbrace{P(Y\mid X=3)}_{\text{Observação}}$
 
+## **Representação canônica de SCMs**
 
-## **Representacao canonica de SCMs**
+Um SCM: $E:=f_E(C,N_E)$
+
+Quando fixamos $N_E=n_E$, ou seja, fixamos um valor exato de ruido obtemos uma função determinística: $E=f_E(C,n_E)$
+
+Portanto, podemos interpretar o ruído como um funcao que mapeia para a equacao com aquele ruido: $E:=n_E(C)$
+
+Essa é a *representação canônica*, em que cada valor do ruído corresponde a uma função que determina o efeito para todos os possíveis valores da causa.
+
+### **Exemplo**
+
+Considere $C,E\in\{0,1\}$, com ruídos independentes de C
+
+**SCM A:**
+$$
+E:=N_E,\qquad N_E\sim Ber(0{,}5)
+$$
+
+O ruído seleciona as funções constantes 0 ou 1.
+
+- 50% dos indivíduos: $(E_0,E_1)=(0,0)$.
+- 50% dos indivíduos: $(E_0,E_1)=(1,1)$.
+
+**SCM B:**
+
+$$
+E:=C\oplus N_E,\qquad N_E\sim Ber(0{,}5)
+$$
+
+O ruído seleciona as funções identidade ou negação (XOR).
+
+- 50% dos indivíduos: $(E_0,E_1)=(0,1)$.
+- 50% dos indivíduos: $(E_0,E_1)=(1,0)$.
+
+
+Ou seja, ambos apresentam as mesmas distribuições observacionais e intervencionais: $ P(E_0=1)=P(E_1=1)=0{,}5 $
+
+Porém, seus contrafactuais são diferentes:
+
+- **SCM A:** mudar \(C\) nunca altera \(E\) para o mesmo indivíduo.
+- **SCM B:** mudar \(C\) sempre altera \(E\) para o mesmo indivíduo.
+
+Dois SCMs podem gerar as mesmas distribuições observacionais e intervencionais, mas contrafactuais diferentes
+
+- **Intervenções:** dependem das distribuições marginais $P(E_0)$ e $P(E_1)$, em que $E_c$ é o efeito sob $do(C=c)$
+- **Contrafactuais:** podem depender da distribuição conjunta $P(E_0,E_1)$, que descreve como os resultados potenciais se relacionam para o mesmo indivíduo
+
+Portanto, conhecer todas as distribuições intervencionais não é necessariamente suficiente para determinar os contrafactuais.
+
+## **Problemas**
+
+1. Dado o modelo gerar 200 observações independentes da distribuição conjunta de (X,Y)
+    $$
+    X:=Y^2+N_X
+    $$
+
+    $$
+    Y:=N_Y
+    $$
+
+    com:
+    $$
+    N_X,N_Y\overset{iid}{\sim}\mathcal N(0,1)
+    $$
+
+    - Resposta:
+
+        ```py
+
+            import numpy as np
+
+            rng = np.random.default_rng(42)
+
+            ny = rng.normal(0, 1, 200)
+            nx = rng.normal(0, 1, 200)
+
+            y = ny
+            x = y**2 + nx
+        ```
+2. Dado 2 modelos, uma única distribuição intervencional permite distinguir os dois modelos ?
+
+    Modelo 1:
+    $$
+    X:=Y+N_X,\qquad Y:=N_Y
+    $$
+
+    Portanto:
+    $$
+    Y\longrightarrow X
+    $$
+
+    Modelo 2:
+    $$
+    X:=M_X,\qquad Y:=X+M_Y
+    $$
+
+    Portanto:
+    $$
+    X\longrightarrow Y
+    $$
+
+    - Resposta:
+
+        Se fixarmos X = x, sendo x um valor fixo qualquer, no modelo 1 Y:= Ny enquanto no 2 Y:= x + My, porém fazendo dessa maneira pode acontecer de Ny por sorte assumir um valor igual a x + My.
+
+  
