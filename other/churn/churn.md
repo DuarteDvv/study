@@ -54,6 +54,12 @@ Mensagem no WPP ou ligação (todas as distribuidoras tem que ter a mesma interv
 - Custo da ligação de acordo com o valor/hora da operadora
 - Custo do tempo gasto do funcionário/BOT de acordo com salário/preço
 
+### **Clientes elegiveis**
+
+Os clientes elegiveis tanto no treino e inferencia são também aqueles que estarão no teste A/B. O critério é:
+
+- Dada uma data de referencia t, consideramos um cliente ativo se a sua recencia é menor que o P90 dele. Se ele tem apenas uma compra, consideramos ele como novo se a recencia for menor que a mediana dos P90 da distribuidora dele
+
 ## **Hipotese e parametros do teste**
 
 ### **Tipo e hipotese**
