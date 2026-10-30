@@ -146,3 +146,23 @@ Essas características podem incluir entropias, propriedades das distribuições
 
 # **Connections to Machine Learning I**
 
+A direção causal entre 2 variavel pode gerar 2 problemas diferentes em ML dependendo de quem causa quem, mesmo sendo problemas conhecidos como tarefas de regressão e classificação
+
+## **Aprendizado Supervisionado e Semi-supervisionado**
+
+Em aprendizado supervisionado temos N pares (x,y) sob hipotese i.i.d (independentes e da mesma distribuição) e a tarefa é aprender uma função/modelo que permita prever y a partir de x (P(y|x)). Para isso usamos uma segunda função chamada loss que quantifica o erro da predição e tentamos minimizar esse erro.
+
+- No caso supervisionado independentemente da direção causal dessas 2 variaveis, conseguimos estimar P(Y|X) com mesma eficiência 
+
+Em aprendizado semi-supervisionado geralmente temos além dos pares (x,y) temos também instancias de (x) sem rotulos. Essas instancias sem rotulo permitem conhecer melhor a distribuição P(X). Nesse caso:
+
+- Se X causa Y (relação causal) então sabemos o mecanismo que gerou X é P(X) e o mecanismo que gerou Y é P(Y|X). Devido ao ICM eles são informacionalment independentes e portanto conhecer mais exemplos de causa não permite inferir nada sobre P(Y|X).
+
+    
+
+- Se Y causa X (relação anticausal) então sabemos que o mecanismo que gerou X é P(X|Y) e o que gerou Y é P(Y). Pelo teorema de Bayes sabemos que P(Y|X) = P(X|Y)P(Y)/P(X), ou seja, aqui ter mais informação sobre a distribuição P(X) nos da informação.
+
+    
+
+
+![alt text](imgs/causal_vs_anticausal_ssl.png)
