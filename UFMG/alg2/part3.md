@@ -323,6 +323,52 @@ Set cover queremos encontrar o menor conjunto de subconjuntos que contem todos o
 Ela tem um fator de aproximação ALG <= (1 + ln(X))OPT que varia com X.
 
 
+#### **Hitting Set**
+
+Nesse problema temos subconjuntos de um universo X, queremos encontrar o menor conjunto C tal que C tenha pelo menos um representante de cada grupo. 
+
+Podemos transformar nosso problema em um set cover.
+
+- Passo 1: cada hiperaresta do Hitting Set se torna um elemento do universo do Set Cover.
+$$
+X=\{S_1,S_2,\ldots,S_m\}
+$$
+Onde m=|E|
+
+Passo 2: para cada vértice $v\in V$, construímos um conjunto:
+$$
+C_v=\{S_i\in E:v\in S_i\}
+$$
+Ou seja, $C_v$ contém todas as hiperarestas que possuem o vértice $v$
+
+No exemplo:
+$$
+C_a=\{S_1\}
+$$
+$$
+C_b=\{S_1,S_2\}
+$$
+$$
+C_c=\{S_2,S_3\}
+$$
+$$
+C_d=\{S_3\}
+$$
+
+Agora temos uma instância de Set Cover! Escolher um conjunto $C_v$ significa selecionar o vértice $v$ no Hitting Set. Além disso, cobrir todo o universo $X$ equivale a atingir todas as hiperarestas
+
+#### **Subset Sum versão de otimização (menor possivel)** 
+
+O problema do subset sum para otimização consistem em achar o subconjunto que a soma seja a maior possivel mas não ultrapasse uma valor limite B. O de decisão queria exatamente B, enquanto esse não.
+
+- O algoritmo aproximativo aqui consiste em ordenar os itens em ordem decrescente, e ir alocando do maior para os menores, adicionamos no conjunto se somar esse item não ultrapassa B, se ultrapassar pulamos ele e continuamos ate os itens acabarem.
+
+#### **Conjunto independente maximo**
+
+O problema consiste em encontrar o maior cojunto de nós tal que nenhum deles tenha arestas um para o outro. 
+
+- O algortimo aproximativo é bem parecido com o de vertex cover mas ao invés ao invés de escolhermos uma aresta e removermos ela, tiramos um nó e todos os seus vizinhos ate não sobre nada no grafo.
+
 ### **PTAS e FPTAS**
 
 Ate agora todos os algoritmos tinham garantias fixas e predefinidas mas e se fosse possivel parametrizar isso ? e escolhermos a qualidae desejada e o tradeoff entre custo.
@@ -392,6 +438,23 @@ Onde $v_{\max}$ é o maior valor entre os itens que cabem individualmente na moc
 
 O algoritmo consegue garantir:
 $$ALG\geq(1-\varepsilon)OPT$$
+
+### **Exemplo**
+
+Transformando os valores pegando o piso de valor original / $\mu$, a qualidade da solução é dada por $\mu$ = qualidade * Vmax / n -> qualidade = 1,92k/12,8k/4 = 0.6, ou seja, a solução aqui será ALG <= 0.4 OPT, encontrara no maximo 40% do otimo.
+
+| Item | Valor $v_i$ | Valor transformado $v_i'$ | Peso $w_i$ |
+|---|---:|---:|---:|
+| 1 | 5,5k | 2k | 2t |
+| 2 | 12,8k | 6k | 5t |
+| 3 | 3,5k | 1k | 1t |
+| 4 | 6,25k | 3k | 3t |
+
+Dado que a capacidade é W=9t
+
+
+
+
 
 
 
