@@ -4,18 +4,18 @@ Em geral são estruturas matematicas parecidas com uma maquina de estados mas se
 
 ## **Deterministico** 
 
-È um conjunto finito de estados, alfabeto de ações e funções de transição que levam de um estado x1 através da ação y ate um novo estado x2. Além disso, dentre o conjuntos de estados temos o estado inicial e estados finais (aceitação).
+È um conjunto finito de estados, alfabeto de ações e funções de transição que levam de um estado x1 através da ação y ate um novo estado x2. Além disso, dentre o conjuntos de estados temos o estado inicial e estados finais (aceitação). A função de transição é **total**: para cada par (estado, símbolo) existe **exatamente um** próximo estado, ou seja, δ: Q × Σ → Q.
 
 ## **Não Deterministico** 
 
-É a mesma estrutura, mas a função de transição pode levar um estado x1, através da ação y, para mais de um estado possível ao mesmo tempo (ou pra nenhum), ou seja, δ: Q × Σ → P(Q), retorna um conjunto de estados em vez de um único. Também pode ter transições ε, que mudam de estado sem consumir nenhum símbolo da entrada. Todo AFN pode ser convertido em um AFD.
+É a mesma estrutura, mas a função de transição pode levar um estado x1, através da ação y, para mais de um estado possível ao mesmo tempo (ou pra nenhum), ou seja, δ: Q × Σ → P(Q), retorna um conjunto de estados em vez de um único. Também pode ter transições ε, que mudam de estado sem consumir nenhum símbolo da entrada. Todo AFN pode ser convertido em um AFD (construção de subconjuntos, em que cada estado do AFD é um subconjunto de estados do AFN), então os dois reconhecem as mesmas linguagens. Porém o AFD resultante pode ter até 2^|Q| estados: o poder é o mesmo, mas o tamanho pode explodir.
 
 ## **Problema**
 
-Automatos só tem estados para lembrar de informações e o numero de estados é fixo. Logo, em problemas como encontrar {0^n 1^n} para qualquer n >= 0, ou seja, procurar um estado em que o numero de 1 e 0 são iguais para qualquer n, o automato não conseguiria resolver pois esse problema exigiria armazenar quantos 0s forem vistos e comparar depois com os 1s. 
+Automatos só tem estados para lembrar de informações e o numero de estados é fixo. Logo, nenhum autômato consegue **reconhecer a linguagem** {0^n 1^n | n >= 0} (strings com n zeros seguidos de exatamente n uns), pois isso exigiria armazenar quantos 0s foram vistos para comparar depois com os 1s. Se o autômato tem k estados, depois de ler mais de k zeros ele necessariamente repete algum estado e "esquece" a contagem exata. A formalização desse argumento é o **Lema do Bombeamento**.
 
 
-# **Maquinas de Turin**
+# **Maquinas de Turing**
 
 Também são estruturas matemáticas parecidas com máquina de estados, mas agora com uma fita infinita que pode ser lida e escrita (em vez de só ler a entrada uma vez, da esquerda pra direita).
 
@@ -23,11 +23,15 @@ Também são estruturas matemáticas parecidas com máquina de estados, mas agor
 
 É um conjunto finito de estados, um alfabeto de entrada, um alfabeto de fita (que inclui o alfabeto de entrada mais um símbolo de branco), e uma função de transição que leva um estado x1, ao ler um símbolo da fita, para um novo estado x2, escrevendo um novo símbolo no lugar e movendo o cabeçote uma casa pra esquerda ou direita. Ou seja, δ: Q × Γ → Q × Γ × {E, D}.
 
-Além disso, dentre o conjunto de estados temos o estado inicial e dois estados de parada especiais: aceitação e rejeição (em vez de só "estados finais" como no autômato, aqui a rejeição também é um estado explícito, porque a máquina pode não parar nunca como no problema da parada).
+Além disso, dentre o conjunto de estados temos o estado inicial e dois estados de parada especiais: aceitação e rejeição. No autômato, a computação sempre termina quando a entrada acaba, então "não terminar em estado final" já significa rejeitar. Na MT isso não acontece: ela anda pela fita para os dois lados e só para quando entra em um dos estados de parada, por isso a rejeição precisa ser um estado explícito.
+
+Isso gera três resultados possíveis para uma entrada: **aceita, rejeita ou entra em loop** (nunca para). O problema da parada é justamente perguntar se é possível decidir, para qualquer máquina e entrada, se ela vai parar, e isso é indecidível.
 
 ## **Não determinística**
 
-Mesma estrutura, mas a função de transição pode levar um estado x1, ao ler um símbolo, para mais de um par (estado, símbolo escrito, direção) possível ao mesmo tempo, δ: Q × Γ → P(Q × Γ × {E, D}).
+Mesma estrutura, mas a função de transição pode levar um estado x1, ao ler um símbolo, para mais de um par (estado, símbolo escrito, direção) possível ao mesmo tempo, δ: Q × Γ → P(Q × Γ × {E, D}). A computação vira uma árvore de ramos, e a máquina **aceita se algum ramo** chega ao estado de aceitação.
+
+Assim como AFN → AFD, **toda MT não determinística pode ser simulada por uma MT determinística** (por exemplo, explorando a árvore de ramos em largura). Então, para computabilidade, as duas são equivalentes. A diferença aparece no tempo: a simulação pode custar exponencialmente mais, e é por isso que a definição de NP usando MT não determinística faz sentido.
 
 
 ### **Algoritmo**
@@ -42,8 +46,10 @@ Estuda o que pode ser computado, sem se importar com quanto tempo ou memória is
 
 Aqui a pergunta muda: entre os problemas computáveis (decidíveis), quais têm um algoritmo eficiente, que roda em tempo razoável mesmo pra entradas grandes?
 
+As classes abaixo são definidas para **problemas de decisão**, ou seja, problemas cuja resposta é sim ou não (ex: "existe um caminho de custo ≤ k?" em vez de "qual o caminho de menor custo?").
+
 - **P:** problemas decidíveis por uma MT determinística em tempo polinomial (O(nᵏ) pra algum k), considerados "tratáveis" na prática.
-- **NP:** problemas cuja solução, uma vez proposta, pode ser verificada em tempo polinomial por uma MT determinística, equivalente a dizer que uma MT não determinística resolve o problema em tempo polinomial.
+- **NP:** problemas cuja solução, uma vez proposta, pode ser verificada em tempo polinomial por uma MT determinística (essa solução proposta é chamada de **certificado**, e para instâncias com resposta "sim" ele tem tamanho polinomial), equivalente a dizer que uma MT não determinística resolve o problema em tempo polinomial.
 
 Todo problema em P também está em NP (se dá pra resolver rápido, dá pra verificar rápido também, é só resolver de novo). A pergunta em aberto mais famosa da computação é se vale a volta: P = NP? A maioria dos pesquisadores acredita que não, mas ninguém conseguiu provar.
 
@@ -59,7 +65,7 @@ Busca de padroes em texto, esses padroes e textos sao subconjuntos de um conjunt
 - Padrao: Representado como P[1...m] e se queremos representar kth prefixo do padrão (k primeiros elementos P[1...k]) usamos $P_k$
 - Amboa indexados em 1
 
-O problema entao é encontrar um indice s em que 0 <= s <= n - m (se isso nao for verdade o padrao P nao cabe no final do texto T). Tal que T[s+1...s+m] = P[1...n], ou seja, s é o indice anterior ao padrao totalmente igual encontrado no texto. E como indices vao de 0 a n-m entao podemor usar -1 como flag para nao existe padrao. Outra forma de definir é encontrar s tal que P ⊐ $T_{s + m}$, ou seja, s tal que o padrão é sufixo do prefixo de T que vai s+m.
+O problema entao é encontrar um indice s em que 0 <= s <= n - m (se isso nao for verdade o padrao P nao cabe no final do texto T). Tal que T[s+1...s+m] = P[1...m], ou seja, s é o indice anterior ao padrao totalmente igual encontrado no texto. E como indices vao de 0 a n-m entao podemor usar -1 como flag para nao existe padrao. Outra forma de definir é encontrar s tal que P ⊐ $T_{s + m}$, ou seja, s tal que o padrão é sufixo do prefixo de T que vai s+m.
 
 - Tamanho de uma string w é |w|
 - string vazia é denotada como lambda λ
@@ -85,8 +91,8 @@ def naive(P, T):
 
     matches = []
 
-    for i in range(n - m):
-        if T[i:i + m] = P:
+    for i in range(n - m + 1): # +1 para incluir a ultima janela (s = n - m)
+        if T[i:i + m] == P:
             matches.append(i)
 
     return matches
@@ -94,7 +100,7 @@ def naive(P, T):
 
 Aqui passamos uma janela deslizante de tamanho m no texto T inteiro e comparamos cada uma dessas janelas com o padrão P de tamanho m. Todas as janelas deslizantes tem complexidade O(n) e para cada janela temos uma comparação de tamanho O(m). 
 
-- *Complexidade de tempo:* O(n * m) para padrões de tamanho m > n/2 podemos dizer que a complexidade é O(n^2)
+- *Complexidade de tempo:* Θ((n - m + 1) * m), ou seja O(n * m). Esse produto é máximo quando m ≈ n/2, dando ≈ n²/4 = O(n²). Para m > n/2 o número de janelas diminui (com m = n existe só 1 janela e o custo é O(n)). Pior caso clássico: T = aaaa...a e P = aaab, em que cada janela compara quase m caracteres antes de falhar.
 - *Complexidade de espaço:* O(1)
 
 ### **Algoritmo de automato finito para String Matching**
@@ -152,11 +158,41 @@ def find(P, T, alfabeto):
 
 - **Busca no texto:** O(n), sempre, sem exceção, cada caractere do texto é lido exatamente uma vez.
 
-- **Total:** O(m^3 * |Σ|)
+- **Total:** O(m^3 * |Σ| + n)
+
+- **Espaço:** O(m * |Σ|), pois a tabela tem (m+1) * |Σ| entradas.
+
+Obs: usando a função prefixo do KMP (próxima seção) dá para construir δ em O(m * |Σ|), já que, para q > 0, δ(q, a) = δ(π[q-1], a) quando q = m ou P[q] != a.
 
 #### **Intuição**
 
 Primeiro passo é computar a tabela de transições que mapeia o estado atual + novo char lido para um novo estado (dado que estado é quantos caracteres do padrao ja casamos). A construcao dessa tabela tem complexidade m^3 * alfabeto e após ser construida passamos linearmente no texto T e atualizamos o estado atual com os novos caracteres lidos do texto, se chegarmos ao estado final (estado = tamanho do padrao) entao ja casamos todo o padrao e podemos salvar uma aparicao.
+
+#### **Exemplo**
+
+Exemplo usado em todos os algoritmos desta seção:
+
+```text
+P = abab          (m = 4)
+T = abacababab    (n = 10)
+    0123456789
+Ocorrências: posições 4 e 6 (se sobrepõem)
+```
+
+Tabela δ para P = abab com Σ = {a, b, c}:
+
+| q \ char | a | b | c |
+|---|---|---|---|
+| 0 | 1 | 0 | 0 |
+| 1 (`a`) | 1 | **2** | 0 |
+| 2 (`ab`) | **3** | 0 | 0 |
+| 3 (`aba`) | 1 | **4** | 0 |
+| 4 (`abab`) aceita | **3** | 0 | 0 |
+
+- **δ(3, a) = 1:** eu tinha `aba` e li `a`, então tenho `abaa`. O maior prefixo de P que é sufixo disso é só `a`, então não precisamos voltar para 0.
+- **δ(4, a) = 3:** depois de casar `abab`, ler `a` dá `ababa`, que termina em `aba`. É assim que o autômato encontra ocorrências sobrepostas.
+
+Busca: os estados percorridos são 1, 2, 3, 0, 1, 2, 3, **4**, 3, **4**, com matches terminando em i = 7 (início 4) e i = 9 (início 6).
 
 ### **KMP**
 
@@ -254,12 +290,43 @@ matched = pi[matched - 1]
 
 em vez de zerar `matched`, pois o sufixo da ocorrência encontrada pode já ser o prefixo de uma próxima ocorrência. Isso também permite encontrar matches sobrepostos.
 
+Note que `compute_prefix_function` tem a mesma estrutura de `kmp_search`: calcular π é rodar o próprio KMP do padrão contra ele mesmo (começando de q = 1 para que o prefixo seja próprio).
+
+#### **Exemplo**
+
+```text
+P  = a b a b
+π  = 0 0 1 2
+```
+- π[2] = 1: em `aba`, o prefixo `a` também é sufixo
+- π[3] = 2: em `abab`, o prefixo `ab` também é sufixo
+
+Busca em T = abacababab:
+
+```text
+i  c  matched
+0  a  0 → 1
+1  b  1 → 2
+2  a  2 → 3        (casei "aba")
+3  c  3 → 0        mismatch: π[2]=1 → P[1]='b'≠'c' → π[0]=0 → P[0]='a'≠'c' → fica 0
+4  a  0 → 1
+5  b  1 → 2
+6  a  2 → 3
+7  b  3 → 4  MATCH em 4, matched = π[3] = 2   ← reaproveita "ab"
+8  a  2 → 3
+9  b  3 → 4  MATCH em 6
+```
+
+Comparando com o autômato: o KMP passa pelos mesmos estados, mas em vez de consultar δ(q, c) direto, ele chega no estado certo seguindo a cadeia π até achar um prefixo compatível.
+
 #### **Complexidade**
 
 * **Pré-processamento:** \(O(m)\)
 * **Busca:** \(O(n)\)
 * **Espaço adicional:** \(O(m)\)
 * **Total:** \(O(n+m)\)
+
+**Por que O(n) se tem um `while` dentro do `for`?** É uma análise amortizada: `matched` sobe no máximo 1 por iteração do `for` (no total no máximo n subidas), e cada passo do `while` faz `matched` diminuir pelo menos 1. Como ele nunca fica negativo, não pode descer mais do que subiu, então o total de passos do `while` em toda a execução é ≤ n. O mesmo argumento (com `k`) dá O(m) para o cálculo de π.
 
 
 
@@ -281,6 +348,8 @@ def compute_shift_table(P):
 ```
 
 Para cada caractere presente em `P[0:m-1]`, armazenamos a distância entre sua ocorrência mais à direita nessa região e o último índice do padrão. Como percorremos o padrão da esquerda para a direita e sobrescrevemos valores anteriores, caracteres repetidos ficam associados à sua ocorrência mais à direita.O último caractere `P[m-1]` não participa da construção da tabela. Caracteres que não aparecem na tabela recebem um shift de `m`.
+
+O último caractere fica de fora porque, se entrasse, `shift[P[m-1]]` seria 0 e o algoritmo nunca sairia da janela atual. Usando só `P[0:m-1]` todo shift é ≥ 1.
 
 Depois fazemos a busca:
 
@@ -325,7 +394,26 @@ Se `j < 0`, todos os caracteres do padrão foram comparados com sucesso, portant
 T[i + m - 1]
 ```
 
-isto é, o caractere do texto alinhado com o final do padrão. Se esse caractere aparece em `P[0:m-1]`, deslocamos o padrão de forma a alinhar esse caractere do texto com sua ocorrência mais à direita no padrão. Se ele não aparece, podemos deslocar o padrão inteiro (`m` posições), pois nenhum alinhamento intermediário poderia produzir um match.A principal ideia do Horspool é usar informações sobre o caractere no final da janela para eliminar vários alinhamentos impossíveis de uma só vez.
+isto é, o caractere do texto alinhado com o final do padrão. Se esse caractere aparece em `P[0:m-1]`, deslocamos o padrão de forma a alinhar esse caractere do texto com sua ocorrência mais à direita no padrão. Se ele não aparece, podemos deslocar o padrão inteiro (`m` posições), pois nenhum alinhamento intermediário poderia produzir um match. A principal ideia do Horspool é usar informações sobre o caractere no final da janela para eliminar vários alinhamentos impossíveis de uma só vez.
+
+#### **Exemplo**
+
+```text
+P = a b a b
+shift['a'] = 1   (ocorrência mais à direita de 'a' em "aba" está a 1 do fim)
+shift['b'] = 2
+qualquer outro = m = 4
+```
+
+Busca em T = abacababab:
+
+```text
+janela 0: "abac"  compara P[3]='b' com 'c' → mismatch.  Último char = 'c' → não está em P → pula 4
+janela 4: "abab"  MATCH.                                Último char = 'b' → pula 2
+janela 6: "abab"  MATCH.                                Último char = 'b' → pula 2 → i = 8 > n - m, fim
+```
+
+Foram 3 janelas em vez das 7 do ingênuo. O salto de 4 é seguro porque qualquer janela que contenha aquele `c` não pode casar, já que `c` não existe em P.
 
 #### **Complexidade**
 
@@ -351,7 +439,11 @@ Na prática, especialmente quando o alfabeto é relativamente grande em relaçã
 
 ### **Shift-And**
 
-De forma similar ao KMP, ele também utiliza um estados para armazenar os prefixos do padrão que são sufixos do que foi casado ate agora. O primeiro passo é criar uma mascara binária para cada caracter do padrão.
+De forma similar ao KMP, ele também utiliza um estado para armazenar os prefixos do padrão que são sufixos do que foi lido ate agora. A diferença é que KMP e o autômato guardam apenas o **maior** desses prefixos, enquanto o Shift-And guarda **todos ao mesmo tempo**, como um vetor de m bits:
+
+> o bit j do estado vale 1 ⟺ os últimos j+1 caracteres lidos são iguais a P[0..j]
+
+Isso é simular o autômato **não determinístico** do padrão, em que cada bit é um estado que pode estar ativo ou não. O primeiro passo é criar uma mascara binária para cada caracter do padrão.
 
 ```py
 def compute_masks(P):
@@ -400,14 +492,66 @@ def shift_and_search(P, T):
     return matches
 ```
 
+A atualização `state = ((state << 1) | 1) & masks[c]` tem três partes:
+
+- **`state << 1`:** todo casamento parcial de tamanho j+1 (bit j) tenta virar um de tamanho j+2 (bit j+1).
+- **`| 1`:** um casamento novo sempre pode começar no caractere atual (bit 0).
+- **`& masks[c]`:** só sobrevivem os casamentos em que o próximo caractere do padrão é realmente `c`, ou seja, os bits j com P[j] == c.
+
+Se o bit m-1 estiver ligado, os últimos m caracteres lidos formam o padrão inteiro, então há um match terminando em i.
+
+#### **Exemplo**
+
+Máscaras para P = abab (bit 0 na ponta direita):
+
+```text
+mask[a] = 0101
+mask[b] = 1010
+mask[c] = 0000
+```
+
+Busca em T = abacababab:
+
+```text
+i c   state
+0 a   0001   casei "a"
+1 b   0010   casei "ab"
+2 a   0101   casei "aba" E "a" (dois casamentos parciais vivos ao mesmo tempo)
+3 c   0000   tudo morre
+4 a   0001
+5 b   0010
+6 a   0101
+7 b   1010   bit 3 ligado → MATCH em 4 ("ab" continua vivo no bit 1)
+8 a   0101
+9 b   1010   MATCH em 6
+```
+
+Cada passo são poucas instruções de CPU (shift, or, and), sem `if` nem `while` para tratar mismatch.
+
 #### **Complexidade** 
 
-Assumindo que o padrão cabe em uma palavra da máquina, ou seja, m < w sendo w o numero de bits de uma palavra
+Assumindo que o padrão cabe em uma palavra da máquina, ou seja, m ≤ w sendo w o numero de bits de uma palavra
 
 **Pré-processamento:** \(O(m)\)
 **Busca:** \(O(n)\)
 **Espaço:** \(O(|\Sigma|)\) com tabela explícita, ou \(O(\min(m,|\Sigma|))\) com dicionário
 **Total:** O(n+m)
+
+### **Relação entre os algoritmos**
+
+| Algoritmo | Pré-processamento | Ideia |
+|---|---|---|
+| Ingênuo | nada | testa todas as janelas |
+| Autômato | tabela δ(estado, char) | estado = maior prefixo de P que é sufixo do que li, com a transição pronta para qualquer char |
+| KMP | vetor π (só depende do padrão) | mesmo estado do autômato, mas a transição é calculada na hora seguindo π |
+| Horspool | tabela de shift | olha o último char da janela e pula vários alinhamentos de uma vez |
+| Shift-And | máscara de bits por char | guarda todos os casamentos parciais ao mesmo tempo, em bits |
+
+```text
+Autômato ──(tira a tabela δ, calcula a transição sob demanda com π)──▶ KMP
+Autômato ──(usa o AFN em vez do AFD, estados viram bits)────────────▶ Shift-And
+Ingênuo  ──(compara de trás pra frente e pula janelas)──────────────▶ Horspool
+```
 
 ### **Quando usar qual ?**
 
@@ -467,9 +611,35 @@ e parte da vantagem diminui.
 
 # **Estruturas de dados para casamento de padrões**
 
+Aqui o problema é resolvido ao contrário da seção anterior:
+
+| | Algoritmos (KMP, Horspool…) | Estruturas (Trie, Árvore de Sufixos) |
+|---|---|---|
+| O que é pré-processado | o **padrão** | o **texto** ou o **conjunto de chaves** |
+| Custo por consulta | O(n), sempre lendo o texto | O(m), **sem depender do tamanho do texto** |
+| Bom para | texto novo a cada busca | texto fixo com muitas consultas |
+
+Exemplos usados nesta seção: chaves **{casa, caso, cal, do}** para as tries e **banana$** para a árvore de sufixos.
+
 ## **Trie (Arvore de prefixo)**
 
-Uma arvore M-nária, ou seja, cada nó pode ter ate M filhos em que esses filhos podem ser qualquer digito/char de um alfabeto. Palavras de um texto/conteudo são adicionadas sequencialmente na arvore (ordens diferentes geram arvores diferentes) em que cada cada nó dessa arvore é um caractere dessas palavras. Uma consequencia disso é que todas as palavras de uma mesma subarvore compartilham o mesmo prefixo. Elas são uteis para indices invertidos, autocomplete e geração de itemsets frequentes em mineração de dados (fp_growth). Cada nó dessa arvore guarda um valor que representa quantas vezes uma palavra terminada nesse nó aparece.
+Uma arvore M-nária, ou seja, cada nó pode ter ate M filhos em que esses filhos podem ser qualquer digito/char de um alfabeto. Palavras de um texto/conteudo são adicionadas na arvore em que cada cada nó dessa arvore é um caractere dessas palavras. A trie é determinada apenas pelo **conjunto** de chaves: cada chave sempre segue o mesmo caminho, então a ordem de inserção não muda a árvore final. Uma consequencia disso é que todas as palavras de uma mesma subarvore compartilham o mesmo prefixo. Elas são uteis para indices invertidos, autocomplete e geração de itemsets frequentes em mineração de dados (fp_growth). Cada nó dessa arvore guarda um valor que representa quantas vezes uma palavra terminada nesse nó aparece.
+
+```text
+raiz
+├─ c
+│  └─ a
+│     ├─ s
+│     │  ├─ a ●     "casa"
+│     │  └─ o ●     "caso"
+│     └─ l ●        "cal"
+└─ d
+   └─ o ●           "do"
+```
+
+(● = nó em que alguma chave termina, ou seja, valor > 0)
+
+Todas as chaves que começam com "ca" estão na subárvore de c → a, por isso a trie serve para autocomplete: basta descer pelo prefixo e listar a subárvore.
 
 ### **Busca**
 
@@ -479,7 +649,9 @@ Iniciamos a busca pela raiz (que não possui um char) e vamos descendo na arvore
 - Os simbolos da chave (nó) existem mas o valor associado ao ultimo nó é 0 (A palavra nunca foi adicionada na arvore) -> False
 - Os simbolos da chave (nó) existem e o valor é maior que 0 (palavra ja foi adicionada) -> True
 
-*Complexidade de tempo:* O(m) sendo m o tamanho da chave
+Exemplo: "cas" existe como caminho mas o nó do s não está marcado, então é False. "cama" para no m, que não existe, e também é False.
+
+*Complexidade de tempo:* O(m) sendo m o tamanho da chave, independente de quantas chaves existem na árvore
 
 ### **Inserção**
 
@@ -495,7 +667,9 @@ Fazemos uma busca (igual a anterior) adicionando os simbolos da esquerda para di
 Buscamos a chave que queremos remover ate chegar no ultimo nó dela
 
 - Se nó final tem filhos, apenas reduz o contador e apaga os valores
-- Se o nó não tiver filhos, apaga e repete recursivamente
+- Se o nó não tiver filhos, apaga e repete recursivamente no pai, **parando** quando chegar em um nó que tenha outro filho ou que seja fim de outra chave (valor > 0)
+
+Exemplo: remover "casa" apaga apenas o a final, porque o s ainda tem o filho o (de "caso").
 
 *Complexidade de tempo:* O(m) sendo m o tamanho da chave
 
@@ -503,15 +677,32 @@ Buscamos a chave que queremos remover ate chegar no ultimo nó dela
 
 Trie tem um otimo desempenho em tempo mas custo de armazenamento depende do numero de palavras e tamanho do alfabeto e pode se tornar muito cara para alfabetos e palavras muito longas.
 
-*Complexidade de espaço:* O(N * alfabeto) pois cada um dos N nós da arvore temos que armazenar *alfabeto* ponteiros (pois cada nó pode ter alfabeto ponteiros)
+*Complexidade de espaço:* O(N * alfabeto) pois cada um dos N nós da arvore temos que armazenar *alfabeto* ponteiros (pois cada nó pode ter alfabeto ponteiros). No exemplo são 9 nós (contando a raiz) × 26 = 234 ponteiros, dos quais só 8 são usados.
 
 ## **Trie Ternária**
 
-Para tentar mitigar o problema de memória na Trie ternária cada nó tem apenas 3 filhos em que:
+Para tentar mitigar o problema de memória na Trie ternária cada nó guarda um caractere e tem apenas 3 filhos. Comparando o simbolo atual da chave com o **simbolo do próprio nó**:
 
-- **left_children:** se o simbolo procurado atualmente é menor alfabeticamente que o simbolo pai
-- **mid_children:** se o simbolo procurado é exatamente o simbolo do nó pai
-- **right_children:** se o simbolo procurado atualmente é maior alfabeticamente que o simbolo pai
+- **left_children:** simbolo da chave é menor alfabeticamente que o simbolo do nó
+- **mid_children:** simbolo da chave é igual ao simbolo do nó
+- **right_children:** simbolo da chave é maior alfabeticamente que o simbolo do nó
+
+Ou seja, cada nível da trie original vira uma pequena árvore binária de busca (pelos ponteiros left/right) e o ponteiro mid desce para o próximo nível. **Só o mid consome um caractere da chave**: left e right apenas procuram o caractere certo entre as alternativas daquele nível.
+
+Inserindo casa, caso, cal, do nessa ordem:
+
+```text
+c
+├─mid─ a
+│      └─mid─ s
+│             ├─left── l ●            (l < s)
+│             └─mid─── a ●
+│                      └─right─ o ●   (o > a)
+└─right─ d
+         └─mid─ o ●
+```
+
+Diferente da trie, **a forma da TST depende da ordem de inserção**: se "do" fosse inserida primeiro, d seria a raiz e c ficaria à sua esquerda.
 
 ### **Busca**
 
@@ -522,7 +713,16 @@ Passamos pela chave da esquerda para direita e para cada simbolo:
 - se o *simbolo* é maior que o nó atual -> vai para a direita 
 - se nó não não existe ou valor é nulo -> False
 
-*Complexidade de tempo:* O(m + log N)
+Exemplo, buscando "cal":
+
+```text
+'c' = c  → mid    (avança na chave)
+'a' = a  → mid    (avança na chave)
+'l' < s  → left   (NÃO avança na chave)
+'l' = l  → chave acabou e nó está marcado → True
+```
+
+*Complexidade de tempo:* O(m + log N) no **caso médio** (chaves inseridas em ordem aleatória, N = número de chaves). Se as chaves forem inseridas ordenadas, as BSTs de cada nível degeneram em listas e o pior caso vira O(m * |Σ|).
 
 ### **Inserção**
 
@@ -530,7 +730,7 @@ Passamos pela chave da esquerda para direita e para cada simbolo:
 - Ao encontrar nós nulos insere
 - Ao inserir o último símbolo, marcamos o nó como fim da chave
 
-*Complexidade de tempo:* *O(m + log N)*
+*Complexidade de tempo:* *O(m + log N)* no caso médio, O(m * |Σ|) no pior caso
 
 ### **Memória**
 
@@ -538,7 +738,19 @@ Passamos pela chave da esquerda para direita e para cada simbolo:
 
 ## **Trie Compacta**
 
-Aqui ataca o problema de forma diferente em que condensamos varios nós em um unico criando nós de prefixos inteiros. Nessa formulação apenas nós de folha armazenam valores/itens e o restante serve para acelerar a busca. Para a Trie compacta é melhor imaginar que toda palavra/chave é igual a ela mesmo concatenada com um simbolo terminal $, ou seja, "water" -> "water$".
+Aqui ataca o problema de forma diferente em que condensamos varios nós em um unico criando nós de prefixos inteiros. Nessa formulação apenas nós de folha armazenam valores/itens e o restante serve para acelerar a busca. Para a Trie compacta é melhor imaginar que toda palavra/chave é igual a ela mesmo concatenada com um simbolo terminal $, ou seja, "water" -> "water$". Sem o $, se "ca" e "casa" fossem chaves, "ca" terminaria no meio de um caminho (nó interno). Com o $ nenhuma chave é prefixo de outra, então **toda chave termina em uma folha**.
+
+```text
+raiz
+├─ "ca"
+│   ├─ "s"
+│   │   ├─ "a$" ●
+│   │   └─ "o$" ●
+│   └─ "l$" ●
+└─ "do$" ●
+```
+
+As cadeias de nós com um único filho da trie (como d → o) viraram uma única aresta rotulada com uma substring.
 
 ### **Busca**
 
@@ -568,15 +780,24 @@ Aqui ataca o problema de forma diferente em que condensamos varios nós em um un
         - o nó antigo passa a armazenar apenas seu sufixo restante;
         - criamos uma folha terminal para representar o fim da nova chave.
 
+Exemplos na árvore acima:
+
+- Inserir "cama$": casa a aresta "ca" inteira, sobra "ma$". Nenhum filho começa com m, então criamos a folha "ma$" abaixo de "ca".
+- Inserir "cl$": só o "c" casa com a aresta "ca". Dividimos o nó em "c", com filhos "a" (que mantém a subárvore antiga, com "s" e "l$") e a nova folha "l$".
+
 ### **Remoção**
 
 - Buscar nó contendo a chave
 - se o nó não for nulo, remove
-- se o pai desse nó ficar com apenas 1 filho, concatena prefixo do pai e filho e remove o filho 
+- se o pai desse nó ficar com apenas 1 filho (e não for a raiz), concatena prefixo do pai e filho e remove o filho 
+
+Exemplo: remover "cal$" deixa o nó "ca" só com o filho "s", então juntamos os dois em uma aresta "cas".
 
 ### **Memória**
 
-Reduz bastante o numero de nós mas ao custo de se armazenar mais coisas em cada nó... um jeito de mitigar isso é dado que as palavras estão em um vetor ou outra estrutura, podemos armazenar os indices para essa estrutura na trie.
+Reduz bastante o numero de nós: como todo nó interno tem pelo menos 2 filhos, com K chaves existem K folhas e no máximo K - 1 nós internos, ou seja, **no máximo 2K - 1 nós**. Esse número depende só da quantidade de chaves e não do tamanho delas.
+
+O custo é armazenar mais coisas em cada nó (substrings inteiras). Um jeito de mitigar isso é dado que as palavras estão em um vetor ou outra estrutura, podemos armazenar os indices para essa estrutura na trie: cada aresta guarda (id_palavra, início, fim) em vez da substring, e cada nó passa a ocupar O(1).
 
 ## **Árvore de Sufixos**
 
@@ -602,14 +823,40 @@ $
 
 Depois compactamos caminhos com apenas um filho, armazenando substrings inteiras nas arestas em vez de um caractere por aresta. Para buscar um padrão `P`, percorremos a árvore consumindo seus caracteres. Se conseguirmos consumir todo `P`, então ele ocorre em `T`.
 
+O `$` é necessário pelo mesmo motivo da trie compacta: sem ele, o sufixo "a" de "banana" é prefixo de "ana" e "anana", e terminaria no meio de um caminho. Com o `$`, cada sufixo termina em uma folha própria.
+
+Árvore resultante (o número em cada folha é a posição onde aquele sufixo começa em T):
+
+```text
+raiz
+├─ "$"            (6)
+├─ "a"
+│   ├─ "$"        (5)
+│   └─ "na"
+│       ├─ "$"    (3)
+│       └─ "na$"  (1)
+├─ "banana$"      (0)
+└─ "na"
+    ├─ "$"        (4)
+    └─ "na$"      (2)
+```
+
+Buscando P = "ana": raiz → "a" → "na", consumindo o padrão inteiro. **As folhas da subárvore onde a busca terminou são exatamente as ocorrências de P**: posições 1 e 3 (b**ana**na e ban**ana**).
+
+Outras consultas que ficam simples:
+
+- **Quantas vezes P aparece:** número de folhas da subárvore (pode ser pré-calculado em cada nó).
+- **Maior substring repetida:** o nó interno mais profundo (em número de caracteres). Aqui é "ana".
+
 ### **Complexidade**
 
 Se \(n = |T|\) e \(m = |P|\):
 
-* **Construção ingênua:** \(O(n^2)\) 
-* **Construção com algoritmos como Ukkonen:** \(O(n)\), sob hipóteses apropriadas
-* **Espaço da Suffix Tree:** \(O(n)\) -> um nó para cada sufixo (seria O(n^2) com a normal)
-* **Busca do padrão:** \(O(m)\)
+* **Construção ingênua:** \(O(n^2)\) -> inserir cada um dos n sufixos custa O(n)
+* **Construção com algoritmos como Ukkonen:** \(O(n)\), considerando alfabeto de tamanho constante
+* **Espaço da Suffix Tree:** \(O(n)\) -> são n folhas (uma por sufixo) e no máximo n - 1 nós internos (cada um tem ≥ 2 filhos). Isso só vale porque as arestas guardam índices (início, fim) em T em vez das substrings; guardando substrings, ou sem compactar (suffix trie), seria O(n^2)
+* **Busca do padrão (existe ou não):** \(O(m)\)
+* **Listar todas as ocorrências:** \(O(m + occ)\), sendo occ o número de ocorrências (percorrer as folhas da subárvore)
 
 O pré-processamento pode valer a pena quando o texto permanece fixo e queremos realizar **muitas consultas de padrões diferentes**, pois construímos a estrutura uma vez e cada busca posterior depende essencialmente apenas do tamanho do padrão.
 
@@ -617,13 +864,13 @@ O pré-processamento pode valer a pena quando o texto permanece fixo e queremos 
 
 Ramo da computação que estuda soluções algorítmicas para problemas geométricos
 
-## **Operações com seguimentos de reta**
+## **Operações com segmentos de reta**
 
-Dado seguimentos de retas (vetores) definidos por seus pontos das extremidades, ou seja, p0p1 é uma reta que vai do ponto p0 ao p1. Todas as operações que aqui tem complexidade de O(1).
+Dado segmentos de retas (vetores) definidos por seus pontos das extremidades, ou seja, p0p1 é uma reta que vai do ponto p0 ao p1. Todas as operações que aqui tem complexidade de O(1).
 
-### **Orientação/Direção de um seguimento em relação a outro**
+### **Orientação/Direção de um segmento em relação a outro**
 
-Se temos 2 seguimentos de reta de mesma origem, por exemplo, a = p0p1 e b = p0p2 como sabemos se *a* esta a direita ou esquerda de *b*, *a* esta no sentido horario de *b* ou antihorario ?
+Se temos 2 segmentos de reta de mesma origem, por exemplo, a = p0p1 e b = p0p2 como sabemos se *a* esta a direita ou esquerda de *b*, *a* esta no sentido horario de *b* ou antihorario ?
 
 A ideia aqui é o usar o produto vetorial a x b que é equivalente a area do paralelograma entre esses vetores para descobrir a direção de b em relação a a, esse produto vetorial pode ser calculado como o determinante da matriz desses 2 vetores. Lembrando que (a x b) = - (b x a).
 
@@ -631,13 +878,35 @@ A ideia aqui é o usar o produto vetorial a x b que é equivalente a area do par
 - Se o determinante é *negativo*, então b esta a *direita* de a, ou seja, sentido horario
 - Se o determinante é *0*, então b e a são *colineares* (mesma reta)
 
+Escrevendo com os pontos (os vetores precisam ser relativos à origem comum p0):
+
+```text
+orient(p0, p1, p2) = (p1 − p0) × (p2 − p0)
+                   = (x1 − x0)(y2 − y0) − (x2 − x0)(y1 − y0)
+```
+
+Exemplo: p0 = (0,0), p1 = (4,0), p2 = (2,3) → 4·3 − 2·0 = 12 > 0, então p2 está à esquerda de p0→p1.
+
+O valor absoluto é a área do paralelogramo (o dobro da área do triângulo p0p1p2) e o sinal dá a orientação. Essa primitiva é a base de toda a seção: usa só multiplicação e subtração, sem divisão, ângulos ou raízes, então nunca divide por zero e com coordenadas inteiras o resultado é exato.
+
 ### **Detectar mudança de direção da rota**
 
-Dado uma rota composta por 3 pontos p0 -> p1 -> p2, no ponto p1 queremos saber se vamos virar a esquerda, direita ou continuar reto. Isso converge para exatamente o problema anterior, só precisamos considerar os 2 vetores p0p2 e p0p1 e o determinante responderá as mesmas perguntas.
+Dado uma rota composta por 3 pontos p0 -> p1 -> p2, no ponto p1 queremos saber se vamos virar a esquerda, direita ou continuar reto. Isso converge para exatamente o problema anterior, só precisamos calcular (p0p1) × (p0p2) = orient(p0, p1, p2), nessa ordem (pois a × b = − b × a): positivo → vira à esquerda em p1, negativo → vira à direita, 0 → segue reto. Isso funciona porque (p1 − p0) × (p2 − p0) tem o mesmo valor que (p1 − p0) × (p2 − p1).
 
-### **Determinar se dois seguimentos se interceptam**
+### **Determinar se dois segmentos se interceptam**
 
-Considerando 2 seguimentos p0p1 e p2p3, eles vão se interceptar se as extremidades desses segmentos tiverem direções opostas, ou seja, p0 esta a direita de p2 e p1 esta a esquerda de p3, então existe uma interceptação. Entretanto se alguma das 4 orientações der 0 então significa que um ponto esta na mesma reta mas não necessáriamente no mesmo segmento de reta (segmento é um subconjunto da reta), se isso acontecer é necessário verificar o ponto e as extremidades do segmento para er se existe ou não interseção.
+Considerando 2 segmentos p0p1 e p2p3, eles se interceptam se **cada um atravessa a reta que contém o outro**:
+
+```text
+d1 = orient(p2, p3, p0)   d2 = orient(p2, p3, p1)   → sinais opostos? (p0 e p1 em lados opostos da reta p2p3)
+d3 = orient(p0, p1, p2)   d4 = orient(p0, p1, p3)   → sinais opostos? (p2 e p3 em lados opostos da reta p0p1)
+```
+
+As **duas** condições são necessárias. Contraexemplo com só uma: p0p1 = (0,0)→(0,4) e p2p3 = (5,2)→(6,2). p0 e p1 estão em lados opostos da reta y = 2, mas p2 e p3 estão do mesmo lado da reta x = 0, e os segmentos não se tocam.
+
+Exemplo em que se cruzam: p0p1 = (0,0)→(4,4) e p2p3 = (0,4)→(4,0) dá d1 = −16 e d2 = 16 (opostos), e simetricamente d3 e d4 também são opostos.
+
+Entretanto se alguma das 4 orientações der 0 então significa que um ponto esta na mesma reta mas não necessáriamente no mesmo segmento de reta (segmento é um subconjunto da reta), se isso acontecer é necessário verificar o ponto e as extremidades do segmento para ver se existe ou não interseção: basta testar se o ponto está dentro do retângulo delimitador (bounding box) do segmento, ou seja, min(x) ≤ x ≤ max(x) e min(y) ≤ y ≤ max(y).
 
 ## **Alguns problemas relacionados**
 
@@ -651,12 +920,16 @@ O algoritmo é:
 
 1. Ordene todos os pontos das extremidades dos segmentos por x 
 2. Passe por todas as coordenadas x dos pontos ordenados da esquerda para a direita 
-3. Mantenha os segmentos ativos ordenados por y (O seguimento é ativo se a coordenada x atual é >= a menor coordenada x do seguimento e <= que a maior)
-4. Ao inserir um segmento (chegamos em um x que inclui os limites do seguimento), teste interseção com seus vizinhos (vizinhos da ordenação por y, ou seja, o ponto maior que o atual e o menor)
+3. Mantenha os segmentos ativos ordenados pelo y em que a reta de varredura vertical os corta naquele x (O segmento é ativo se a coordenada x atual é >= a menor coordenada x do segmento e <= que a maior)
+4. Ao inserir um segmento (chegamos em um x que inclui os limites do segmento), teste interseção com seus vizinhos (vizinhos da ordenação por y, ou seja, o ponto maior que o atual e o menor)
 5. Ao remover um segmento, teste os dois vizinhos que ficaram juntos
 6. Se algum teste detectar interseção retorne True
-	​
-A complexidade da abordagem ingenua é O(n^2) pois precisamos testar interseção de todos os pontos com todos os outros. Essa abordagem, usando uma arvore binária balanceada por exemplo tem complexidade O(nlogn) devido as inserções e remoções em logn.
+
+**Por que basta testar vizinhos?** Considere a interseção mais à esquerda. Imediatamente antes dela, os dois segmentos que se cruzam estão adjacentes na ordem por y (não há nada entre eles). Eles se tornaram adjacentes em algum evento anterior (inserção de um deles ou remoção de quem estava no meio), e nesse evento o teste entre eles foi feito.
+
+A complexidade da abordagem ingenua é O(n^2) pois precisamos testar interseção de todos os segmentos com todos os outros. Essa abordagem, usando uma arvore binária balanceada por exemplo tem complexidade O(nlogn): ordenar as 2n extremidades custa O(nlogn) e cada uma das 2n inserções/remoções/consultas de vizinho custa O(logn).
+
+Obs: esse algoritmo (Shamos-Hoey) só responde se **existe** alguma interseção. Para listar todas as k interseções existe o Bentley-Ottmann, com custo O((n + k) log n).
 
 ### **Determinar se um ponto está dentro de um polígono**
 
@@ -667,8 +940,12 @@ A ideia aqui é bem simples:
     - par -> p esta fora
     - impar -> p esta dentro
 
+Funciona porque cada vez que o raio cruza a borda ele alterna entre dentro e fora, e no infinito ele está fora.
+
 A complexidade é O(n) pois temos que verificar intersecao com todas as arestas
-	​
+
+Cuidado com os casos degenerados: o raio pode passar exatamente por um vértice (que seria contado duas vezes, uma para cada aresta) ou correr ao longo de uma aresta. A regra usual é contar uma aresta apenas se **um** de seus extremos estiver estritamente acima do raio.
+
 ## **Problema da envoltoria convexa**
 
 Consiste em encontrar o menor polígono (estritamente) convexo (todos os angulos internos menores que π) que contenha um conjunto de pontos P. Dessa forma, se H é a envoltória convexa de P, todo ponto de P está dentro ou na borda de H. A saida é um subconjunto de P que são os vértices do resultado.
@@ -677,24 +954,42 @@ Consiste em encontrar o menor polígono (estritamente) convexo (todos os angulos
 
 Algoritmo assume no minimo 3 pontos nos dados pois é minimo para se construir um poligono convexo e assumo que caso existe 3 ou mais pontos colineares apenas o mais distante é relevante. A ideia é:
 
-1. Escolhemos um ponto ancora (inicial) que com certeza esta dentro da envolvoria, usamos o ponto mais extremo a esquerda e para baixo
-2. Agora tracando uma reta do ancora para todos os outros pontos, ordenados os pontos em relacao ao angulo gerado por essa reta (isso permite passar pelos pontos em sentido antihorario) e se dois pontos têm exatamente o mesmo ângulo (colineares) mantemos o mais distante
+1. Escolhemos um ponto ancora (inicial) que com certeza é **vértice** da envoltória, usamos o ponto de menor y (e menor x em caso de empate). Um ponto extremo como esse nunca pode estar no interior.
+2. Agora tracando uma reta do ancora para todos os outros pontos, ordenados os pontos em relacao ao angulo gerado por essa reta (isso permite passar pelos pontos em sentido antihorario) e se dois pontos têm exatamente o mesmo ângulo (colineares) mantemos o mais distante. Não é preciso calcular ângulos com atan: o ponto a vem antes de b se orient(âncora, a, b) > 0.
 3. Fazemos um scan nos pontos ordenados para descobrir quem pertence ou nao a envoltoria, para isso analisamos os 2 ultimos pontos adicionados na envoltoria (uma pilha) junto com o ponto atual ((p0,p1),p_curr):
     - Se p_curr esta a esquerda em relacao a p0p1, entao precisamos de p_curr e p1 na envoltoria e adicionamos p_curr na pilha
-    - Se p_curr esta a direta em relacao a p0p1, entao n precisamos de p1 na envoltoria e damos pop() nele e repetimos o processo com os novos ultimos da pilha ate virar esquerda e adicionarmos p_curr
-- Usamos uma pilha geralmente pois ela simula perfeitamente o processo recursivo de verificacao
+    - Se p_curr esta a direta (ou é colinear) em relacao a p0p1, entao n precisamos de p1 na envoltoria e damos pop() nele e repetimos o processo com os novos ultimos da pilha ate virar esquerda e adicionarmos p_curr
+- Usamos uma pilha porque um ponto novo pode invalidar vários dos últimos pontos aceitos, sempre a partir do topo (o mais recente)
 
-A complexidade do algoritmo é *O(n)* na varredura mas precisamos ordenar todos os nós pelo angulo entao é dominado por *O(nlogn)*
+#### **Exemplo**
+
+Pontos A(0,0), B(4,0), C(2,1), F(2,2), D(4,4), E(0,4):
+
+1. Âncora = A (menor y)
+2. Ordenando por ângulo: B (0°), C (≈27°), F e D (45°, colineares com A → mantém D, o mais distante), E (90°). Sequência: B, C, D, E
+3. Varredura:
+
+```text
+pilha [A,B]
+C: orient(A,B,C) = +4  esquerda → push        [A,B,C]
+D: orient(B,C,D) = −8  direita  → pop C
+   orient(A,B,D) = +16 esquerda → push        [A,B,D]
+E: orient(B,D,E) = +16 esquerda → push        [A,B,D,E]
+```
+
+Envoltória: A, B, D, E. C saiu porque, ao chegar em D, a curva em C virou para a direita (C é uma "reentrância").
+
+A complexidade do algoritmo é *O(n)* na varredura (amortizado: cada ponto entra e sai da pilha no máximo uma vez, então o total de push + pop é ≤ 2n) mas precisamos ordenar todos os nós pelo angulo entao é dominado por *O(nlogn)*
 
 ### **Algoritmo embrulho para presente (gift wrapping)**
 
 Aqui a ideia é nao ordenar e pagar um preco definido pelo tamanho da envoltoria (saida), a ideia é:
 
 1. Escolhe um ponto ancora igual o algoritmo anterior 
-2. Buscamos o ponto mais a direita em relacao ao ultimo nó adicionado dentro da envoltoria e adicionamos na envoltoria. Para isso é necessário 3 pontos ... podemos pegar inicialmente 3 aleatorios e se o mais extremo estiver mais a direita ele vira o novo do meio em relacao ao primeiro (da envoltoria) e assim buscamos o mais a direita.
-3. Repetimos o passo 2 ate encontrar algum ponto que ja esta na envoltoria
+2. A partir do último vértice p adicionado na envoltória, buscamos o próximo vértice q tal que **todos os outros pontos fiquem à esquerda de p→q**. Para isso começamos com um candidato q qualquer e, para cada ponto r do conjunto, se r está à direita de p→q (orient(p, q, r) < 0), r passa a ser o candidato. No final da passada, q é o ponto "mais à direita" visto de p, e o adicionamos na envoltória.
+3. Repetimos o passo 2 ate voltar ao ponto âncora
 
-A complexidade do algoritmo depende de quantos pontos *h* existem na envoltoria e para cada um deles temos que fazer uma busca linear em todos os *n* pontos do conjunto, ou seja, complexidade total O(h*n).
+A complexidade do algoritmo depende de quantos pontos *h* existem na envoltoria e para cada um deles temos que fazer uma busca linear em todos os *n* pontos do conjunto, ou seja, complexidade total O(h*n). É um algoritmo **output-sensitive** (o custo depende do tamanho da saída): se h < log n ele é melhor que o Graham, mas se todos os pontos estiverem na envoltória (h = n) vira O(n^2).
 
 ### **Algoritmo Incremental**
 
@@ -704,11 +999,15 @@ Algoritmos bem simples que comeca com 3 pontos nao colineares do conjunto comple
 2. Para cada um dos outros n - 3 pontos, fazemos a pergunta: "o ponto esta dentro do poligono convexo atual?"
     - Se sim, nao precisamos atualizar a envoltoria
     - Se nao, precisamos atualizar a envoltoria
-        - Para atualizar a envoltoria buscamos as 2 retas tangentes ao poligo atual que passam no novo ponto P a ser adicionado, depois é só conectar P aos 2 pontos da envoltoria que tocam nas tangentes. Mas o problema é como conseguir essas retas tangentes, o custo é O(n^2)
+        - Para atualizar a envoltoria buscamos as 2 retas tangentes ao poligo atual que passam no novo ponto P a ser adicionado, depois é só conectar P aos 2 pontos da envoltoria que tocam nas tangentes. Mas o problema é como conseguir essas retas tangentes: testar se o ponto está dentro e achar as tangentes custa O(n) por ponto, então o algoritmo inteiro custa O(n^2)
 
-### **Algoritmo incremental (v2)**
+### **Algoritmo incremental (v2) / Andrew (monotone chain)**
 
-A ideia aqui é ao inves de buscar tangentes, ordenamos os pontos por X e agora sempre que chegar um ponto P novo sabemos que ele nao pode estar dentro da envoltoria atual pois o x dele é maior (ordenado). Sabendo disso n precisamos mais fazer a pergunta de pertencimento e podemos executar a varredura de graham novamente nos pontos de cima e de baixo do poligono.
+A ideia aqui é ao inves de buscar tangentes, ordenamos os pontos por X e agora sempre que chegar um ponto P novo sabemos que ele nao pode estar dentro da envoltoria atual pois o x dele é maior (ordenado). Mais que isso, ele é o ponto mais à direita até agora, então **sempre é vértice** da envoltória. Sabendo disso n precisamos mais fazer a pergunta de pertencimento.
+
+Construímos separadamente a cadeia de cima e a cadeia de baixo da envoltória, cada uma com uma pilha igual à do Graham: chega o ponto novo, damos pop enquanto a curva estiver para o lado errado e depois push. Não é rodar o Graham de novo a cada ponto: é uma única passada pelos pontos ordenados.
+
+A complexidade é O(n) na passada (cada ponto entra e sai de cada pilha no máximo uma vez) e **O(nlogn)** no total por causa da ordenação.
 
 ### **Algoritmo dividir e conquistar**
 
@@ -717,18 +1016,21 @@ A ideia aqui é usar a estrategia dividir e conquistar para encontrar a envoltor
 1. Ordenados os pontos por x (isso permite dividir os pontos no espaco)
 2. Dividimos recursivamente o espaco até chegar em conjuntos com no máximo 3 pontos pois achar o convex hull del 1, 2 e 3 pontos é trivial (sao eles mesmos)
 3. Para juntas 2 convex hulls preciamos encontrar 2 retas tangentes a eles (elas representam as arestas que precisamos criar para pegar todos os pontos juntos)
-    - Considerando apenas os pontos do hull, ou seja, sem considerar os internos escolhemos os 2 pontos mais proximos entre os hulls e formamos uma reta
-    - Depois verificamos se essa reta esta acima de todos os nós de ambos os Hulls, se nao estiver temos que subir a reta e para isso apenas trocamos as extremidades delas por nós com y maior nas envoltorias
-    - Quando a reta englobar todos, chegamos a tangente
+    - Considerando apenas os pontos do hull, ou seja, sem considerar os internos, começamos com a reta que liga o ponto **mais à direita** do hull esquerdo ao ponto **mais à esquerda** do hull direito
+    - Para a tangente superior, avançamos a extremidade direita para o seu **vizinho no hull direito** (no sentido que sobe) enquanto a reta subir, ou seja, enquanto o vizinho estiver acima da reta. Depois fazemos o mesmo com a extremidade esquerda no hull esquerdo. Alternamos entre os dois lados
+    - Quando nenhuma das duas extremidades consegue mais se mover, todos os pontos estão abaixo da reta e chegamos a tangente
     - repetimos o mesmo processo para a tangente de baixo mas com objetivos opostos
+    - Por fim, descartamos os vértices dos dois hulls que ficaram entre as tangentes (do lado de dentro)
 
-O merge tem complexidade de O(n) pois no pior dos casos (ultima recursao) temos que dar merge em algo proximo de n pontos. Temos logn niveis na recursao e consequentemente a complexidade é O(nlogn)
+O merge tem complexidade de O(n), pois cada extremidade só anda pelos vértices do seu hull. A recorrência é T(n) = 2T(n/2) + O(n): temos logn niveis na recursao e cada nível soma O(n) de merge, consequentemente a complexidade é O(nlogn)
 
 ## **Problema da galeria de arte**
 
 Uma câmera consegue enxergar todos os pontos que possuem uma linha de visão direta até ela. As paredes bloqueiam essa visão. Se o polígono for convexo, uma única câmera basta, porque de qualquer ponto interno conseguimos enxergar todo o polígono. Já em um polígono não convexo, aparecem “quinas para dentro”, que podem esconder regiões.
 
 O objetivo seria encontrar o menor número possível de câmeras. Só que calcular esse mínimo exatamente é um problema computacionalmente difícil. Por isso, a estratégia apresentada procura uma garantia do tipo: Independentemente do formato do polígono, com no máximo X câmeras certamente conseguimos vigiar tudo.
+
+**Teorema da galeria de arte (Chvátal):** para um polígono simples com n vértices, ⌊n/3⌋ câmeras **sempre bastam** e **às vezes são necessárias** (ex: um polígono em forma de "pente", em que cada dente precisa de uma câmera própria). A prova abaixo (de Fisk) usa triangulação + coloração.
 
 ### **Triangulação de poligonos**
 
@@ -740,27 +1042,29 @@ A primeira ideia é observar que um triângulo é muito fácil de vigiar. Uma c�
 
 #### **Coloração de grafos**
 
-Em uma coloração de grafo, um triangulo pode ter no máximo 3 cores (um para cada vértice), se 2 ou mais triangulos compartilham o mesmo nó então dentro deles não existira outro nó com mesma cor, ou seja, não podemos colocar cameras desnecessárias. A ideia da coloração é:
+A ideia é pintar os vértices com 3 cores de forma que **todo triângulo tenha exatamente um vértice de cada cor**. Se isso for possível, qualquer cor sozinha toca todos os triângulos, então colocar câmeras em todos os vértices de uma única cor já vigia o polígono inteiro. A ideia da coloração é:
 
-1. Construimos o grafo G que são os vértices e arestas do poligono e o grafo T(G) que é um grafo que cada nó é um triangulo e ele tem aresta para outro triangulo se eles compartilharem vértices.
-2. Usamos o grafo T para definir a ordem que colorimos o grafo G, usando um DFS no T
+1. Construimos o grafo G que são os vértices e arestas do poligono **mais as diagonais da triangulação**, e o grafo dual T(G) em que cada nó é um triangulo e ele tem aresta para outro triangulo se eles compartilharem uma **aresta (diagonal)**. Compartilhar só um vértice não conta.
+2. O dual de uma triangulação de polígono simples é uma **árvore** (cada diagonal divide o polígono em dois). Usamos o grafo T para definir a ordem que colorimos o grafo G, usando um DFS no T: o primeiro triângulo recebe as 3 cores, e cada triângulo seguinte compartilha uma diagonal (2 vértices já pintados) com o anterior, então o terceiro vértice recebe a cor que sobrou. A escolha é forçada e nunca gera conflito.
 3. Depois de todos os nós de G estarem coloridos, pegamos a cor que tem menos nós coloridos e colocamos nos nós dela as cameras
 
-- No final vamos ter n/3 cameras pois dividimos o grafo em 3 cores, oq é uma vantagem muito maior que n-2
+- No final vamos ter no máximo ⌊n/3⌋ cameras: como os n vértices estão divididos em 3 cores, pelo princípio da casa dos pombos a menor cor tem no máximo n/3 vértices. Isso é uma vantagem muito maior que n-2
 
 #### **Como triangular os poligonos ?**
 
-Para esse problema existe um algoritmo chamado corte de pontas de orelha, em que orelhas são pontas apontadas para fora que o poligono produz, que funciona assim:
+Para esse problema existe um algoritmo chamado corte de pontas de orelha. Um vértice Pi é uma **orelha** se o triângulo P(i-1), Pi, P(i+1) está inteiro dentro do polígono, ou seja, a diagonal P(i-1)P(i+1) pode ser traçada e "corta fora" a ponta Pi. O **teorema das duas orelhas** garante que todo polígono simples com n ≥ 4 vértices tem pelo menos 2 orelhas, então o algoritmo sempre encontra uma. Ele funciona assim:
 
-1. Buscamos todas as orelhas do grafo passando de 3 em 3 nós e isso tem custo O(n)
+1. Buscamos todas as orelhas do grafo passando de 3 em 3 nós. São n candidatos e cada teste precisa verificar se algum dos outros vértices está dentro do triângulo (O(n)), então isso tem custo O(n^2)
 2. Enquanto o poligono tiver mais que 3 pontos (ultimo triangulo): O(n)
 
     1. Encontramos uma orelha do poligono atual e salvamos quem são os 3 pontos que fazem parte dela (um triangulo)
     2. Removemos o ponto que é a ponta da orelha e atualizamos os vizinhos dessa orelha pois podem ter se tornado uma orelha
 
-Algortimo no final tem complexidade o(n^2) mas existem soluções nlogn mais sofisticadas
+Algortimo no final tem complexidade O(n^2): são n - 3 cortes e cada um revalida os 2 vizinhos em O(n). Existem soluções O(nlogn) mais sofisticadas (particionamento em polígonos monótonos).
 
-- **Como indentificar orelhas ?** Verificamos se não tem nenhum outro ponto dentro do triangulo, se não tiver, para cada 3 pontos Pi-1, Pi e Pi+1 verificamaso se Pi+1 esta a esquerda de Pi, se sim então Pi é uma orelha.
+- **Como indentificar orelhas ?** Assumindo os vértices do polígono em ordem anti-horária, Pi é orelha se as duas condições valem:
+    - Pi é um vértice **convexo**: P(i+1) está à esquerda de P(i-1)→Pi, ou seja, orient(P(i-1), Pi, P(i+1)) > 0
+    - **nenhum outro vértice** do polígono está dentro do triângulo P(i-1), Pi, P(i+1)
 
 ## **Range Search** 
 
@@ -772,6 +1076,9 @@ O problema consiste em dado um conjunto de pontos multidimensionais (features de
 - Uma solução mais robusta seria criar uma arvore binária balanceada com os pontos. Depois ao buscar por um intervalo [min,max] especifico temos que olhar todas as folhas maiores que min e menores que max, para isso podemos fazer duas consultas na arvore buscando exatamente os valores da borda e pegar pontos que estão em subarvores de interesse. Nessa arvore geralmente é interessante usar a mediana para fazer divisões balanceadas.
 
     -  A complexidade é O(logn + k) sendo logn pela busca na arvore balanceada e k o numero de pontos que existe no intervalo buscado
+    -  Construção O(nlogn) e espaço O(n)
+
+- Em 1D, um **vetor ordenado com busca binária** já dá o mesmo O(logn + k): busca binária para achar o primeiro ponto ≥ min e varre até passar de max. A árvore é interessante porque é a ideia que generaliza para mais dimensões (e aceita inserções/remoções).
 
 ### **K-dimensôes (KD-Tree)**
 
@@ -792,7 +1099,7 @@ A ideia da kd-tree é que cada subarvore representa uma região do espaço, quan
 - **Região do nó esta dentro da região da consulta:** não precisamos explorar a arvore pois sabemos que tudo la dentro é importante e portanto só retornamos os pontos
 - **Região do nó tem interseção com a região da consulta:** precisamos explorar a arvore pois nem tudo la é importante
 
-A construição da arvore tem complexidade **O(nlogn)** pois para cada um dos logn niveis da arvore temos que processar todos os pontos n pontos para as novas divisões. A busca tem complexidade **O(root(n) + k)**. Podemos generalizar para qualquer quantidade de dimensões essa ideia pois ela sempre ira separar o espaço k-dimensional
+A construição da arvore tem complexidade **O(nlogn)** pois para cada um dos logn niveis da arvore temos que processar todos os pontos n pontos para as novas divisões. A busca em 2D tem complexidade **O(√n + k)** e o espaço é O(n). Podemos generalizar para qualquer quantidade d de dimensões essa ideia pois ela sempre ira separar o espaço d-dimensional, mas a busca passa a custar **O(n^(1-1/d) + k)**, que se aproxima de O(n) conforme d cresce (maldição da dimensionalidade). Por isso KD-trees funcionam bem em poucas dimensões, mas para dados com muitas features perdem a vantagem sobre a busca linear.
  
 
 # **Questões** 
