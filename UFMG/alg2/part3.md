@@ -393,7 +393,7 @@ Quando nosso peso da aresta é uma métrica como distancia temos algumas garanti
     1. gerar uma arvore geradora minima T
     2. duplicar as arestas para deixar todos os nós com numeros pares 
     3. caminhar no grafo e achar um ciclo euleriano 
-    4. eliminamos repetições de nós e achamos um hamiltoniano H
+    4. eliminamos repetições de nós e achamos um hamiltoniano H (Só é possivel pois o grafo precisa ser completo)
 
     Seja H' o ciclo hamiltoniano ótimo. Se removemos uma aresta de H' ele vira uma arvore geradora (não necessariamente minima). Como T é a arvore geradora de menor custo, c(T) <= c(H' - e) <= c(H'). Quando duplicamos as arestas, o percurso euleriano custa 2c(T). Ao eliminar nós repetidos pegamos "atalhos" (u -> w no lugar de u -> v -> w), e pela desigualdade triangular isso nunca aumenta o custo. Sendo c(H) o custo do ciclo descoberto pelo algortimo, c(H) <= 2c(T) <= 2c(H').
 
