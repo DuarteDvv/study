@@ -72,7 +72,7 @@ Achar ciclo no grafo que visita todos os nós do grafo e apenas uma vez cada um.
 
 - *Solução 1 (Brute):* Gerar todas as permutações de nós do grafo de tamanho n, ou seja, n! possibilidades e depois verificamos se o i tem aresta para i + 1 ate terminar.
 
-- *Solução 2 (Backtrack):* Para cada nó do grafo passamos e decidimos adicionar ele ou não na solução, apenas adicionamos se:
+- *Solução 2 (Backtrack):* Construímos o caminho um nó de cada vez: a cada passo escolhemos o próximo nó entre os candidatos, apenas adicionamos se:
     - Se ele não foi adicionado ainda
     - Se o nó anterior aponta para ele 
     - Se for o ultimo nó, se ele se conecta com o primeiro
@@ -82,7 +82,7 @@ Caso contrário podamos o ramo.
 
 No backtracking removemos soluções invalidas em relação as restrições do problema. Aqui a ideia é remover soluções que não tem possibilidade de superar a melhor solução encontrada ate agora.
 
-- Por exemplo, se estamos minimizando uma soma e nossa menor ate agora é 10 e sabemos por alguma estimativa que um determinado ramo vai ter no minimo 11 na solução, por mais que 11 seja valido não precisamos mais explorar aquele ramo pois ele será sempre pior que o nosso pior ate agora.
+- Por exemplo, se estamos minimizando uma soma e nossa menor ate agora é 10 e sabemos por alguma estimativa que um determinado ramo vai ter no minimo 11 na solução, por mais que 11 seja valido não precisamos mais explorar aquele ramo pois ele será sempre pior que o nosso melhor ate agora.
 
 Branch (Ramificação) vem da propria arvore de soluções incrementais, enquanto bound (limite) é a estimativa de uma ramo que permite ou não podar ele.
 
@@ -99,7 +99,7 @@ $$
 Em problemas de minimização queremos encontrar a solução valida com valor minimo. Portanto, para todas as soluções possiveis S(v) precisamos de uma estimativa que seja menor ou igual a melhor solução valida de S(v) (nunca maior). Essa estimativa é chamada de lower bound (LB).
 
 $$
-LB(v)\leq \min_{s\in S(u)}f(s)
+LB(v)\leq \min_{s\in S(v)}f(s)
 $$
 Se temos:
 
@@ -203,7 +203,136 @@ Queremos o subconjunto de itens que a soma do peso é menor ou igual um maximo e
 
 Queremos o ciclo hamiltoniano com menor somatório custo 
 
-- *Solução:* A ideia aqui estimar usando a soma das 2 menores arestas que um nó pode se conectar, uma de saida e outra de entrada, dessa forma sabemos que para aquele nó não existe melhores escolhas. Quando 2 ou mais nós ja foram escolhidos temos que atualizar a soma para utilizar as arestas que conectam eles ao invés das duas menores. Ao restante estimado pode-se usar as 2 menores normalmente pois a decisão não foi tomada ainda.
+- *Solução:* A ideia aqui estimar usando a soma das 2 menores arestas que um nó pode se conectar, uma de saida e outra de entrada, dessa forma sabemos que para aquele nó não existe melhores escolhas. Quando 2 ou mais nós ja foram escolhidos temos que atualizar a soma para utilizar as arestas que conectam eles ao invés das duas menores. Ao restante estimado pode-se usar as 2 menores normalmente pois a decisão não foi tomada ainda. Como cada aresta do ciclo é contada duas vezes (uma em cada extremidade), dividimos a soma por 2:
+$$
+LB=\left\lceil\frac{1}{2}\sum_{v\in V}(\text{soma das 2 menores arestas de }v)\right\rceil
+$$
+
+
+## **Programação Dinâmica**
+
+Backtracking e branch and bound cortam ramos da arvore de soluções, mas em muitos problemas a arvore tem outro desperdicio: o mesmo subproblema aparece em vários ramos diferentes e é resolvido de novo toda vez. A ideia da programação dinâmica (PD) é resolver cada subproblema uma unica vez, guardar a resposta em uma tabela e reutilizar.
+
+- Na mochila, decidir os itens 3..n com 7 de capacidade livre é o mesmo subproblema, não importa se chegamos nele pegando o item 1 (peso 3) ou o item 2 (peso 3). A força bruta resolve ele 2 vezes, a PD uma.
+
+Para PD funcionar o problema precisa ter 2 propriedades:
+
+1. *Subestrutura ótima:* a solução ótima do problema é formada por soluções ótimas de subproblemas menores. Se a mochila ótima com os itens 1..i pega o item i, então o resto dela é a mochila ótima com os itens 1..i-1 e capacidade W - w_i.
+
+2. *Sobreposição de subproblemas:* os mesmos subproblemas se repetem muitas vezes na recursão. Se não se repetem (como em merge sort, onde cada metade é diferente) é só divisão e conquista e guardar resultados não ajuda.
+
+### **Como montar uma PD**
+
+1. *Definir o estado:* quais parâmetros identificam um subproblema, por exemplo K[i][c] = melhor valor usando os itens 1..i com capacidade c. Essa é a parte mais dificil e a mais importante.
+
+2. *Escrever a recorrência:* como a resposta de um estado depende de estados menores. Geralmente é olhar a ultima decisão (pegar ou não o item i) e escolher a melhor.
+
+3. *Casos base:* os estados triviais, por exemplo K[0][c] = 0 (sem itens não tem valor).
+
+4. *Ordem de preenchimento:* preencher a tabela de forma que quando calculamos um estado, os estados que ele usa já estão prontos.
+
+5. *Reconstrução:* a tabela guarda apenas o valor ótimo, para saber quais decisões levaram a ele voltamos na tabela a partir da resposta verificando qual opção da recorrência foi usada.
+
+Existem duas formas de implementar:
+
+- *Top-down (memoização):* escrevemos a recursão normal do backtracking mas antes de calcular um estado verificamos se ele já está na tabela. Só calcula os estados que realmente aparecem.
+
+- *Bottom-up (tabulação):* preenchemos a tabela iterativamente dos casos base até a resposta. Não tem custo de recursão e é mais facil economizar memoria.
+
+### **PD Geral**
+
+```text
+PD_TOP_DOWN(estado):
+    se estado é caso base:
+        retornar valor base
+
+    se memo[estado] já foi calculado:
+        retornar memo[estado]
+
+    melhor = pior valor possivel
+    para cada decisão possível em estado:
+        melhor = melhor_entre(melhor, custo(decisão) + PD_TOP_DOWN(subestado(decisão)))
+
+    memo[estado] = melhor
+    retornar melhor
+```
+
+$$\text{Programação Dinâmica = recursão + memoização (ou tabela)}$$
+
+A complexidade é dada por:
+
+$$
+O(\text{número de estados}\times\text{custo de cada transição})
+$$
+
+Diferente de backtracking e branch and bound, que no pior caso continuam exponenciais, a PD tem complexidade garantida, mas ela pode ser *pseudo-polinomial*: a mochila O(nW) depende do valor numérico de W e não do tamanho da entrada. W é escrito com log W bits, então se W = 2^n a tabela tem tamanho exponencial no tamanho da entrada. Por isso a mochila continua NP-difícil mesmo com PD, e é por isso que o FPTAS precisa reduzir os valores.
+
+### **Exemplos**
+
+#### **Fibonacci**
+
+Calcular o n-ésimo número de Fibonacci F(n) = F(n-1) + F(n-2).
+
+- *Solução 1 (Recursão ingênua):* F(5) chama F(4) e F(3), F(4) chama F(3) de novo e F(2)... cada chamada gera duas, então são O(2^n) chamadas para apenas n subproblemas distintos.
+
+- *Solução 2 (PD):* guardamos F(i) assim que é calculado. O estado é só i, são n estados e cada um custa O(1), logo O(n). No bottom-up nem precisamos da tabela toda, apenas dos 2 ultimos valores.
+
+#### **Subset Sum**
+
+Queremos saber se existe um subconjunto dentro de um conjunto de numeros (inteiros positivos) que a soma seja S.
+
+- *Solução 1 (Brute/Backtrack):* gera os 2^n subconjuntos, podando quando a soma passa de S.
+
+- *Solução 2 (PD):* o estado é D[i][s] = existe subconjunto dos itens 1..i com soma exatamente s? Olhando a ultima decisão, ou não pegamos o item i ou pegamos:
+$$
+D[i][s]=D[i-1][s]\;\lor\;D[i-1][s-a_i]\quad(\text{se }s\geq a_i)
+$$
+Com D[0][0] = verdadeiro e D[0][s] = falso para s > 0. São n·S estados com transição O(1), logo O(nS).
+
+#### **Problema da mochila (0/1)**
+
+Queremos o subconjunto de itens que a soma do peso é menor ou igual a W e que maximize o valor total.
+
+- *Solução 1 (Brute):* 2^n subconjuntos.
+
+- *Solução 2 (PD por peso):* o estado é K[i][c] = maior valor usando os itens 1..i com capacidade c.
+$$
+K[i][c]=\max\big(\underbrace{K[i-1][c]}_{\text{não pega }i},\;\underbrace{v_i+K[i-1][c-w_i]}_{\text{pega }i,\text{ se }w_i\leq c}\big)
+$$
+Com K[0][c] = 0. São n·W estados com transição O(1), logo O(nW). A resposta é K[n][W].
+
+Exemplo com W = 5 e itens (peso, valor): 1 = (2, 3), 2 = (3, 4), 3 = (4, 5).
+
+| i \ c | 0 | 1 | 2 | 3 | 4 | 5 |
+|---|---:|---:|---:|---:|---:|---:|
+| 0 | 0 | 0 | 0 | 0 | 0 | 0 |
+| 1 | 0 | 0 | 3 | 3 | 3 | 3 |
+| 2 | 0 | 0 | 3 | 4 | 4 | **7** |
+| 3 | 0 | 0 | 3 | 4 | 5 | **7** |
+
+Por exemplo K[2][5] = max(K[1][5], 4 + K[1][2]) = max(3, 4 + 3) = 7. Para reconstruir: K[3][5] = K[2][5], então o item 3 não foi pego; K[2][5] ≠ K[1][5], então o item 2 foi pego e vamos para K[1][2]; K[1][2] ≠ K[0][2], então o item 1 foi pego. Solução {1, 2} com valor 7.
+
+- *Solução 3 (PD por valor):* invertemos a pergunta, o estado é P[i][x] = menor peso necessario para conseguir valor exatamente x usando os itens 1..i.
+$$
+P[i][x]=\min\big(P[i-1][x],\;w_i+P[i-1][x-v_i]\big)
+$$
+Com P[0][0] = 0 e P[0][x] = ∞ para x > 0. A resposta é o maior x tal que P[n][x] <= W. Complexidade O(nV) com V = Σv_i. Essa é a versão usada no FPTAS da mochila.
+
+#### **Caixeiro Viajante (Held-Karp)**
+
+Queremos o ciclo hamiltoniano com menor somatório de custo.
+
+- *Solução 1 (Brute):* testa as (n-1)! ordens de visita.
+
+- *Solução 2 (PD):* o que importa para continuar um caminho parcial não é a ordem em que os nós foram visitados, apenas quais foram visitados e onde estamos agora. O estado é C(S, j) = menor custo de um caminho que sai do nó 1, visita exatamente os nós de S e termina em j ∈ S.
+$$
+C(S,j)=\min_{i\in S\setminus\{j\},\,i\neq1}\big(C(S\setminus\{j\},i)+d(i,j)\big)
+$$
+Com C({1, j}, j) = d(1, j). A resposta é fechar o ciclo:
+$$
+OPT=\min_{j\neq1}\big(C(V,j)+d(j,1)\big)
+$$
+São 2^n·n estados com transição O(n), logo O(n²2^n). Continua exponencial, mas é muito menor que n! (para n = 20: ~4·10^8 contra ~10^17).
 
 
 ## **Algortimos aproximativos**
@@ -251,7 +380,7 @@ O problema aqui é encontrar o menor conjunto C' de nós que tem conexão pelo m
 3. Remova todas as arestas que a e b tem 
 4. Repita o processo
 
-Coincidentemente o resultado desse algoritmo é um matching que é um conjunto de arestas que não compartilham extremidades. Se |M| são as arestas do matching então para ter um vertex cover é necessário pegar pelo menos um dos vértices dessas arestas e portanto |C'| >= |M|. Se |M| são arestas então cada uma tem 2 nós, logo |M| x2 >= |C|, logo |C'| x2 >= |C|, ou seja, o numero de nós dessa aproximação é sempre no maximo 2 o otimo.
+Coincidentemente o resultado desse algoritmo é um matching que é um conjunto de arestas que não compartilham extremidades. Seja C* a cobertura ótima e C o conjunto retornado pelo algoritmo. Como as arestas de M não compartilham extremidades, qualquer vertex cover (inclusive o ótimo) precisa de pelo menos um vértice distinto para cada aresta de M, portanto |C*| >= |M|. O algoritmo adiciona exatamente os 2 nós de cada aresta de M, logo |C| = 2|M| <= 2|C*|, ou seja, o numero de nós dessa aproximação é sempre no maximo 2 vezes o otimo.
 
 
 #### **Caixeiro Viajante**
@@ -266,13 +395,18 @@ Quando nosso peso da aresta é uma métrica como distancia temos algumas garanti
     3. caminhar no grafo e achar um ciclo euleriano 
     4. eliminamos repetições de nós e achamos um hamiltoniano H
 
-    Se removemos uma aresta de um ciclo hamiltoniano ele vira uma arvore geradora minima. Sabemos que a arvore geradora que criamos é minima em custo e portanto qualquer ci gerado por ela vai ser maior ou igual a ela, ou seja, c(T) <= c(H'), quando duplicamos as arestas agr c(T) vira 2c(T). Sendo c(H) o custo do ciclo descoberto pelo algortimo, sabemos que ele é <= 2c(T), logo c(H) <= 2c(H').
+    Seja H' o ciclo hamiltoniano ótimo. Se removemos uma aresta de H' ele vira uma arvore geradora (não necessariamente minima). Como T é a arvore geradora de menor custo, c(T) <= c(H' - e) <= c(H'). Quando duplicamos as arestas, o percurso euleriano custa 2c(T). Ao eliminar nós repetidos pegamos "atalhos" (u -> w no lugar de u -> v -> w), e pela desigualdade triangular isso nunca aumenta o custo. Sendo c(H) o custo do ciclo descoberto pelo algortimo, c(H) <= 2c(T) <= 2c(H').
 
 - **Christofides:** Usa a mesma logíca do anterior mas evita duplicar todas as arestas e sim apenas as necessárias. Isso faz com que a garantia suba de 2x para 1.5x. 
 
 Não existe fator de aproximação para o TSP geral, apenas para a versão usando métrica que respeita a desigualdade triangular. Podemos provar por contradição:
 
-Imagine que temos um algoritmo que funciona para o TSP geral, podemos pegar um grafo G, criar um novo grafo G' completo em que toda aresta que existia em G tinha peso 1 e toda aresta que não existia em G tem peso c|V| sendo V os vértices do grafo, ou seja, o otimo tera custo igual a |V|. Se executarmos o algortimo aproximativo e a solução retornada c(S) <= c|V| então existe solução, se c(S) >= c|V| não existe solução. O problema é que conseguimos identificar a existencia ou não do ciclo hamiltoniano em tempo polinomial e isso implica que P=NP, logo, impossivel.
+Imagine que temos um algoritmo c-aproximativo para o TSP geral, podemos pegar um grafo G, criar um novo grafo G' completo em que toda aresta que existia em G tem peso 1 e toda aresta que não existia em G tem peso c|V| + 1 sendo V os vértices do grafo.
+
+- Se G tem ciclo hamiltoniano, o otimo tera custo igual a |V|, e o aproximativo retorna c(S) <= c|V|.
+- Se G não tem, qualquer ciclo em G' usa pelo menos uma aresta pesada, logo c(S) > c|V|.
+
+Olhando apenas o custo retornado conseguimos identificar a existencia ou não do ciclo hamiltoniano (NP-completo) em tempo polinomial, o que implicaria P=NP. Logo, esse algoritmo não existe a menos que P=NP.
 
 #### **Balanceamento de carga**
 
@@ -295,7 +429,7 @@ Temos várias máquinas e queremos distribuir tarefas entre elas, minimizando o 
     ALG=\underbrace{T_{\text{antes}}}_{\leq OPT}+
     \underbrace{t_j}_{\leq OPT}
     $$
-    A carga anterior é no máximo $OPT$ porque, quando recebeu a última tarefa, essa era a máquina menos carregada.
+    A carga anterior é no máximo $OPT$ porque, quando recebeu a última tarefa, essa era a máquina menos carregada, e a menor carga é no máximo a média: $T_{\text{antes}}\leq\frac{\sum t_j}{m}\leq OPT$. Já a última tarefa satisfaz $t_j\leq\max t_j\leq OPT$.
 
     $$ALG\leq2OPT$$
 
@@ -311,14 +445,14 @@ Uma solução ingenua gulosa seria:
 
 Isso pode dar errado pois com pontos [0,10], o primeiro centro cairia na posiçao 5 e o segundo em um dos 2 pontos, logo o menor raio encontrado sera 5 mas o otimo é 0.
 
-- *Algoritmo Farthest-First:* A ideia do algortimo é bem simples, o proximo centro será posicionado sempre no ponto com maior distancia para todos os outros centro já colocados. Ele ter fator 2 pode ser provado com desigualdade triangular.
+- *Algoritmo Farthest-First:* A ideia do algortimo é bem simples, o proximo centro será posicionado sempre no ponto cuja distancia ao seu centro mais proximo (entre os já colocados) é a maior possivel (max-min). Ele ter fator 2 pode ser provado com desigualdade triangular.
 
 
 #### **Set Cover**
 
 Set cover queremos encontrar o menor conjunto de subconjuntos que contem todos os elementos de um universo X. A solução gulosa é:
 
-- Escolher sempre o subconjunto que contem maior quantidade de elementos desconhecidos
+- Escolher sempre o subconjunto que contem maior quantidade de elementos ainda não cobertos
 
 Ela tem um fator de aproximação ALG <= (1 + ln(X))OPT que varia com X.
 
@@ -341,7 +475,7 @@ C_v=\{S_i\in E:v\in S_i\}
 $$
 Ou seja, $C_v$ contém todas as hiperarestas que possuem o vértice $v$
 
-No exemplo:
+No exemplo, com $V=\{a,b,c,d\}$ e hiperarestas $S_1=\{a,b\}$, $S_2=\{b,c\}$, $S_3=\{c,d\}$:
 $$
 C_a=\{S_1\}
 $$
@@ -357,17 +491,21 @@ $$
 
 Agora temos uma instância de Set Cover! Escolher um conjunto $C_v$ significa selecionar o vértice $v$ no Hitting Set. Além disso, cobrir todo o universo $X$ equivale a atingir todas as hiperarestas
 
-#### **Subset Sum versão de otimização (menor possivel)** 
+#### **Subset Sum versão de otimização (maior soma <= B)** 
 
 O problema do subset sum para otimização consistem em achar o subconjunto que a soma seja a maior possivel mas não ultrapasse uma valor limite B. O de decisão queria exatamente B, enquanto esse não.
 
 - O algoritmo aproximativo aqui consiste em ordenar os itens em ordem decrescente, e ir alocando do maior para os menores, adicionamos no conjunto se somar esse item não ultrapassa B, se ultrapassar pulamos ele e continuamos ate os itens acabarem.
+
+- *Fator 2:* se todos os itens couberem, a solução é ótima. Senão, seja $a_j$ o primeiro item rejeitado. A soma $S$ já contém $a_1\geq a_j$, logo $S\geq a_j$, e como $a_j$ não coube, $S+a_j>B\geq OPT$. Então $2S>OPT$, ou seja, $ALG\geq OPT/2$.
 
 #### **Conjunto independente maximo**
 
 O problema consiste em encontrar o maior cojunto de nós tal que nenhum deles tenha arestas um para o outro. 
 
 - O algortimo aproximativo é bem parecido com o de vertex cover mas ao invés ao invés de escolhermos uma aresta e removermos ela, tiramos um nó e todos os seus vizinhos ate não sobre nada no grafo.
+
+- *Cuidado:* em grafos gerais esse problema não tem fator de aproximação constante. Se o grafo tem grau máximo $\Delta$, cada nó escolhido remove no máximo $\Delta+1$ nós, então $ALG\geq\frac{n}{\Delta+1}\geq\frac{OPT}{\Delta+1}$.
 
 ### **PTAS e FPTAS**
 
@@ -399,7 +537,7 @@ Essa é a diferença fundamental.
 #### **FPTAS da mochila**
 
 
-Existe a solução de programação dinâmica para a mochila com complexidade:
+Existe a solução de programação dinâmica para a mochila (ver seção de Programação Dinâmica) com complexidade:
 
 $$
 O(nW)
@@ -441,16 +579,82 @@ $$ALG\geq(1-\varepsilon)OPT$$
 
 ### **Exemplo**
 
-Transformando os valores pegando o piso de valor original / $\mu$, a qualidade da solução é dada por $\mu$ = qualidade * Vmax / n -> qualidade = 1,92k/12,8k/4 = 0.6, ou seja, a solução aqui será ALG <= 0.4 OPT, encontrara no maximo 40% do otimo.
+Transformando os valores pegando o piso de valor original / $\mu$ com $\mu$ = 1,92k, a qualidade da solução é dada por $\mu = \varepsilon \cdot v_{max} / n$ -> $\varepsilon = \mu \cdot n / v_{max}$ = 1,92k · 4 / 12,8k = 0.6, ou seja, a solução aqui será ALG >= 0.4 OPT, encontrara pelo menos 40% do otimo.
 
 | Item | Valor $v_i$ | Valor transformado $v_i'$ | Peso $w_i$ |
 |---|---:|---:|---:|
-| 1 | 5,5k | 2k | 2t |
-| 2 | 12,8k | 6k | 5t |
-| 3 | 3,5k | 1k | 1t |
-| 4 | 6,25k | 3k | 3t |
+| 1 | 5,5k | 2 | 2t |
+| 2 | 12,8k | 6 | 5t |
+| 3 | 3,5k | 1 | 1t |
+| 4 | 6,25k | 3 | 3t |
 
-Dado que a capacidade é W=9t
+Os valores transformados não têm unidade, são "quantos $\mu$ cabem no valor", por exemplo $\lfloor 12,8k / 1,92k\rfloor = \lfloor 6,67\rfloor = 6$.
+
+Dado que a capacidade é W=9t, usamos a PD por valor (ver Programação Dinâmica) sobre os valores transformados:
+
+$$
+P[i][x]=\min\big(P[i-1][x],\;w_i+P[i-1][x-v_i']\big)
+$$
+
+$P[i][x]$ é o menor peso para conseguir valor transformado exatamente $x$ usando os itens 1..i. A soma dos valores transformados é $V' = 2+6+1+3 = 12$, então $x$ vai de 0 a 12.
+
+**Passo 0 (nenhum item):** só é possivel ter valor 0 com peso 0, todo o resto é impossivel (∞).
+
+| i \ x | 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 | 11 | 12 |
+|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|
+| 0 | 0 | ∞ | ∞ | ∞ | ∞ | ∞ | ∞ | ∞ | ∞ | ∞ | ∞ | ∞ | ∞ |
+
+**Passo 1 (item 1: $v'=2$, $w=2$):** cada célula copia a linha de cima (não pega o item) ou soma $w=2$ à célula 2 posições para trás na linha de cima (pega o item).
+- $P[1][2]=\min(P[0][2],\;2+P[0][0])=\min(∞,\;2)=2$
+- Todas as outras ficam iguais à linha 0, pois $P[0][x-2]=∞$ para $x\neq2$.
+
+**Passo 2 (item 2: $v'=6$, $w=5$):** olhamos 6 posições para trás na linha 1.
+- $P[2][6]=\min(∞,\;5+P[1][0])=5$ (só item 2)
+- $P[2][8]=\min(∞,\;5+P[1][2])=5+2=7$ (itens 1 e 2)
+- O resto copia a linha 1.
+
+**Passo 3 (item 3: $v'=1$, $w=1$):** olhamos 1 posição para trás na linha 2.
+- $P[3][1]=\min(∞,\;1+P[2][0])=1$
+- $P[3][2]=\min(2,\;1+P[2][1])=\min(2,\;∞)=2$
+- $P[3][3]=\min(∞,\;1+P[2][2])=3$
+- $P[3][6]=\min(5,\;1+P[2][5])=\min(5,\;∞)=5$
+- $P[3][7]=\min(∞,\;1+P[2][6])=6$
+- $P[3][8]=\min(7,\;1+P[2][7])=\min(7,\;∞)=7$
+- $P[3][9]=\min(∞,\;1+P[2][8])=8$
+- $x=4,5,10,11,12$ continuam ∞.
+
+**Passo 4 (item 4: $v'=3$, $w=3$):** olhamos 3 posições para trás na linha 3.
+- $P[4][3]=\min(3,\;3+P[3][0])=\min(3,\;3)=3$
+- $P[4][4]=\min(∞,\;3+P[3][1])=4$
+- $P[4][5]=\min(∞,\;3+P[3][2])=5$
+- $P[4][6]=\min(5,\;3+P[3][3])=\min(5,\;6)=5$
+- $P[4][7]=\min(6,\;3+P[3][4])=\min(6,\;∞)=6$
+- $P[4][8]=\min(7,\;3+P[3][5])=\min(7,\;∞)=7$
+- $P[4][9]=\min(8,\;3+P[3][6])=\min(8,\;8)=8$
+- $P[4][10]=\min(∞,\;3+P[3][7])=9$
+- $P[4][11]=\min(∞,\;3+P[3][8])=10$
+- $P[4][12]=\min(∞,\;3+P[3][9])=11$
+- $x=0,1,2$ copiam a linha 3.
+
+**Tabela final:**
+
+| i \ x | 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 | 11 | 12 |
+|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|
+| 0 | 0 | ∞ | ∞ | ∞ | ∞ | ∞ | ∞ | ∞ | ∞ | ∞ | ∞ | ∞ | ∞ |
+| 1 | 0 | ∞ | 2 | ∞ | ∞ | ∞ | ∞ | ∞ | ∞ | ∞ | ∞ | ∞ | ∞ |
+| 2 | 0 | ∞ | 2 | ∞ | ∞ | ∞ | 5 | ∞ | 7 | ∞ | ∞ | ∞ | ∞ |
+| 3 | 0 | 1 | 2 | 3 | ∞ | ∞ | 5 | 6 | 7 | 8 | ∞ | ∞ | ∞ |
+| 4 | 0 | 1 | 2 | 3 | 4 | 5 | 5 | 6 | 7 | 8 | **9** | 10 | 11 |
+
+**Resposta:** procuramos na ultima linha o maior $x$ com $P[4][x]\leq W=9$. $P[4][12]=11$ e $P[4][11]=10$ passam do limite, $P[4][10]=9$ cabe. Logo o melhor valor transformado é 10.
+
+**Reconstrução:** voltamos de $P[4][10]$ verificando qual opção do min foi usada:
+- $P[4][10]=9\neq P[3][10]=∞$, então o item 4 foi pego, vamos para $P[3][10-3]=P[3][7]=6$
+- $P[3][7]=6\neq P[2][7]=∞$, então o item 3 foi pego, vamos para $P[2][7-1]=P[2][6]=5$
+- $P[2][6]=5\neq P[1][6]=∞$, então o item 2 foi pego, vamos para $P[1][6-6]=P[1][0]=0$
+- $P[1][0]=P[0][0]=0$, então o item 1 não foi pego
+
+O conjunto é {2, 3, 4}: peso 5 + 1 + 3 = 9t e valor real 12,8k + 3,5k + 6,25k = 22,55k. Testando os subconjuntos que cabem em 9t, esse também é o ótimo real (o segundo melhor é {1, 2, 3} com 21,8k), bem acima da garantia de 40%.
 
 
 
