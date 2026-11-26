@@ -137,4 +137,278 @@ Enquanto não atingir o limite de iterações:
 Retornar melhor solução encontrada
 ```
 
-# PSO 
+# **PSO (Particle Swarm Optmization)** 
+
+PSO é outro algortimo de inteligencia de enxames só que nesse ele funciona de forma diferente do ACO. Aqui temos um conjunto de particulas no espaco em que cada particula representa uma solucao candidata atual, entao se queremos minimizar uma funcao de 2 variaveis nossas particulas sao pontos em 2D (um para cada variavel) em que queremos otimizar esse fitness se movendo no espaco com uma velocidade usando conhecimento global e local.
+
+## **Componentes de uma particula**
+
+Para um problema de D variaveis que queremos otimizar temos para cada particula:
+
+- **Vetor de solucao atual:** Solucao atual de dimensao D
+- **Velocidade atual:** Direcao no espaco que atualmente estamos tendendo a avancar para otimizar a fitness
+- **Melhor solucao individual:** Vetor de menor fitness ja encontrado por essa particula
+- **Melhor solucao global:** Vetor de menor fitness ja encontrado por todas as particulas 
+
+## **Equações do PSO**
+
+### **Atualização da velocidade**
+
+$$
+\begin{aligned}
+\mathbf{v}_i(t)={}&
+\omega\mathbf{v}_i(t-1)\\
+&+c_1\phi_1(\mathbf{p}_i-\mathbf{x}_i(t-1))\\
+&+c_2\phi_2(\mathbf{p}_g-\mathbf{x}_i(t-1))
+\end{aligned}
+$$
+
+A equação é composta por três termos: inércia, componente cognitivo e componente social.
+
+- *Inércia:* Representa a tendência da partícula de continuar seu movimento anterior. O parâmetro $\omega$ determina quanto da velocidade anterior será preservado.
+
+- **Componente cognitivo:* A diferença entre a melhor posição individual e a posição atual produz um vetor que aponta em direção ao pBest. Esse vetor indica a direção em que a partícula deve se mover para retornar à sua melhor posição histórica
+
+- *Componente social:* Possui a mesma lógica do componente cognitivo, mas direciona a partícula para a melhor solução conhecida coletivamente.
+
+Os parâmetros $c_1$ e $c_2$ controlam a importância de cada componente. Os fatores $\phi_1$ e $\phi_2$ são taxas de aprendizagem, usualmente sorteadas no intervalo $[0,1]$ no PSO convencional.
+
+### **Atualização da posição**
+
+Depois de calcular a nova velocidade, atualizamos a posição:
+$$\mathbf{x}_i(t)=\mathbf{x}_i(t-1)+\mathbf{v}_i(t)
+$$
+
+### **Influência dos parâmetros**
+
+#### **Inércia ($\omega$)**
+
+A inércia controla quanto do movimento anterior é preservado. Uma possivel estrategia usando ela é o decaimento linear ao longo das iteracoes. Dessa forma, no inicio teriamos maior exploracao pois a direcao anterior teria muito peso e portanto explorariamos pouco a direcoes melhores, ao final com a inercia pequena focamos em usar mais o conhecimento dos melhores.
+
+#### **Coeficientes cognitivo e social**
+
+Um valor elevado de $c_1$, relativamente a $c_2$, tende a preservar a independência das partículas, enquanto um valor elevado de $c_2$, relativamente a $c_1$, tende a concentrá-las nas melhores regiões conhecidas pelo grupo.
+
+### **Exploration X Explotation**
+
+- *Favorece exploração:* Maior inércia, Maior influência individual relativa, Mutação das partículas
+
+- **Favorece explotation:** Menor inércia, Maior influência social relativa, Concentração nas melhores soluções
+
+O excesso de explotation pode provocar convergência prematura, situação em que as partículas se concentram em um ótimo local e perdem diversidade antes de encontrar o ótimo global
+
+### **Fator de constrição ($\chi$)**
+
+O fator de constrição $\chi$ é uma alternativa a inércia para reduzir o numero de parametros e é calculado a partir dos coeficientes cognitivo e social.
+
+$$
+\chi=\frac{2}
+{\left|2-\beta-\sqrt{\beta^2-4\beta}\right|}
+$$
+
+Onde:
+$$
+\beta=c_1+c_2
+$$
+
+A atualização apresentada no PDF é:
+$$
+\begin{aligned}
+\mathbf{v}_i(t)={}&
+\chi\mathbf{v}_i(t-1)\\
+&+c_1\phi_1(\mathbf{p}_i-\mathbf{x}_i)\\
+&+c_2\phi_2(\mathbf{p}_g-\mathbf{x}_i)
+\end{aligned}
+$$
+
+A finalidade é controlar a dinâmica das partículas e favorecer a convergência do enxame.
+
+### **Limitação da velocidade**
+
+Outro mecanismo utilizado para controlar o deslocamento das partículas é limitar a velocidade máxima.
+$$-V_{\max}\leq v_{ij}\leq V_{\max}
+$$
+
+Para cada dimensão da partícula:
+$$
+v_{ij}\leftarrow
+\begin{cases}
+V_{\max},&v_{ij}>V_{\max}\\
+-V_{\max},&v_{ij}<-V_{\max}\\
+v_{ij},&\text{caso contrário}
+\end{cases}
+$$
+
+A limitação reduz o risco de deslocamentos excessivos, mas não garante, sozinha, que a posição permaneça dentro do espaço de busca. Também pode ser necessário tratar os limites da posição
+
+## **Topologias de comunicacao com vizinhança**
+
+
+A vizinhança determina com quais partículas um indivíduo compartilha informações. Existem dois conceitos de distância: 
+
+- *Geográfica:* Baseada na proximidade das partículas no espaço de busca, podendo utilizar a distância euclidiana.
+- *Social:* Baseada nas conexões entre partículas, independentemente de suas posições no espaço de busca.
+
+Uma partícula pode estar distante de outra no espaço de busca, mas ainda assim ser sua vizinha social.
+
+### **Principais topologias**
+
+- *Estrela (global):* Todas as partículas se comunicam entre si.Tem convergência mais rápida e possivelmente prematura pois a melhor solucao fica disponivel para todos.
+
+- *Anel:* Cada partícula se comunica normalmente com dois vizinhos. Cobre melhor o espaco de busca pela limitacao de informacao mas converge mais lentamente.
+
+- *Focal (Wheel):* Existe uma partícula central responsável pela comunicação entre os demais indivíduos. A informação passa pelo ponto focal, em vez de ser compartilhada diretamente entre todas as partículas.
+
+- *Von Neumann:* As partículas são organizadas em uma grade, com quatro vizinhos por partícula. A aula destaca seu bom desempenho empírico em diversos problemas.
+
+## **Algortimo**
+
+```text
+Inicializar posições e velocidades aleatoriamente
+
+Avaliar a fitness das partículas
+Inicializar pBest de cada partícula
+Inicializar gBest do enxame
+
+Enquanto o critério de parada não for satisfeito:
+
+    Para cada partícula:
+
+        Calcular nova velocidade
+
+        Limitar velocidade, se necessário
+
+        Calcular nova posição
+
+        Avaliar fitness da nova posição
+
+        Se a nova posição for melhor que pBest:
+            Atualizar pBest
+
+        Se a nova posição for melhor que gBest:
+            Atualizar gBest
+
+Retornar gBest
+```
+
+### **Metodos hibridos**
+
+- *PSO com seleção:* as partículas são classificadas de acordo com seu desempenho. A metade com pior desempenho é substituída pela melhor metade, preservando as memórias individuais conforme o algoritmo apresentado.
+
+- *PSO com mutação gaussiana:* adicionamos uma perturbação aleatória à posição das partículas após sua atualização. Algumas versões aplicam a mutação apenas à melhor solução global.
+
+# **Otimizacao de Hiperparametros (HPO)**
+
+Objetivo é encontrar automaticamente configurações de hiperparâmetros que produzam modelos de aprendizado de máquina com melhor desempenho
+
+- *Parâmetros* são valores aprendidos durante o treinamento de um modelo como regras em uma arvore ou pesos em modelos neurais
+- *Hiperparâmetros* são configurações definidas antes do treinamento que influenciam o processo de aprendizagem ou a estrutura do modelo como profundidade maxima em arvores e numero de camadas em redes
+
+Existem diferentes niveis de automatizacao:
+
+- HPO escolhe hiperparâmetros de um algoritmo.
+- Seleção de algoritmos	escolhe qual algoritmo utilizar.
+- Uma abordagem combinada escolhe algoritmo e seus hiperparâmetros.
+- AutoML escolhe composição e configuração de pipelines completos.
+
+## **Formulacao**
+
+Podemos escrever a função objetivo como:
+$$
+\Psi(\lambda)=
+\frac{1}{|D_{\mathrm{valid}}|}
+\sum_{x\in D_{\mathrm{valid}}}
+\mathcal{L}\left(x,
+\mathcal{A}_{\lambda}(D_{\mathrm{train}})\right)
+$$
+
+E o problema de otimização como:
+$$\lambda^*=\arg\min_{\lambda\in\Lambda}\Psi(\lambda)
+$$ 
+
+Onde:
+
+- $\lambda$: Vetor de hiperparâmetros
+- $\Lambda$: Espaço de configurações possíveis
+- $\mathcal{A}_{\lambda}$: Algoritmo configurado com $\lambda$
+- $D_{\mathrm{train}}$: Conjunto de treinamento
+- $D_{\mathrm{valid}}$: Conjunto de validação
+- $\mathcal{L}$: Função de perda
+- $\Psi(\lambda)$: Perda média na validação
+- $\lambda^*$: Configuração ótima
+
+A lógica é: 
+1. Primeiro, escolhemos uma configuração de hiperparâmetros $\lambda$.
+
+2. Depois, treinamos o modelo utilizando essa configuração:
+$
+M_\lambda=\mathcal{A}_\lambda(D_{\mathrm{train}})
+$
+
+3. Em seguida, calculamos sua perda média no conjunto de validação:
+$
+\Psi(\lambda)=
+\frac{1}{|D_{\mathrm{valid}}|}
+\sum_{x\in D_{\mathrm{valid}}}
+\mathcal{L}(x,M_\lambda)
+$
+
+4. Finalmente, procuramos a configuração que minimiza essa perda. Como geralmente não conseguimos avaliar todas as configurações possíveis, retornamos a melhor entre as $S$ configurações efetivamente avaliadas:
+$$
+\hat{\lambda}=
+\arg\min_{\lambda\in\{\lambda^{(1)},\ldots,\lambda^{(S)}\}}
+\Psi(\lambda)
+$$
+
+## **Grid Search**
+
+O Grid Search (busca em grade) discretiza cada hiperparâmetro em um conjunto de valores e testa todas as combinações possíveis.
+
+Por exemplo, considere uma SVM com dois hiperparâmetros:
+$$
+C\in\{0,1;\ 1;\ 10\}
+$$
+
+$$
+\sigma\in\{0,01;\ 0,1;\ 1\}
+$$
+
+O Grid Search avaliará as nove combinações possiveis. Se cada hiperparâmetro d possui uma quantidade diferente de valores possiveis temos a seguinte quantidade de possibilidades:
+
+$$N=\prod_{i=1}^{d}k_i
+$$
+
+Sua principal vantagem é que é simples, facil de paralelizar e pode ser muito util quando existe conhecimento especializado para delimitar os parametros. Entretanto, seu custo é exponencial, gasta computacao em regioes claramente ruins de forma cega e é limitado a encontrar apenas as melhores solucoes dentro da grade discretizada.
+
+## **Random Search**
+
+O Random Search (busca aleatória) seleciona configurações aleatoriamente dentro do espaço de hiperparâmetros. Em vez de testar todas as combinações possíveis, definimos um orçamento de $N$ avaliações.
+
+#### **Por que o Random Search pode ser melhor que o Grid Search, mesmo sendo aleatório?**
+
+A dimensionalidade efetiva representa a quantidade de dimensões que realmente influenciam significativamente a função objetivo. *Na realidade poucos hiperparâmetros são realmente relevantes para determinado dataset, e os hiperparâmetros relevantes podem mudar de um dataset para outro.* A busca aleatória pode permitir explorar diversas regioes e com alta probabilidade encontrar pelo menos uma solucao boa conforme amostramos mais e conforme a proporcao da dimensionalidade efetiva aumenta.
+
+## **Bayesian Optimization (BO)**
+
+Tanto Grid Search quanto Random Search são classificados como métodos cegos (blind methods), pois não utilizam os resultados anteriores para orientar a escolha das próximas configurações. A Otimização Bayesiana procura utilizar as avaliações anteriores para *escolher de maneira inteligente a próxima configuração* de hiperparâmetros.
+
+Ela é especialmente adequada para funções objetivo:
+- Caixa-preta (black-box)
+- Computacionalmente caras
+- Multimodais, ou seja, com múltiplos ótimos locais
+- Possivelmente ruidosas
+
+### **O que é uma função caixa-preta?**
+
+Uma função caixa-preta é uma função cuja expressão analítica não conhecemos e cujas derivadas não estão diretamente disponíveis.
+
+Por exemplo:
+$$
+f(\lambda)=\text{erro de validação da rede neural}
+$$
+
+Não temos uma equação explícita relacionando com pesos e constantes o número de camadas, o learning rate e os demais hiperparâmetros ao erro final. Para descobrir $f(\lambda)$, precisamos efetivamente treinar e avaliar o modelo.
+
+Se avaliar a função objetivo for barato, podemos testar muitas configurações. Entretanto, se cada avaliação demorar horas, precisamos reduzir a quantidade de avaliações. É nesse cenário que a Otimização Bayesiana se torna interessante.
+
+### **Componentes da Otimizacao Bayesiana**
