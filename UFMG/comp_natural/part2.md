@@ -412,3 +412,53 @@ Não temos uma equação explícita relacionando com pesos e constantes o númer
 Se avaliar a função objetivo for barato, podemos testar muitas configurações. Entretanto, se cada avaliação demorar horas, precisamos reduzir a quantidade de avaliações. É nesse cenário que a Otimização Bayesiana se torna interessante.
 
 ### **Componentes da Otimizacao Bayesiana**
+
+È composto por 2 componentes principais:
+
+- *Surrogate Model:* O proprosito aqui é estimar o desempenho de uma determinada combinação de solução (hiperparametros) e junto ter a incerteza dessa estimativa.
+    - Quão boa deteminada combinação é ? quanto de certeza temos nisso ?
+
+- *Aquisition Function:* Decide para onde seguir na exploração do espaço
+    - Qual a proxima combinação/solução devemos testar ?
+
+![alt text](imgs/BO.png)
+
+A grande vantagem é que avaliar o modelo surrogate para ter uma estimativa de qualidade é muito mais barato do que treinar o modelo e conseguir esse valor real. Então podemos escolher regiões especificas de maior potencial para treinar e alimentar os modelos com valores reais e assim reduzir incertezas de outras regiões.
+
+### **Algortimo da Otimização Bayesiana**
+
+1. Inicialmente executamos o modelo com algumas soluções iniciais (Hiperparametros) e conseguimos uma amostra diversa de varios pontos no espaço e suas respectivas losses/perdas reais (ou seja, incerteza 0 nesses pontos pois são reais da função objetivo). O objetivo aqui é conhecer um pouco outputs da função objetivo para aprender a estimar.
+
+2. Ajustamos o modelo surrogate nessas observações para ele aprender a estimar a função objetivo e a incerteza das estimativas.
+
+3. Utilizamos a função de aquisição para determinar o proximo ponto/solução devemos explorar. Essa decisão é baseada na estimativa de qualidade do sorrogate e da incerteza associada.
+
+4. Treinamos o modelo real com hiperparametros escolhidos pela aquisição, ou seja, conseguimos o valor real da função objetivo para aquela instancia com potencial.
+
+5. Adicionamos esse novo resultado real da função objetivo junto das soluções iniciais executadas. Atualizamos/treinamos o sorrogate com essa nova informação e repetimos o processo por N iterações em que N é o orçamento.
+
+```text
+Realizar algumas avaliações iniciais
+Armazenar configurações e resultados
+
+Enquanto houver orçamento de avaliações:
+
+    Ajustar modelo substituto
+    Estimar função objetivo e incerteza das previsões
+
+    Construir função de aquisição
+
+    Encontrar configuração que maximiza
+    a função de aquisição
+
+    Treinar modelo com essa configuração
+    Avaliar seu desempenho real
+
+    Adicionar resultado às observações
+    Atualizar melhor configuração encontrada
+
+Retornar melhor configuração encontrada
+```
+
+### **Processo Gaussiano (GP)**
+
